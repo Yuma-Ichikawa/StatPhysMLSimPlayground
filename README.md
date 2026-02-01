@@ -9,7 +9,6 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/yuma-ichikawa/statphys-ml/actions/workflows/ci.yml"><img src="https://github.com/yuma-ichikawa/statphys-ml/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Python 3.10+"></a>
   <a href="LICENSE.txt"><img src="https://img.shields.io/badge/license-BSD--3--Clause-green.svg" alt="License"></a>
   <a href="https://github.com/psf/black"><img src="https://img.shields.io/badge/code%20style-black-000000.svg" alt="Code style: black"></a>
@@ -351,11 +350,27 @@ Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md)
 If you use this package in your research, please cite:
 
 ```bibtex
-@software{statphys_ml,
-  author = {Ichikawa, Yuma},
-  title = {StatPhys-ML: Statistical Mechanics Simulation Package for Machine Learning},
-  year = {2025},
-  url = {https://github.com/yuma-ichikawa/statphys-ml}
+@software{ichikawa2025statphysml,
+  author       = {Ichikawa, Yuma},
+  title        = {{StatPhys-ML}: Statistical Mechanics Simulation Package for Machine Learning},
+  year         = {2025},
+  month        = feb,
+  version      = {0.1.0},
+  publisher    = {GitHub},
+  url          = {https://github.com/yuma-ichikawa/statphys-ml},
+  note         = {Python package for Teacher-Student model analysis using replica method and online learning theory}
+}
+```
+
+For BibTeX users who prefer `@misc`:
+
+```bibtex
+@misc{ichikawa2025statphysml,
+  author       = {Ichikawa, Yuma},
+  title        = {{StatPhys-ML}: Statistical Mechanics Simulation Package for Machine Learning},
+  year         = {2025},
+  howpublished = {\url{https://github.com/yuma-ichikawa/statphys-ml}},
+  note         = {Version 0.1.0}
 }
 ```
 
