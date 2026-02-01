@@ -1,0 +1,124 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "statphys-ml"
+version = "0.1.0"
+description = "Statistical mechanics simulation package for machine learning theory (Replica, Online Learning, DMFT)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE.txt"}
+authors = [{name = "Yuma Ichikawa", email = "yuma.ichikawa@example.com"}]
+keywords = [
+    "statistical mechanics",
+    "machine learning",
+    "replica method",
+    "online learning",
+    "teacher-student model",
+    "high-dimensional statistics",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+
+dependencies = [
+    "numpy>=1.24",
+    "torch>=2.0",
+    "scipy>=1.10",
+    "matplotlib>=3.7",
+    "seaborn>=0.12",
+    "tqdm>=4.65",
+    "pandas>=2.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+lint = [
+    "black>=23.0",
+    "ruff>=0.1",
+    "mypy>=1.0",
+    "isort>=5.12",
+]
+dev = [
+    "statphys-ml[test,lint]",
+]
+docs = [
+    "sphinx>=6.0",
+    "sphinx-rtd-theme>=1.0",
+    "sphinx-autodoc-typehints>=1.23",
+]
+all = [
+    "statphys-ml[dev,docs]",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.urls]
+Homepage = "https://github.com/yuma-ichikawa/statphys-ml"
+Documentation = "https://statphys-ml.readthedocs.io"
+Repository = "https://github.com/yuma-ichikawa/statphys-ml"
+Issues = "https://github.com/yuma-ichikawa/statphys-ml/issues"
+
+# Black configuration
+[tool.black]
+line-length = 100
+target-version = ['py310', 'py311', 'py312']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+# Ruff configuration
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "D", "UP", "B", "C4", "SIM"]
+ignore = ["D100", "D104", "D107", "D203", "D213"]
+
+# isort configuration
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["statphys"]
+
+# mypy configuration
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+# pytest configuration
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short"
