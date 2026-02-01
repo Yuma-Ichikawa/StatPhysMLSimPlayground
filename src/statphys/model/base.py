@@ -205,6 +205,7 @@ class BaseModel(nn.Module, OrderParamsMixin, ABC):
 
         Raises:
             ValueError: If method is unknown.
+
         """
         if method == "normal":
             torch.nn.init.normal_(tensor, mean=0.0, std=scale)
@@ -212,6 +213,7 @@ class BaseModel(nn.Module, OrderParamsMixin, ABC):
             torch.nn.init.zeros_(tensor)
         elif method == "uniform":
             import math
+
             bound = scale * math.sqrt(3.0)
             torch.nn.init.uniform_(tensor, -bound, bound)
         elif method == "xavier":

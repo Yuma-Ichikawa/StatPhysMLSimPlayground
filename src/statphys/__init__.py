@@ -75,11 +75,7 @@ from statphys.simulation import (
 )
 
 # Theory imports
-from statphys.theory import (
-    ODESolver,
-    SaddlePointSolver,
-    TheoryResult,
-)
+from statphys.theory import ODESolver, SaddlePointSolver, TheoryResult
 from statphys.utils.io import ResultsManager, load_results, save_results
 
 # Core imports for convenient access
@@ -87,8 +83,8 @@ from statphys.utils.order_params import OrderParameterCalculator, auto_calc_orde
 from statphys.utils.seed import fix_seed, get_device
 
 # Visualization imports
-from statphys.vis import (  # Default plotting functions
-    ComparisonPlotter,
+from statphys.vis import ComparisonPlotter  # Default plotting functions
+from statphys.vis import (
     OrderParamPlotter,
     PhaseDiagramPlotter,
     Plotter,

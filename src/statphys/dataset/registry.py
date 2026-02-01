@@ -1,6 +1,7 @@
 """Dataset registry for dynamic dataset creation."""
 
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any, Optional
 
 from statphys.dataset.base import BaseDataset
 

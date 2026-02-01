@@ -334,9 +334,7 @@ class OrderParameterCalculator:
             return TaskType.BINARY_CLASSIFICATION
         if "n_classes" in teacher_params:
             n = teacher_params["n_classes"]
-            return (
-                TaskType.BINARY_CLASSIFICATION if n == 2 else TaskType.MULTICLASS_CLASSIFICATION
-            )
+            return TaskType.BINARY_CLASSIFICATION if n == 2 else TaskType.MULTICLASS_CLASSIFICATION
 
         return TaskType.REGRESSION
 

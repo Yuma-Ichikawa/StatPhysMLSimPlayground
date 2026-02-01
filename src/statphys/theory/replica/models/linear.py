@@ -2,8 +2,6 @@
 
 from typing import Any
 
-import numpy as np
-
 from statphys.theory.replica.models.base import ReplicaEquations
 
 
@@ -46,6 +44,7 @@ class RidgeRegressionEquations(ReplicaEquations):
           error in neural networks." arXiv:1710.03667
         - Hastie et al. (2022). "Surprises in high-dimensional ridgeless
           least squares interpolation." Ann. Statist.
+
     """
 
     def __init__(
@@ -64,6 +63,7 @@ class RidgeRegressionEquations(ReplicaEquations):
             eta: Noise variance σ². Default 0.0.
             reg_param: Ridge parameter λ. Default 0.01.
             eps: Small constant for numerical stability. Default 1e-6.
+
         """
         super().__init__(rho=rho, eta=eta, reg_param=reg_param, eps=eps, **params)
         self.rho = rho
@@ -89,6 +89,7 @@ class RidgeRegressionEquations(ReplicaEquations):
 
         Returns:
             (m_new, q_new) updated order parameters
+
         """
         rho = kwargs.get("rho", self.rho)
         eta = kwargs.get("eta", self.eta)
@@ -131,6 +132,7 @@ class RidgeRegressionEquations(ReplicaEquations):
 
         Returns:
             Generalization error
+
         """
         rho = kwargs.get("rho", self.rho)
         return 0.5 * (rho - 2 * m + q)
@@ -148,6 +150,7 @@ class RidgeRegressionEquations(ReplicaEquations):
 
         Returns:
             (m*, q*) fixed point solution
+
         """
         rho = kwargs.get("rho", self.rho)
         eta = kwargs.get("eta", self.eta)

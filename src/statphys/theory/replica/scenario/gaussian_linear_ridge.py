@@ -25,6 +25,7 @@ Generalization error:
 References:
     - Engel, Van den Broeck (2001). Statistical Mechanics of Learning
     - Hastie et al. (2022). Ann. Statist.
+
 """
 
 from typing import Any
@@ -72,6 +73,7 @@ class GaussianLinearRidgeEquations(ReplicaEquations):
             eta: Noise variance σ². Default 0.0.
             reg_param: Ridge parameter λ. Default 0.01.
             eps: Small constant for numerical stability.
+
         """
         super().__init__(rho=rho, eta=eta, reg_param=reg_param, eps=eps, **params)
         self.rho = rho
@@ -93,6 +95,7 @@ class GaussianLinearRidgeEquations(ReplicaEquations):
 
         Returns:
             m* : teacher-student overlap
+
         """
         rho = kwargs.get("rho", self.rho)
         lam = kwargs.get("reg_param", self.reg_param)
@@ -125,6 +128,7 @@ class GaussianLinearRidgeEquations(ReplicaEquations):
 
         Returns:
             q* : self-overlap
+
         """
         rho = kwargs.get("rho", self.rho)
         sigma_sq = kwargs.get("eta", self.eta)
@@ -162,6 +166,7 @@ class GaussianLinearRidgeEquations(ReplicaEquations):
 
         Returns:
             (m*, q*) analytical solution
+
         """
         return self.analytical_solution(alpha, **kwargs)
 
@@ -187,6 +192,7 @@ class GaussianLinearRidgeEquations(ReplicaEquations):
 
         Returns:
             Generalization error
+
         """
         rho = kwargs.get("rho", self.rho)
         return 0.5 * (rho - 2 * m + q)
@@ -205,6 +211,7 @@ class GaussianLinearRidgeEquations(ReplicaEquations):
 
         Returns:
             (m*, q*) analytical fixed point solution
+
         """
         m_star = self.solve_m(alpha, **kwargs)
         q_star = self.solve_q(alpha, m_star, **kwargs)
@@ -224,6 +231,7 @@ class GaussianLinearRidgeEquations(ReplicaEquations):
 
         Returns:
             Dictionary with 'm', 'q', 'eg' arrays
+
         """
         alpha_values = np.asarray(alpha_values)
         m_values = np.zeros_like(alpha_values)

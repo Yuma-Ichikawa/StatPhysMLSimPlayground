@@ -449,6 +449,7 @@ def soft_threshold(x: float | np.ndarray, threshold: float) -> float | np.ndarra
 
     Returns:
         Soft-thresholded value(s).
+
     """
     return np.sign(x) * np.maximum(np.abs(x) - threshold, 0)
 
@@ -465,6 +466,7 @@ def hard_threshold(x: float | np.ndarray, threshold: float) -> float | np.ndarra
 
     Returns:
         Hard-thresholded value(s).
+
     """
     return np.where(np.abs(x) > threshold, x, 0)
 
@@ -488,6 +490,7 @@ def moreau_envelope(
 
     Returns:
         Moreau envelope value.
+
     """
     search_range = 5 * np.sqrt(gamma)
     y_vals = np.linspace(x - search_range, x + search_range, n_points)
@@ -514,6 +517,7 @@ def proximal_operator(
 
     Returns:
         Proximal operator value.
+
     """
     search_range = 5 * np.sqrt(gamma)
     y_vals = np.linspace(x - search_range, x + search_range, n_points)

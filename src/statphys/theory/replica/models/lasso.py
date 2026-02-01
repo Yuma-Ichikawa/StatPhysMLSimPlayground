@@ -36,6 +36,7 @@ class LassoEquations(ReplicaEquations):
           IEEE Trans. Inf. Theory
         - Thrampoulidis, Oymak, Hassibi (2018). "Precise error analysis
           of regularized M-estimators." IEEE Trans. Inf. Theory
+
     """
 
     def __init__(
@@ -52,6 +53,7 @@ class LassoEquations(ReplicaEquations):
             rho: Teacher norm (||W₀||²/d). Default 1.0.
             eta: Noise variance. Default 0.0.
             reg_param: LASSO parameter λ. Default 0.01.
+
         """
         super().__init__(rho=rho, eta=eta, reg_param=reg_param, **params)
         self.rho = rho
@@ -88,6 +90,7 @@ class LassoEquations(ReplicaEquations):
 
         Returns:
             (m_new, q_new) updated order parameters
+
         """
         rho = kwargs.get("rho", self.rho)
         eta = kwargs.get("eta", self.eta)
@@ -150,6 +153,7 @@ class LassoEquations(ReplicaEquations):
 
         Returns:
             Generalization error
+
         """
         rho = kwargs.get("rho", self.rho)
         return 0.5 * (rho - 2 * m + q)
@@ -168,6 +172,7 @@ class LassoEquations(ReplicaEquations):
 
         Returns:
             Estimated fraction of non-zero weights
+
         """
         lam = kwargs.get("reg_param", self.reg_param)
         rho = kwargs.get("rho", self.rho)

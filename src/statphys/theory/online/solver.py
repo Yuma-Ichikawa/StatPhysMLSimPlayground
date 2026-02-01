@@ -326,6 +326,8 @@ class AdaptiveODESolver(ODESolver):
                 "params": params,
                 "success": solution.success,
                 "message": solution.message,
-                "t_events": [te.tolist() for te in solution.t_events] if solution.t_events else [],
+                "t_events": (
+                    [te.tolist() for te in solution.t_events] if solution.t_events else []
+                ),
             },
         )

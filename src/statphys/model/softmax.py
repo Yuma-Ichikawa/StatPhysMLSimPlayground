@@ -193,7 +193,11 @@ class SoftmaxRegressionWithBias(SoftmaxRegression):
     ):
         """Initialize with bias."""
         super().__init__(
-            d=d, n_classes=n_classes, init_scale=init_scale, init_method=init_method, **kwargs
+            d=d,
+            n_classes=n_classes,
+            init_scale=init_scale,
+            init_method=init_method,
+            **kwargs,
         )
 
         # Bias terms

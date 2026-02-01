@@ -11,6 +11,7 @@ References:
     - Engel, Van den Broeck (2001). Statistical Mechanics of Learning.
     - Opper, Kinzel (1996). "Statistical mechanics of generalization."
       Physics of Neural Networks III
+
 """
 
 from typing import Any
@@ -59,6 +60,7 @@ class GaussianLinearProbitEquations(ReplicaEquations):
         Args:
             rho: Teacher norm (||W₀||²/d). Default 1.0.
             reg_param: L2 regularization λ. Default 0.01.
+
         """
         super().__init__(rho=rho, reg_param=reg_param, **params)
         self.rho = rho
@@ -105,6 +107,7 @@ class GaussianLinearProbitEquations(ReplicaEquations):
 
         Returns:
             (E[g·u/√ρ], E[g²])
+
         """
         q = max(q, 1e-6)
         rho = max(rho, 1e-6)
@@ -173,6 +176,7 @@ class GaussianLinearProbitEquations(ReplicaEquations):
 
         Returns:
             (m_new, q_new) updated order parameters
+
         """
         rho = kwargs.get("rho", self.rho)
         lam = kwargs.get("reg_param", self.reg_param)
@@ -211,6 +215,7 @@ class GaussianLinearProbitEquations(ReplicaEquations):
 
         Returns:
             Classification error probability
+
         """
         rho = kwargs.get("rho", self.rho)
         if q > 0 and rho > 0:

@@ -36,6 +36,7 @@ class OnlineLogisticEquations(OnlineEquations):
     References:
         - Dietrich, Opper, Sompolinsky (1999). Phys. Rev. Lett.
         - Engel, Van den Broeck (2001). Statistical Mechanics of Learning.
+
     """
 
     def __init__(
@@ -52,6 +53,7 @@ class OnlineLogisticEquations(OnlineEquations):
             rho: Teacher norm (||W₀||²/d). Default 1.0.
             lr: Learning rate η. Default 0.1.
             reg_param: L2 regularization λ. Default 0.0.
+
         """
         super().__init__(rho=rho, lr=lr, reg_param=reg_param, **params)
         self.rho = rho
@@ -80,6 +82,7 @@ class OnlineLogisticEquations(OnlineEquations):
 
         Returns:
             [dm/dt, dq/dt]
+
         """
         m, q = y
 
@@ -137,6 +140,7 @@ class OnlineLogisticEquations(OnlineEquations):
 
         Returns:
             Classification error probability
+
         """
         m, q = y
         rho = kwargs.get("rho", self.rho)

@@ -9,8 +9,8 @@ import torch.nn as nn
 
 from statphys.simulation.base import BaseSimulation, SimulationResult
 from statphys.simulation.config import TheoryType
+from statphys.utils.order_params import OrderParameterCalculator
 from statphys.utils.seed import fix_seed
-from statphys.utils.order_params import OrderParameterCalculator, ModelType
 
 
 class OnlineSimulation(BaseSimulation):
@@ -212,6 +212,7 @@ class OnlineSimulation(BaseSimulation):
 
         Returns:
             Callable for order parameter calculation.
+
         """
         # Create a temporary model to detect type
         temp_model = model_class(d=dataset.d)

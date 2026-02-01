@@ -10,6 +10,7 @@ Loss: Logistic loss ℓ(y, z) = log(1 + exp(-yz))
 References:
     - Dietrich, Opper, Sompolinsky (1999). Phys. Rev. Lett.
     - Engel, Van den Broeck (2001). Statistical Mechanics of Learning.
+
 """
 
 from typing import Any
@@ -65,6 +66,7 @@ class GaussianLinearLogisticEquations(OnlineEquations):
             reg_param: L2 regularization λ. Default 0.0.
             use_quadrature: If True, use numerical quadrature (deterministic).
                            If False, use Monte Carlo (for debugging).
+
         """
         super().__init__(
             rho=rho, lr=lr, reg_param=reg_param, use_quadrature=use_quadrature, **params
@@ -85,6 +87,7 @@ class GaussianLinearLogisticEquations(OnlineEquations):
 
         Returns:
             (E[g·u/√ρ], E[g·z/√q], E[g²])
+
         """
         # Ensure numerical stability
         q = max(q, 1e-6)
@@ -143,6 +146,7 @@ class GaussianLinearLogisticEquations(OnlineEquations):
 
         Returns:
             [dm/dt, dq/dt]
+
         """
         m, q = y
 
@@ -180,6 +184,7 @@ class GaussianLinearLogisticEquations(OnlineEquations):
 
         Returns:
             Classification error probability
+
         """
         m, q = y
         rho = kwargs.get("rho", self.rho)

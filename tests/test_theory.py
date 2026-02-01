@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from statphys.theory.base import TheoryResult, TheoryType
-from statphys.theory.online import ODESolver, GaussianLinearMseEquations
+from statphys.theory.online import GaussianLinearMseEquations, ODESolver
 from statphys.theory.replica import GaussianLinearRidgeEquations, SaddlePointSolver
 
 

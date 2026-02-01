@@ -1,6 +1,7 @@
 """Model registry for dynamic model creation."""
 
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any, Optional
 
 from statphys.model.base import BaseModel
 
@@ -94,7 +95,11 @@ def get_model(name: str, **kwargs: Any) -> BaseModel:
 def _register_defaults() -> None:
     """Register default model classes."""
     from statphys.model.committee import CommitteeMachine, SoftCommitteeMachine
-    from statphys.model.linear import LinearClassifier, LinearRegression, RidgeRegression
+    from statphys.model.linear import (
+        LinearClassifier,
+        LinearRegression,
+        RidgeRegression,
+    )
     from statphys.model.mlp import DeepNetwork, TwoLayerNetwork, TwoLayerNetworkReLU
     from statphys.model.transformer import SingleLayerAttention, SingleLayerTransformer
 

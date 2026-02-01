@@ -11,11 +11,6 @@ from typing import Any
 
 import numpy as np
 
-from statphys.utils.special_functions import (
-    classification_error_linear,
-    regression_error_linear,
-)
-
 
 class OnlineEquations(ABC):
     """
@@ -52,6 +47,7 @@ class OnlineEquations(ABC):
 
         Args:
             **params: Parameters like rho, eta, lr, reg_param, etc.
+
         """
         self.params = params
 
@@ -78,6 +74,7 @@ class OnlineEquations(ABC):
 
         Returns:
             Array of dy/dt values with same shape as y.
+
         """
         pass
 
@@ -99,6 +96,7 @@ class OnlineEquations(ABC):
 
         Returns:
             Generalization error value.
+
         """
         pass
 

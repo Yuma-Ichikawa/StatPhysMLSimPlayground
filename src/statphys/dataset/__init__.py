@@ -36,21 +36,21 @@ Example:
     >>> from statphys.dataset import GaussianDataset
     >>> dataset = GaussianDataset(d=500, rho=1.0, eta=0.1)
     >>> X, y = dataset.generate_dataset(n_samples=1000)
+
 """
 
+# Attention-indexed
+from statphys.dataset.attention import AttentionIndexedModelDataset
 from statphys.dataset.base import BaseDataset, TeacherType
+
+# Fairness/Bias
+from statphys.dataset.fairness import TeacherMixtureFairnessDataset
 
 # Basic input distributions
 from statphys.dataset.gaussian import (
     GaussianClassificationDataset,
     GaussianDataset,
     GaussianMultiOutputDataset,
-)
-from statphys.dataset.sparse import BernoulliGaussianDataset, SparseDataset
-from statphys.dataset.structured import (
-    CorrelatedGaussianDataset,
-    SpikedCovarianceDataset,
-    StructuredDataset,
 )
 
 # GLM and classification
@@ -67,32 +67,26 @@ from statphys.dataset.icl import (
     ICLNonlinearRegressionDataset,
 )
 
-# Sequence/Token data
-from statphys.dataset.sequence import (
-    MarkovChainDataset,
-    CopyTaskDataset,
-    GeneralizedPottsDataset,
-    TiedLowRankAttentionDataset,
-    MixedGaussianSequenceDataset,
-)
-
-# Attention-indexed
-from statphys.dataset.attention import (
-    AttentionIndexedModelDataset,
-)
-
-# Fairness/Bias
-from statphys.dataset.fairness import (
-    TeacherMixtureFairnessDataset,
-)
-
 # Noisy labels
-from statphys.dataset.noisy import (
-    NoisyGMMSelfDistillationDataset,
-)
+from statphys.dataset.noisy import NoisyGMMSelfDistillationDataset
 
 # Registry
 from statphys.dataset.registry import DatasetRegistry, get_dataset, register_dataset
+
+# Sequence/Token data
+from statphys.dataset.sequence import (
+    CopyTaskDataset,
+    GeneralizedPottsDataset,
+    MarkovChainDataset,
+    MixedGaussianSequenceDataset,
+    TiedLowRankAttentionDataset,
+)
+from statphys.dataset.sparse import BernoulliGaussianDataset, SparseDataset
+from statphys.dataset.structured import (
+    CorrelatedGaussianDataset,
+    SpikedCovarianceDataset,
+    StructuredDataset,
+)
 
 __all__ = [
     # Base classes

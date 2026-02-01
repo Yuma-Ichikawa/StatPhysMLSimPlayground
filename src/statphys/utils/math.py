@@ -14,7 +14,9 @@ import torch
 from scipy.special import erf
 
 
-def H_function(x: float | np.ndarray | torch.Tensor) -> float | np.ndarray | torch.Tensor:
+def H_function(
+    x: float | np.ndarray | torch.Tensor,
+) -> float | np.ndarray | torch.Tensor:
     """
     Complementary Gaussian CDF (tail probability).
 
@@ -40,7 +42,9 @@ def H_function(x: float | np.ndarray | torch.Tensor) -> float | np.ndarray | tor
         return 0.5 * (1 - erf(x / np.sqrt(2.0)))
 
 
-def erf_scaled(x: float | np.ndarray | torch.Tensor) -> float | np.ndarray | torch.Tensor:
+def erf_scaled(
+    x: float | np.ndarray | torch.Tensor,
+) -> float | np.ndarray | torch.Tensor:
     """
     Scaled error function: erf(x / sqrt(2)).
 

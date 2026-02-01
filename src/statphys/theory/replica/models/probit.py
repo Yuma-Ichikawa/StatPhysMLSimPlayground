@@ -34,6 +34,7 @@ class ProbitEquations(ReplicaEquations):
         - Engel, Van den Broeck (2001). Statistical Mechanics of Learning.
         - Opper, Kinzel (1996). "Statistical mechanics of generalization."
           Physics of Neural Networks III
+
     """
 
     def __init__(
@@ -48,6 +49,7 @@ class ProbitEquations(ReplicaEquations):
         Args:
             rho: Teacher norm (||W₀||²/d). Default 1.0.
             reg_param: L2 regularization λ. Default 0.01.
+
         """
         super().__init__(rho=rho, reg_param=reg_param, **params)
         self.rho = rho
@@ -81,6 +83,7 @@ class ProbitEquations(ReplicaEquations):
 
         Returns:
             (m_new, q_new) updated order parameters
+
         """
         rho = kwargs.get("rho", self.rho)
         lam = kwargs.get("reg_param", self.reg_param)
@@ -128,6 +131,7 @@ class ProbitEquations(ReplicaEquations):
 
         Returns:
             Classification error probability
+
         """
         rho = kwargs.get("rho", self.rho)
         if q > 0 and rho > 0:

@@ -42,6 +42,7 @@ class OnlineEquations(ABC):
 
         Args:
             **params: Parameters like rho, eta, lr, reg_param, etc.
+
         """
         self.params = params
 
@@ -68,6 +69,7 @@ class OnlineEquations(ABC):
 
         Returns:
             Array of dy/dt values with same shape as y.
+
         """
         pass
 
@@ -89,6 +91,7 @@ class OnlineEquations(ABC):
 
         Returns:
             Generalization error value.
+
         """
         pass
 

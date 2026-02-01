@@ -32,6 +32,7 @@ class LogisticRegressionEquations(ReplicaEquations):
           of support vector networks." Phys. Rev. Lett.
         - Salehi et al. (2019). "The impact of regularization on
           high-dimensional logistic regression." NeurIPS
+
     """
 
     def __init__(
@@ -46,6 +47,7 @@ class LogisticRegressionEquations(ReplicaEquations):
         Args:
             rho: Teacher norm (||W₀||²/d). Default 1.0.
             reg_param: L2 regularization parameter λ. Default 0.01.
+
         """
         super().__init__(rho=rho, reg_param=reg_param, **params)
         self.rho = rho
@@ -75,6 +77,7 @@ class LogisticRegressionEquations(ReplicaEquations):
 
         Returns:
             (m_new, q_new) updated order parameters
+
         """
         rho = kwargs.get("rho", self.rho)
         lam = kwargs.get("reg_param", self.reg_param)
@@ -140,6 +143,7 @@ class LogisticRegressionEquations(ReplicaEquations):
 
         Returns:
             Classification error probability
+
         """
         rho = kwargs.get("rho", self.rho)
         if q > 0 and rho > 0:

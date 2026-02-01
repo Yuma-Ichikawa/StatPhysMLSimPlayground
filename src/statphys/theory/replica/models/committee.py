@@ -41,6 +41,7 @@ class CommitteeMachineEquations(ReplicaEquations):
           in multilayer neural networks." Phys. Rev. Lett. 74, 4337
         - Goldt et al. (2020). "Modeling the influence of data structure
           on learning in neural networks." Phys. Rev. X 10, 041044
+
     """
 
     def __init__(
@@ -63,9 +64,16 @@ class CommitteeMachineEquations(ReplicaEquations):
             eta: Noise variance. Default 0.0.
             activation: Activation function ('erf', 'tanh', 'sign', 'relu').
             reg_param: L2 regularization λ. Default 0.01.
+
         """
         super().__init__(
-            K=K, M=M, rho=rho, eta=eta, activation=activation, reg_param=reg_param, **params
+            K=K,
+            M=M,
+            rho=rho,
+            eta=eta,
+            activation=activation,
+            reg_param=reg_param,
+            **params,
         )
         self.K = K
         self.M = M
@@ -122,6 +130,7 @@ class CommitteeMachineEquations(ReplicaEquations):
 
         Returns:
             (m_new, q_new) updated order parameters
+
         """
         rho = kwargs.get("rho", self.rho)
         kwargs.get("eta", self.eta)
@@ -172,6 +181,7 @@ class CommitteeMachineEquations(ReplicaEquations):
 
         Returns:
             Generalization error
+
         """
         rho = kwargs.get("rho", self.rho)
         eta = kwargs.get("eta", self.eta)

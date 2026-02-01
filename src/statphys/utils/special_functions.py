@@ -294,6 +294,7 @@ def I3(Q_ab: float, Q_ac: float, Q_bc: float, activation: str = "erf") -> float:
 
     Raises:
         NotImplementedError: For non-erf activations.
+
     """
     if activation == "erf":
         # Simplified formula for symmetric case
@@ -325,6 +326,7 @@ def I4(Q_ab: float, Q_cd: float, Q_ac: float, activation: str = "erf") -> float:
 
     Raises:
         NotImplementedError: For non-erf activations.
+
     """
     if activation == "erf":
         # Factorized approximation (assumes independence)

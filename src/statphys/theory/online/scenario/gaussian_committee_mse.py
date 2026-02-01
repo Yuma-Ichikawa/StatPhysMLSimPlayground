@@ -13,12 +13,12 @@ References:
     - Biehl, Schwarze (1995). "Learning by on-line gradient descent."
       J. Phys. A 28, 5033
     - Goldt et al. (2020). Phys. Rev. X 10, 041044
+
 """
 
 from typing import Any
 
 import numpy as np
-from scipy.special import erf
 
 from statphys.theory.online.scenario.base import OnlineEquations
 
@@ -68,6 +68,7 @@ class GaussianCommitteeMseEquations(OnlineEquations):
             rho: Teacher norm per unit (T_mm = rho). Default 1.0.
             lr: Learning rate η. Default 0.1.
             activation: Activation function ('erf' only for now). Default 'erf'.
+
         """
         super().__init__(
             k_student=k_student,
@@ -143,12 +144,13 @@ class GaussianCommitteeMseEquations(OnlineEquations):
 
         Returns:
             [dr/dt, dq/dt]
+
         """
         r, q = y
 
         T = params.get("rho", self.rho)  # Teacher self-overlap
         lr = params.get("lr", self.lr)
-        K = params.get("k_student", self.k_student)
+        params.get("k_student", self.k_student)
 
         # Ensure numerical stability
         q = max(q, 1e-6)
@@ -198,10 +200,11 @@ class GaussianCommitteeMseEquations(OnlineEquations):
 
         Returns:
             Generalization error
+
         """
         r, q = y
         T = kwargs.get("rho", self.rho)
-        K = kwargs.get("k_student", self.k_student)
+        kwargs.get("k_student", self.k_student)
 
         q = max(q, 1e-6)
         T = max(T, 1e-6)
@@ -242,6 +245,7 @@ class GaussianCommitteeMseEquations(OnlineEquations):
 
         Returns:
             (r*, q*) estimated steady state
+
         """
         T = kwargs.get("rho", self.rho)
         # For matched architecture, optimal is r = q = T

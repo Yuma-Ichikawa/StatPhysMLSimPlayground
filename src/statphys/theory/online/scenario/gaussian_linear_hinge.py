@@ -10,6 +10,7 @@ Loss: Hinge loss ℓ(y, z) = max(0, κ - yz)
 References:
     - Dietrich, Opper, Sompolinsky (1999). Phys. Rev. Lett.
     - Gardner (1988). J. Phys. A
+
 """
 
 from typing import Any
@@ -62,6 +63,7 @@ class GaussianLinearHingeEquations(OnlineEquations):
             lr: Learning rate η. Default 0.1.
             margin: Hinge loss margin κ. Default 1.0 (standard SVM).
             reg_param: L2 regularization λ. Default 0.0.
+
         """
         super().__init__(rho=rho, lr=lr, margin=margin, reg_param=reg_param, **params)
         self.rho = rho
@@ -97,6 +99,7 @@ class GaussianLinearHingeEquations(OnlineEquations):
 
         Returns:
             [dm/dt, dq/dt]
+
         """
         m, q = y
 
@@ -143,6 +146,7 @@ class GaussianLinearHingeEquations(OnlineEquations):
 
         Returns:
             Classification error probability
+
         """
         m, q = y
         rho = kwargs.get("rho", self.rho)

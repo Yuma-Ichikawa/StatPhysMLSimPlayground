@@ -167,6 +167,7 @@ class SimulationConfig:
 
         Returns:
             SimulationConfig instance.
+
         """
         return cls(
             theory_type=TheoryType.REPLICA,
@@ -200,6 +201,7 @@ class SimulationConfig:
 
         Returns:
             SimulationConfig instance.
+
         """
         return cls(
             theory_type=TheoryType.ONLINE,

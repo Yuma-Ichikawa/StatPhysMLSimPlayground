@@ -16,6 +16,7 @@ References:
 Note:
     This implementation uses the replica symmetric ansatz. For the exact
     CGMT-based analysis, see Thrampoulidis et al. (2018).
+
 """
 
 from typing import Any
@@ -67,6 +68,7 @@ class GaussianLinearLassoEquations(ReplicaEquations):
             rho: Teacher norm (||W₀||²/d). Default 1.0.
             eta: Noise variance. Default 0.0.
             reg_param: LASSO parameter λ. Default 0.01.
+
         """
         super().__init__(rho=rho, eta=eta, reg_param=reg_param, **params)
         self.rho = rho
@@ -158,6 +160,7 @@ class GaussianLinearLassoEquations(ReplicaEquations):
         Note:
             For α < 1 (underparameterized), exact solution may not exist.
             For α > 1, the equations are well-defined.
+
         """
         rho = kwargs.get("rho", self.rho)
         eta = kwargs.get("eta", self.eta)
@@ -236,6 +239,7 @@ class GaussianLinearLassoEquations(ReplicaEquations):
 
         Returns:
             Generalization error
+
         """
         rho = kwargs.get("rho", self.rho)
         return 0.5 * (rho - 2 * m + q)
@@ -251,6 +255,7 @@ class GaussianLinearLassoEquations(ReplicaEquations):
 
         Returns:
             Estimated fraction of non-zero weights
+
         """
         lam = kwargs.get("reg_param", self.reg_param)
         rho = kwargs.get("rho", self.rho)

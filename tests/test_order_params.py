@@ -2,7 +2,6 @@
 
 import numpy as np
 import pytest
-import torch
 
 from statphys.dataset import GaussianClassificationDataset, GaussianDataset
 from statphys.model import CommitteeMachine, LinearRegression, TwoLayerNetwork
@@ -169,7 +168,7 @@ class TestOrderParameterCalculator:
         # Check student-teacher overlaps
         assert "avg" in params.student_teacher_overlaps
         # Should have W_0_W0, W_1_W0, W_2_W0
-        assert any("W_0" in k for k in params.student_teacher_overlaps.keys())
+        assert any("W_0" in k for k in params.student_teacher_overlaps)
 
         # Check student self-overlaps (Q matrix)
         assert "diag_avg" in params.student_self_overlaps
@@ -250,9 +249,7 @@ class TestOrderParameterCalculator:
         dataset = GaussianDataset(d=100, rho=1.0, eta=0.0)
         model = LinearRegression(d=100)
 
-        calc = OrderParameterCalculator(
-            return_format="object", include_teacher_overlaps=True
-        )
+        calc = OrderParameterCalculator(return_format="object", include_teacher_overlaps=True)
         params = calc(dataset, model)
 
         # Should have teacher self-overlap (rho)
@@ -352,13 +349,15 @@ class TestComprehensiveOverlaps:
         params = calc(dataset, model)
 
         # Should have individual overlaps W_i with W0
-        overlap_count = sum(1 for k in params.student_teacher_overlaps.keys()
-                          if k.startswith("W_") and "matrix" not in k)
+        overlap_count = sum(
+            1 for k in params.student_teacher_overlaps if k.startswith("W_") and "matrix" not in k
+        )
         assert overlap_count >= 3  # At least 3 hidden units
 
         # Should have Q matrix elements
-        self_overlap_count = sum(1 for k in params.student_self_overlaps.keys()
-                                if k.startswith("W_") and "matrix" not in k)
+        self_overlap_count = sum(
+            1 for k in params.student_self_overlaps if k.startswith("W_") and "matrix" not in k
+        )
         # 3 hidden units -> 3 diagonal + 3 off-diagonal = 6 unique pairs
         assert self_overlap_count >= 6
 

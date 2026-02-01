@@ -12,6 +12,7 @@ References:
       Europhys. Lett.
     - Kinzel, Opper (1991). "Dynamics of learning." Physics of Neural Networks
     - Saad, Solla (1995). Phys. Rev. E
+
 """
 
 from typing import Any
@@ -59,6 +60,7 @@ class GaussianLinearPerceptronEquations(OnlineEquations):
         Args:
             rho: Teacher norm (||W₀||²/d). Default 1.0.
             lr: Learning rate η. Default 1.0 (standard perceptron).
+
         """
         super().__init__(rho=rho, lr=lr, **params)
         self.rho = rho
@@ -104,6 +106,7 @@ class GaussianLinearPerceptronEquations(OnlineEquations):
 
         Returns:
             [dm/dt, dq/dt]
+
         """
         m, q = y
 
@@ -144,6 +147,7 @@ class GaussianLinearPerceptronEquations(OnlineEquations):
 
         Returns:
             Classification error probability
+
         """
         m, q = y
         rho = kwargs.get("rho", self.rho)
@@ -167,6 +171,7 @@ class GaussianLinearPerceptronEquations(OnlineEquations):
 
         Returns:
             Stability parameter κ
+
         """
         m, q = y
         rho = rho if rho is not None else self.rho

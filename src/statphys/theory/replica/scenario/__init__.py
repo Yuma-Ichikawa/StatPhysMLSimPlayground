@@ -74,6 +74,7 @@ def get_replica_equations(name: str, **kwargs) -> ReplicaEquations:
 
     Example:
         >>> equations = get_replica_equations("gaussian_linear_ridge", rho=1.0, reg_param=0.01)
+
     """
     if name not in REPLICA_SCENARIOS:
         raise ValueError(f"Unknown scenario: {name}. Available: {list(REPLICA_SCENARIOS.keys())}")

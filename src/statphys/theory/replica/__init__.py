@@ -14,25 +14,29 @@ Scenarios (organized by data × model × loss):
 - GaussianCommitteeMseEquations (alias: CommitteeMachineEquations): Committee machine
 
 Example:
---------
+-------
 >>> from statphys.theory.replica import SaddlePointSolver, RidgeRegressionEquations
 >>> equations = RidgeRegressionEquations(rho=1.0, eta=0.1, reg_param=0.01)
 >>> solver = SaddlePointSolver(equations=equations, order_params=['m', 'q'])
 >>> result = solver.solve(alpha_values=[0.5, 1.0, 2.0], rho=1.0, eta=0.1)
+
 """
 
 # Scenario module
 from statphys.theory.replica.scenario import (
     REPLICA_SCENARIOS,
-    ReplicaEquations,
-    get_replica_equations,
-    GaussianLinearRidgeEquations,
+    GaussianCommitteeMseEquations,
+    GaussianLinearHingeEquations,
     GaussianLinearLassoEquations,
     GaussianLinearLogisticEquations,
-    GaussianLinearHingeEquations,
     GaussianLinearProbitEquations,
-    GaussianCommitteeMseEquations,
+    GaussianLinearRidgeEquations,
+    ReplicaEquations,
+    get_replica_equations,
 )
+
+# Solver
+from statphys.theory.replica.solver import SaddlePointSolver
 
 # Integration utilities (re-exported from utils for convenience)
 from statphys.utils.integration import (
@@ -43,9 +47,6 @@ from statphys.utils.integration import (
     proximal_operator,
     soft_threshold,
 )
-
-# Solver
-from statphys.theory.replica.solver import SaddlePointSolver
 
 # Convenience aliases (for shorter, more intuitive names)
 RidgeRegressionEquations = GaussianLinearRidgeEquations

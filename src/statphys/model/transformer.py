@@ -259,7 +259,9 @@ class SingleLayerTransformer(BaseModel):
         nn.init.normal_(self.ff2.weight, mean=0.0, std=self.init_scale / np.sqrt(self.d_ff))
         nn.init.normal_(self.input_proj.weight, mean=0.0, std=self.init_scale / np.sqrt(self.d))
         nn.init.normal_(
-            self.output_proj.weight, mean=0.0, std=self.init_scale / np.sqrt(self.d_model)
+            self.output_proj.weight,
+            mean=0.0,
+            std=self.init_scale / np.sqrt(self.d_model),
         )
 
     def _attention(self, x: torch.Tensor) -> torch.Tensor:

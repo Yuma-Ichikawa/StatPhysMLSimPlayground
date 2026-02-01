@@ -19,14 +19,6 @@ from statphys.utils.integration import (
     teacher_student_integral,
 )
 from statphys.utils.io import ResultsManager, load_results, save_results
-from statphys.utils.order_params import (
-    ModelType,
-    OrderParameterCalculator,
-    TaskType,
-    auto_calc_order_params,
-    default_calculator,
-    detailed_calculator,
-)
 from statphys.utils.math import (
     H_function,
     compute_overlap,
@@ -37,6 +29,14 @@ from statphys.utils.math import (
     proximal_operator,
     relu,
     sigmoid,
+)
+from statphys.utils.order_params import (
+    ModelType,
+    OrderParameterCalculator,
+    TaskType,
+    auto_calc_order_params,
+    default_calculator,
+    detailed_calculator,
 )
 from statphys.utils.seed import fix_seed, get_device
 from statphys.utils.special_functions import (  # Gaussian distribution functions; Activation functions; Committee machine functions; Proximal operators; Generalization error functions

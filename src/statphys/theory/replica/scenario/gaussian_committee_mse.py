@@ -12,6 +12,7 @@ References:
       neural networks." Europhys. Lett.
     - Saad, Solla (1995). "Exact asymptotic analysis
       of committee machine learning." Phys. Rev. E
+
 """
 
 from typing import Any
@@ -66,9 +67,16 @@ class GaussianCommitteeMseEquations(ReplicaEquations):
             eta: Noise variance. Default 0.0.
             activation: Activation function ('erf', 'tanh', 'sign'). Default 'erf'.
             reg_param: L2 regularization parameter. Default 0.01.
+
         """
         super().__init__(
-            K=K, M=M, rho=rho, eta=eta, activation=activation, reg_param=reg_param, **params
+            K=K,
+            M=M,
+            rho=rho,
+            eta=eta,
+            activation=activation,
+            reg_param=reg_param,
+            **params,
         )
         self.K = K
         self.M = M
@@ -123,9 +131,10 @@ class GaussianCommitteeMseEquations(ReplicaEquations):
 
         Returns:
             (m_new, q_new) updated order parameters
+
         """
         rho = kwargs.get("rho", self.rho)
-        eta = kwargs.get("eta", self.eta)
+        kwargs.get("eta", self.eta)
         lam = kwargs.get("reg_param", self.reg_param)
         K = kwargs.get("K", self.K)
 
@@ -168,6 +177,7 @@ class GaussianCommitteeMseEquations(ReplicaEquations):
 
         Returns:
             Generalization error
+
         """
         rho = kwargs.get("rho", self.rho)
         eta = kwargs.get("eta", self.eta)

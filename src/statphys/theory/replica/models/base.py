@@ -3,8 +3,6 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-import numpy as np
-
 
 class ReplicaEquations(ABC):
     """
@@ -51,6 +49,7 @@ class ReplicaEquations(ABC):
 
         Args:
             **params: Parameters like rho, eta, lambda, etc.
+
         """
         self.params = params
 
@@ -76,6 +75,7 @@ class ReplicaEquations(ABC):
 
         Returns:
             Tuple of updated order parameter values.
+
         """
         pass
 
@@ -98,6 +98,7 @@ class ReplicaEquations(ABC):
 
         Returns:
             Tuple of residuals. Solution satisfies all residuals ≈ 0.
+
         """
         new_params = self(*order_params, alpha=alpha, **kwargs)
         return tuple(new - old for new, old in zip(new_params, order_params, strict=False))
@@ -120,6 +121,7 @@ class ReplicaEquations(ABC):
 
         Returns:
             Generalization error value.
+
         """
         pass
 
@@ -162,6 +164,7 @@ class ReplicaEquations(ABC):
 
         Returns:
             True if physical, False otherwise
+
         """
         m, q = order_params[:2]
         rho = kwargs.get("rho", self.params.get("rho", 1.0))

@@ -74,6 +74,7 @@ def get_online_equations(name: str, **kwargs) -> OnlineEquations:
 
     Example:
         >>> equations = get_online_equations("gaussian_linear_mse", rho=1.0, lr=0.1)
+
     """
     if name not in ONLINE_SCENARIOS:
         raise ValueError(f"Unknown scenario: {name}. Available: {list(ONLINE_SCENARIOS.keys())}")

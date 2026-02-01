@@ -1,6 +1,7 @@
 """Loss function registry."""
 
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any, Optional
 
 from statphys.loss.base import BaseLoss
 

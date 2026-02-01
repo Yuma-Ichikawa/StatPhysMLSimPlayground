@@ -40,6 +40,7 @@ class OnlineCommitteeEquations(OnlineEquations):
         - Biehl, Schwarze (1995). "Learning by on-line gradient descent."
           J. Phys. A 28, 5033
         - Goldt et al. (2020). Phys. Rev. X 10, 041044
+
     """
 
     def __init__(
@@ -60,6 +61,7 @@ class OnlineCommitteeEquations(OnlineEquations):
             rho: Teacher norm per unit (T_mm = rho). Default 1.0.
             lr: Learning rate η. Default 0.1.
             activation: Activation function ('erf', 'relu', 'tanh'). Default 'erf'.
+
         """
         super().__init__(
             k_student=k_student,
@@ -127,6 +129,7 @@ class OnlineCommitteeEquations(OnlineEquations):
 
         Raises:
             NotImplementedError: Full implementation not yet available
+
         """
         raise NotImplementedError(
             "OnlineCommitteeEquations is not fully implemented. "
@@ -162,6 +165,7 @@ class OnlineCommitteeEquations(OnlineEquations):
 
         Returns:
             Generalization error estimate
+
         """
         # Placeholder: assumes symmetric ansatz with first components being m, q
         if len(y) >= 2:

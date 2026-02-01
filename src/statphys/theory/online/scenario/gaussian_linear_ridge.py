@@ -10,11 +10,12 @@ Loss: Ridge (MSE + L2 regularization)
 
 References:
     - Engel, Van den Broeck (2001). Statistical Mechanics of Learning.
+
 """
 
-from typing import Any
-
-from statphys.theory.online.scenario.gaussian_linear_mse import GaussianLinearMseEquations
+from statphys.theory.online.scenario.gaussian_linear_mse import (
+    GaussianLinearMseEquations,
+)
 
 
 class GaussianLinearRidgeEquations(GaussianLinearMseEquations):

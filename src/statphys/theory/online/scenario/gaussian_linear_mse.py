@@ -11,6 +11,7 @@ References:
     - Werfel, Xie, Seung (2005). "Learning curves for stochastic gradient
       descent in linear feedforward networks." Neural Computation
     - Engel, Van den Broeck (2001). Statistical Mechanics of Learning. Ch. 5
+
 """
 
 from typing import Any
@@ -61,6 +62,7 @@ class GaussianLinearMseEquations(OnlineEquations):
             eta_noise: Output noise variance σ². Default 0.0.
             lr: Learning rate η. Default 0.1.
             reg_param: L2 regularization λ. Default 0.0.
+
         """
         super().__init__(rho=rho, eta_noise=eta_noise, lr=lr, reg_param=reg_param, **params)
         self.rho = rho
@@ -88,6 +90,7 @@ class GaussianLinearMseEquations(OnlineEquations):
 
         Returns:
             [dm/dt, dq/dt]
+
         """
         m, q = y
 
@@ -130,6 +133,7 @@ class GaussianLinearMseEquations(OnlineEquations):
 
         Returns:
             Generalization error value
+
         """
         m, q = y
         rho = kwargs.get("rho", self.rho)
@@ -148,6 +152,7 @@ class GaussianLinearMseEquations(OnlineEquations):
 
         Returns:
             (m*, q*) steady state values
+
         """
         rho = kwargs.get("rho", self.rho)
         sigma_sq = kwargs.get("eta_noise", self.eta_noise)

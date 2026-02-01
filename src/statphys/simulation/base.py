@@ -53,7 +53,7 @@ class SimulationResult:
         return {
             "theory_type": self.theory_type.value,
             "experiment_results": self.experiment_results,
-            "theory_results": self.theory_results.to_dict() if self.theory_results else None,
+            "theory_results": (self.theory_results.to_dict() if self.theory_results else None),
             "config": self.config.to_dict() if self.config else None,
             "metadata": self.metadata,
         }

@@ -14,24 +14,25 @@ Scenarios (organized by data × model × loss):
 - GaussianCommitteeMseEquations (alias: OnlineCommitteeEquations): Online committee machine
 
 Example:
---------
+-------
 >>> from statphys.theory.online import ODESolver, OnlineSGDEquations
 >>> equations = OnlineSGDEquations(rho=1.0, lr=0.5, eta_noise=0.1)
 >>> solver = ODESolver(equations=equations, order_params=['m', 'q'])
 >>> result = solver.solve(t_span=(0, 10), init_values=(0.0, 0.01))
+
 """
 
 # Scenario module
 from statphys.theory.online.scenario import (
     ONLINE_SCENARIOS,
+    GaussianCommitteeMseEquations,
+    GaussianLinearHingeEquations,
+    GaussianLinearLogisticEquations,
+    GaussianLinearMseEquations,
+    GaussianLinearPerceptronEquations,
+    GaussianLinearRidgeEquations,
     OnlineEquations,
     get_online_equations,
-    GaussianLinearMseEquations,
-    GaussianLinearRidgeEquations,
-    GaussianLinearPerceptronEquations,
-    GaussianLinearLogisticEquations,
-    GaussianLinearHingeEquations,
-    GaussianCommitteeMseEquations,
 )
 
 # Solver

@@ -25,8 +25,7 @@ try:
     import matplotlib  # noqa: F401
 except ImportError as e:
     raise ImportError(
-        "Visualization module requires matplotlib. "
-        "Install with: pip install statphys-ml[vis]"
+        "Visualization module requires matplotlib. " "Install with: pip install statphys-ml[vis]"
     ) from e
 
 from statphys.vis.comparison import ComparisonPlotter

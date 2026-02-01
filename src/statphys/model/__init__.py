@@ -29,14 +29,14 @@ from statphys.model.random_features import (
     RandomFeaturesModel,
 )
 from statphys.model.registry import ModelRegistry, get_model, register_model
+from statphys.model.sequence import (
+    LinearRNN,
+    LinearSelfAttention,
+    ModernHopfieldNetwork,
+    StateSpaceModel,
+)
 from statphys.model.softmax import SoftmaxRegression, SoftmaxRegressionWithBias
 from statphys.model.transformer import SingleLayerAttention, SingleLayerTransformer
-from statphys.model.sequence import (
-    LinearSelfAttention,
-    StateSpaceModel,
-    LinearRNN,
-    ModernHopfieldNetwork,
-)
 
 __all__ = [
     # Base classes

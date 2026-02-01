@@ -12,6 +12,7 @@ References:
       of support vector networks." Phys. Rev. Lett.
     - Salehi et al. (2019). "The impact of regularization on
       high-dimensional logistic regression." NeurIPS
+
 """
 
 from typing import Any
@@ -62,6 +63,7 @@ class GaussianLinearLogisticEquations(ReplicaEquations):
             rho: Teacher norm (||W₀||²/d). Default 1.0.
             reg_param: L2 regularization parameter λ. Default 0.01.
             n_quad: Number of quadrature points for numerical integration.
+
         """
         super().__init__(rho=rho, reg_param=reg_param, n_quad=n_quad, **params)
         self.rho = rho
@@ -90,6 +92,7 @@ class GaussianLinearLogisticEquations(ReplicaEquations):
 
         Returns:
             (E[g·u/√ρ], E[g²]) expectations needed for saddle-point equations
+
         """
         # Ensure numerical stability
         q = max(q, 1e-6)
@@ -154,6 +157,7 @@ class GaussianLinearLogisticEquations(ReplicaEquations):
 
         Returns:
             (m_new, q_new) updated order parameters
+
         """
         rho = kwargs.get("rho", self.rho)
         lam = kwargs.get("reg_param", self.reg_param)
@@ -200,6 +204,7 @@ class GaussianLinearLogisticEquations(ReplicaEquations):
 
         Returns:
             Classification error probability
+
         """
         rho = kwargs.get("rho", self.rho)
         return classification_error_linear(m, q, rho)

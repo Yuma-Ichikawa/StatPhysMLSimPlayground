@@ -51,6 +51,7 @@ def get_replica_equations(name: str, **kwargs):
 
     Example:
         >>> equations = get_replica_equations("ridge", rho=1.0, eta=0.1, reg_param=0.01)
+
     """
     if name not in REPLICA_MODELS:
         raise ValueError(f"Unknown model: {name}. Available: {list(REPLICA_MODELS.keys())}")

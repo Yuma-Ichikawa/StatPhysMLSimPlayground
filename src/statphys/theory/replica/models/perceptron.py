@@ -40,6 +40,7 @@ class PerceptronEquations(ReplicaEquations):
           network models." J. Phys. A 21, 257
         - Dietrich, Opper, Sompolinsky (1999). "Statistical mechanics
           of support vector networks." Phys. Rev. Lett. 82, 2975
+
     """
 
     def __init__(
@@ -57,6 +58,7 @@ class PerceptronEquations(ReplicaEquations):
             margin: Margin parameter κ. Default 0.0 (perceptron).
                    κ > 0 for SVM with margin.
             reg_param: L2 regularization λ. Default 0.0.
+
         """
         super().__init__(rho=rho, margin=margin, reg_param=reg_param, **params)
         self.rho = rho
@@ -89,6 +91,7 @@ class PerceptronEquations(ReplicaEquations):
 
         Returns:
             (m_new, q_new) updated order parameters
+
         """
         rho = kwargs.get("rho", self.rho)
         kappa = kwargs.get("margin", self.margin)
@@ -154,6 +157,7 @@ class PerceptronEquations(ReplicaEquations):
 
         Returns:
             Classification error probability
+
         """
         rho = kwargs.get("rho", self.rho)
         if q > 0 and rho > 0:
@@ -175,6 +179,7 @@ class PerceptronEquations(ReplicaEquations):
 
         Returns:
             Critical capacity α_c
+
         """
         kappa = margin if margin is not None else self.margin
 
