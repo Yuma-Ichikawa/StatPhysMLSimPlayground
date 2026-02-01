@@ -538,6 +538,108 @@ pytest tests/ --cov=statphys
 pytest tests/test_dataset.py
 ```
 
+## Tutorial
+
+### Simulation Only (No Theory Comparison)
+
+Run numerical experiments without theoretical analysis:
+
+```python
+import statphys
+from statphys.dataset import GaussianDataset
+from statphys.model import LinearRegression
+from statphys.loss import RidgeLoss
+from statphys.simulation import ReplicaSimulation, SimulationConfig
+
+# Fix random seed for reproducibility
+statphys.fix_seed(42)
+
+# Create dataset
+dataset = GaussianDataset(d=500, rho=1.0, eta=0.1)
+
+# Configure simulation (simulation only, no theory)
+config = SimulationConfig.for_replica(
+    alpha_range=(0.1, 5.0),
+    alpha_steps=20,
+    n_seeds=5,
+    reg_param=0.01,
+    use_theory=False,  # Disable theory comparison
+)
+
+# Run simulation
+sim = ReplicaSimulation(config)
+results = sim.run(
+    dataset=dataset,
+    model_class=LinearRegression,
+    loss_fn=RidgeLoss(0.01),
+)
+
+# Plot simulation results
+import matplotlib.pyplot as plt
+alpha_values = results.experiment_results["alpha_values"]
+eg_mean = [op[2] for op in results.experiment_results["order_params_mean"]]  # E_g is index 2
+eg_std = [op[2] for op in results.experiment_results["order_params_std"]]
+
+plt.errorbar(alpha_values, eg_mean, yerr=eg_std, fmt='o', label='Simulation')
+plt.xlabel(r'$\alpha = n/d$')
+plt.ylabel(r'$E_g$')
+plt.legend()
+plt.show()
+```
+
+### Theory vs Simulation Verification (Recommended)
+
+Compare numerical experiments with theoretical predictions:
+
+```python
+import statphys
+from statphys.dataset import GaussianDataset
+from statphys.model import LinearRegression
+from statphys.loss import RidgeLoss
+from statphys.simulation import ReplicaSimulation, SimulationConfig
+from statphys.theory.replica import SaddlePointSolver, GaussianLinearRidgeEquations
+from statphys.vis import ComparisonPlotter
+
+# Fix random seed
+statphys.fix_seed(42)
+
+# Create dataset
+dataset = GaussianDataset(d=500, rho=1.0, eta=0.1)
+
+# Configure simulation with theory enabled
+config = SimulationConfig.for_replica(
+    alpha_range=(0.1, 5.0),
+    alpha_steps=20,
+    n_seeds=5,
+    reg_param=0.01,
+    use_theory=True,  # Enable theory comparison
+)
+
+# Create theory solver
+equations = GaussianLinearRidgeEquations(rho=1.0, eta=0.1, reg_param=0.01)
+theory_solver = SaddlePointSolver(
+    equations=equations,
+    order_params=["m", "q"],
+)
+
+# Run simulation with theory comparison
+sim = ReplicaSimulation(config)
+results = sim.run(
+    dataset=dataset,
+    model_class=LinearRegression,
+    loss_fn=RidgeLoss(0.01),
+    theory_solver=theory_solver,
+)
+
+# Visualize theory vs simulation comparison
+plotter = ComparisonPlotter()
+plotter.plot_theory_vs_experiment(results)
+```
+
+For complete examples, see:
+- [`examples/theory_vs_simulation_verification_ja.ipynb`](examples/theory_vs_simulation_verification_ja.ipynb) (日本語)
+- [`examples/theory_vs_simulation_verification_en.ipynb`](examples/theory_vs_simulation_verification_en.ipynb) (English)
+
 ## Examples
 
 See the `examples/` directory:
@@ -559,6 +661,14 @@ See the `examples/` directory:
 - SciPy >= 1.10
 - Matplotlib >= 3.7
 
+## Documentation
+
+Theory notes are available in the `docs/` directory:
+
+| File | Description |
+|------|-------------|
+| [`docs/replica_note.md`](docs/replica_note.md) | Replica method for static analysis (saddle-point equations, order parameters) |
+| [`docs/online_sgd_learning_note.md`](docs/online_sgd_learning_note.md) | Online SGD dynamics (ODE derivation, concentration theorems) |
 
 ## License
 
