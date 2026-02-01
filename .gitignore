@@ -144,9 +144,10 @@ results/
 *.npz
 *.npy
 
-# Keep assets (logo, images for docs)
+# Keep assets and example images
 !assets/
 !assets/**
+!examples/*.png
 
 # Temporary files
 *.tmp

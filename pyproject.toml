@@ -9,7 +9,7 @@ description = "Statistical mechanics simulation package for machine learning the
 readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE.txt"}
-authors = [{name = "Yuma Ichikawa", email = "yuma.ichikawa@example.com"}]
+authors = [{name = "Yuma Ichikawa", email = "yuma.ichikawa@a.riken.jp"}]
 keywords = [
     "statistical mechanics",
     "machine learning",
@@ -74,6 +74,8 @@ Homepage = "https://github.com/yuma-ichikawa/statphys-ml"
 Documentation = "https://statphys-ml.readthedocs.io"
 Repository = "https://github.com/yuma-ichikawa/statphys-ml"
 Issues = "https://github.com/yuma-ichikawa/statphys-ml/issues"
+Author-Website = "https://ichikawa-laboratory.com/"
+Twitter = "https://x.com/yuma_1_or"
 
 # Black configuration
 [tool.black]

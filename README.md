@@ -37,8 +37,8 @@
 ### From source (recommended for development)
 
 ```bash
-git clone https://github.com/yourusername/StatPhysMLSimPlayground.git
-cd StatPhysMLSimPlayground
+git clone https://github.com/yuma-ichikawa/statphys-ml.git
+cd statphys-ml
 pip install -e ".[dev]"
 ```
 
@@ -135,6 +135,11 @@ results = sim.run(
 | **Gaussian Mixture** | `GaussianMixtureDataset` | Binary GMM (for DMFT analysis) |
 | | `MulticlassGaussianMixtureDataset` | Multi-class GMM |
 
+<p align="center">
+  <img src="assets/dataset_diagram.png" alt="Dataset Generation Framework" width="800">
+</p>
+<p align="center"><em>Teacher-Student framework for data generation</em></p>
+
 ### Models (15 types)
 
 | Category | Class | Description |
@@ -154,6 +159,11 @@ results = sim.run(
 | | `SoftmaxRegressionWithBias` | Softmax with bias terms |
 | **Transformer** | `SingleLayerAttention` | Single attention layer |
 | | `SingleLayerTransformer` | Full single-layer transformer |
+
+<p align="center">
+  <img src="assets/model_diagram.png" alt="Model Architectures" width="800">
+</p>
+<p align="center"><em>Supported model architectures with unified scaling convention</em></p>
 
 ### Loss Functions (16 types)
 
@@ -310,10 +320,14 @@ pytest tests/test_dataset.py
 
 See the `examples/` directory:
 
-- `basic_usage.ipynb`: Comprehensive tutorial covering all features
-- `replica_ridge_regression.py`: Ridge regression with replica theory
-- `online_sgd_learning.py`: Online SGD dynamics
-- `committee_machine.py`: Committee machine analysis
+| File | Description |
+|------|-------------|
+| `basic_usage.ipynb` | Comprehensive tutorial covering all features |
+| `dataset_gallery.ipynb` | Visualization of all 12 supported datasets |
+| `model_gallery.ipynb` | Visualization of all 15 supported models |
+| `replica_ridge_regression.py` | Ridge regression with replica theory |
+| `online_sgd_learning.py` | Online SGD dynamics |
+| `committee_machine.py` | Committee machine analysis |
 
 ## Dependencies
 
@@ -345,6 +359,29 @@ If you use this package in your research, please cite:
 }
 ```
 
-## Acknowledgments
+## Author
 
-This project is developed at Fujitsu Limited.
+**Yuma Ichikawa, Ph.D.**
+
+- **Website**: [https://ichikawa-laboratory.com/](https://ichikawa-laboratory.com/)
+- **Twitter**: [@yuma_1_or](https://x.com/yuma_1_or)
+- **Google Scholar**: [Yuma Ichikawa](https://scholar.google.com/citations?user=yuma-ichikawa)
+- **GitHub**: [yuma-ichikawa](https://github.com/yuma-ichikawa)
+
+### Research Topics
+
+- **Statistical Mechanics**: Information Statistical Mechanics, Spin Glass, Phase Transition, Markov Chain Monte Carlo
+- **Learning Theory**: High-Dimensional Statistics, Learning Dynamics
+- **Combinatorial Optimization**: Learning for Optimization, Heuristics, Simulated Annealing
+- **Large Language Model (LLM)**: Architecture, Compression, Quantization, Pruning
+
+### Contact
+
+- **Email**: yuma.ichikawa@a.riken.jp
+
+## Disclaimer
+
+This project is an **independent personal project** developed by Yuma Ichikawa.
+It is **not affiliated with, sponsored by, or endorsed by any organization**, including the author's employer.
+All views and opinions expressed in this project are solely those of the author.
+
