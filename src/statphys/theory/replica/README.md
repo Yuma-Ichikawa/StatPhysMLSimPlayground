@@ -561,3 +561,145 @@ $$
 
 - Engel, Van den Broeck (2001). *Statistical Mechanics of Learning*. Cambridge University Press.
 - Mézard, Montanari (2009). *Information, Physics, and Computation*. Oxford University Press.
+
+---
+
+## Default Supported Models
+
+This module provides default saddle-point equations for the following models.
+
+### Model List
+
+| Model | Class | Description | File |
+|-------|-------|-------------|------|
+| **Ridge Regression** | `RidgeRegressionEquations` | Linear regression with L2 regularization | `models/linear.py` |
+| **LASSO** | `LassoEquations` | Linear regression with L1 regularization | `models/lasso.py` |
+| **Logistic Regression** | `LogisticRegressionEquations` | Binary classification (logistic loss) | `models/logistic.py` |
+| **Perceptron/SVM** | `PerceptronEquations` | Perceptron/SVM (hinge loss) | `models/perceptron.py` |
+| **Probit Regression** | `ProbitEquations` | Gaussian CDF teacher | `models/probit.py` |
+| **Committee Machine** | `CommitteeMachineEquations` | Two-layer neural network | `models/committee.py` |
+
+### File Structure
+
+```
+theory/replica/
+├── __init__.py          # Module entry point
+├── solver.py            # SaddlePointSolver
+├── equations.py         # Legacy equations (backward compatibility)
+├── integration.py       # Gaussian integration utilities
+└── models/              # Model-specific saddle-point equations
+    ├── __init__.py      # Model registry
+    ├── base.py          # ReplicaEquations base class
+    ├── linear.py        # RidgeRegressionEquations
+    ├── lasso.py         # LassoEquations
+    ├── logistic.py      # LogisticRegressionEquations
+    ├── perceptron.py    # PerceptronEquations
+    ├── probit.py        # ProbitEquations
+    └── committee.py     # CommitteeMachineEquations
+```
+
+### Easy Model Access
+
+```python
+from statphys.theory.replica import get_replica_equations, REPLICA_MODELS
+
+# Check available models
+print(REPLICA_MODELS.keys())
+# dict_keys(['ridge', 'lasso', 'logistic', 'perceptron', 'probit', 'committee'])
+
+# Get model by name
+equations = get_replica_equations("ridge", rho=1.0, eta=0.1, reg_param=0.01)
+```
+
+---
+
+## Writing Custom Saddle-Point Equations
+
+A detailed guide for adding new model saddle-point equations.
+
+### Basic Structure
+
+```python
+# models/my_custom_model.py
+import numpy as np
+from statphys.theory.replica.models.base import ReplicaEquations
+
+# Import special functions from utils (DO NOT implement your own)
+from statphys.utils.special_functions import (
+    gaussian_pdf, gaussian_cdf, gaussian_tail,
+    sigmoid, soft_threshold,
+    I2, I3, I4,
+    classification_error_linear,
+    regression_error_linear,
+)
+from statphys.utils.integration import (
+    gaussian_integral_1d,
+    gaussian_integral_2d,
+    teacher_student_integral,
+)
+
+
+class MyCustomReplicaEquations(ReplicaEquations):
+    """Custom saddle-point equations."""
+    
+    def __init__(self, rho=1.0, eta=0.0, reg_param=0.01, **params):
+        super().__init__(rho=rho, eta=eta, reg_param=reg_param, **params)
+        self.rho = rho
+        self.eta = eta
+        self.reg_param = reg_param
+    
+    def __call__(self, m: float, q: float, alpha: float, **kwargs) -> tuple[float, float]:
+        """
+        Compute fixed-point update (m_new, q_new) = F(m, q; α).
+        
+        The saddle-point equations in residual form: 0 = F(m,q) - (m,q)
+        """
+        rho = kwargs.get('rho', self.rho)
+        eta = kwargs.get('eta', self.eta)
+        lam = kwargs.get('reg_param', self.reg_param)
+        
+        V = rho - 2*m + q + eta
+        denom = 1 + alpha * q / (lam + 1e-6)
+        hat_m = alpha * m / denom
+        hat_q = alpha * (V + m**2) / denom**2
+        
+        new_m = rho * hat_m / (lam + hat_q + 1e-6)
+        new_q = (rho * hat_m**2 + hat_q*(rho + eta)) / (lam + hat_q + 1e-6)**2
+        
+        return new_m, new_q
+    
+    def residual(self, m: float, q: float, alpha: float, **kwargs) -> tuple[float, float]:
+        """Residual form: 0 = F(m,q) - (m,q)"""
+        new_m, new_q = self(m, q, alpha, **kwargs)
+        return (new_m - m, new_q - q)
+    
+    def generalization_error(self, m: float, q: float, **kwargs) -> float:
+        rho = kwargs.get('rho', self.rho)
+        return regression_error_linear(m, q, rho)
+```
+
+### Using Special Functions (from utils)
+
+**Important**: Always use functions from `statphys.utils` instead of implementing your own.
+
+#### Available Functions (`statphys.utils.special_functions`)
+
+| Function | Description |
+|----------|-------------|
+| `gaussian_pdf(x)` / `phi(x)` | Gaussian PDF |
+| `gaussian_cdf(x)` / `Phi(x)` | Gaussian CDF |
+| `gaussian_tail(x)` / `H(x)` | Tail probability H(x) = 1 - Φ(x) |
+| `sigmoid(x)` | Sigmoid function |
+| `soft_threshold(x, λ)` | Soft thresholding (L1 proximal) |
+| `I2(Q, activation)` | Two-point correlation (committee) |
+| `classification_error_linear(m, q, ρ)` | (1/π) arccos(m/√(qρ)) |
+| `regression_error_linear(m, q, ρ)` | (1/2)(ρ - 2m + q) |
+
+#### Available Integration Utilities (`statphys.utils.integration`)
+
+| Function | Description |
+|----------|-------------|
+| `gaussian_integral_1d(f, μ, σ²)` | E[f(z)], z ~ N(μ, σ²) |
+| `gaussian_integral_2d(f, μ, Σ)` | 2D Gaussian integral |
+| `teacher_student_integral(f, m, q, ρ)` | E[f(u,z)] over joint |
+| `conditional_expectation(f, u, m, q, ρ)` | E[f(z)|u=value] |

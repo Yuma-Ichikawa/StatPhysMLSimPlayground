@@ -277,23 +277,34 @@ def I3(Q_ab: float, Q_ac: float, Q_bc: float, activation: str = "erf") -> float:
 
     This appears in committee machine saddle-point equations.
 
+    WARNING: This is a SIMPLIFIED formula valid only for the symmetric case
+    where all correlations are approximately equal. For the general asymmetric
+    case, use numerical integration over the 3D Gaussian distribution.
+
+    For exact implementation, see:
+    - Saad & Solla (1995) "On-line learning in soft committee machines"
+    - Biehl & Schwarze (1995) "Learning by on-line gradient descent"
+
     Args:
         Q_ab, Q_ac, Q_bc: Pairwise correlations.
-        activation: Activation function.
+        activation: Activation function ('erf' only).
 
     Returns:
-        I_3 value.
+        I_3 value (approximate for symmetric case).
 
+    Raises:
+        NotImplementedError: For non-erf activations.
     """
     if activation == "erf":
         # Simplified formula for symmetric case
-        # General case requires numerical integration
+        # Exact: I_3 requires 3D Gaussian integration
         Q = (Q_ab + Q_ac + Q_bc) / 3  # Average correlation
         return (2 / np.pi) ** 1.5 / np.sqrt(1 + Q + 1e-10)
     else:
-        # Numerical integration for other activations
-        # Placeholder - implement full integration if needed
-        return 0.0
+        raise NotImplementedError(
+            f"I3 for activation '{activation}' requires numerical integration. "
+            "Only 'erf' is supported with closed-form approximation."
+        )
 
 
 def I4(Q_ab: float, Q_cd: float, Q_ac: float, activation: str = "erf") -> float:
@@ -302,19 +313,27 @@ def I4(Q_ab: float, Q_cd: float, Q_ac: float, activation: str = "erf") -> float:
 
     I_4 = E[g'(u)g'(v)g(w)g(z)]
 
+    WARNING: This is an APPROXIMATE formula using independence assumption.
+    For exact results, use numerical integration over the 4D Gaussian.
+
     Args:
         Q_ab, Q_cd, Q_ac: Correlations.
-        activation: Activation function.
+        activation: Activation function ('erf' only).
 
     Returns:
-        I_4 value.
+        I_4 value (approximate).
 
+    Raises:
+        NotImplementedError: For non-erf activations.
     """
     if activation == "erf":
-        # Approximate formula
+        # Factorized approximation (assumes independence)
         return I2(Q_ab, "erf") * I2(Q_cd, "erf")
     else:
-        return 0.0
+        raise NotImplementedError(
+            f"I4 for activation '{activation}' requires numerical integration. "
+            "Only 'erf' is supported with factorized approximation."
+        )
 
 
 # =============================================================================

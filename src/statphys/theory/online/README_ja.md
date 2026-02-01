@@ -536,3 +536,305 @@ result = solver.solve(
 - オンライン SGD の**最適学習率**: $\eta^* = 1/(1 + \sigma^2/\rho)$
 - **漸近誤差**減衰: 最適 $\eta$ に対して $E_g(t) \sim 1/t$
 - **臨界学習率**: $\eta_c = 2$（正則化なし SGD の発散閾値）
+
+---
+
+## デフォルトでサポートされているモデル
+
+本モジュールは以下のモデルに対する ODE 方程式をデフォルトでサポートしている.
+
+### モデル一覧
+
+| モデル名 | クラス | 説明 | ファイル |
+|---------|-------|------|---------|
+| **線形回帰（SGD）** | `OnlineSGDEquations` | MSE 損失を持つオンライン SGD | `models/linear.py` |
+| **Ridge 回帰** | `OnlineRidgeEquations` | L2 正則化付きオンライン回帰 | `models/linear.py` |
+| **パーセプトロン** | `OnlinePerceptronEquations` | オンラインパーセプトロン学習 | `models/perceptron.py` |
+| **ロジスティック回帰** | `OnlineLogisticEquations` | オンラインロジスティック回帰 | `models/logistic.py` |
+| **SVM (ヒンジ損失)** | `OnlineHingeEquations` | オンライン SVM/ヒンジ損失学習 | `models/hinge.py` |
+| **委員会マシン** | `OnlineCommitteeEquations` | 2 層ネットワーク（テンプレート） | `models/committee.py` |
+
+### ファイル構造
+
+```
+theory/online/
+├── __init__.py          # モジュールエントリポイント
+├── solver.py            # ODESolver, AdaptiveODESolver
+├── equations.py         # レガシー方程式（後方互換性）
+├── README.md            # 英語ドキュメント
+├── README_ja.md         # 日本語ドキュメント
+└── models/              # モデル別 ODE 方程式
+    ├── __init__.py      # モデルレジストリ
+    ├── base.py          # OnlineEquations 基底クラス
+    ├── linear.py        # OnlineSGDEquations, OnlineRidgeEquations
+    ├── perceptron.py    # OnlinePerceptronEquations
+    ├── logistic.py      # OnlineLogisticEquations
+    ├── hinge.py         # OnlineHingeEquations
+    └── committee.py     # OnlineCommitteeEquations
+```
+
+### モデルの簡単な取得方法
+
+```python
+from statphys.theory.online import get_online_equations, ONLINE_MODELS
+
+# 利用可能なモデルを確認
+print(ONLINE_MODELS.keys())
+# dict_keys(['sgd', 'ridge', 'perceptron', 'logistic', 'hinge', 'committee'])
+
+# 名前でモデルを取得
+equations = get_online_equations("sgd", rho=1.0, lr=0.5)
+```
+
+### カスタムモデルの追加方法
+
+新しいモデルを追加するには:
+
+1. `models/` フォルダに新しいファイルを作成（例: `models/my_model.py`）
+2. `OnlineEquations` を継承したクラスを定義
+3. `__call__` メソッドで ODE の右辺 dy/dt を実装
+4. `generalization_error` メソッドで汎化誤差を実装
+5. `models/__init__.py` の `ONLINE_MODELS` に追加
+
+```python
+# models/my_model.py
+from statphys.theory.online.models.base import OnlineEquations
+import numpy as np
+
+class MyCustomEquations(OnlineEquations):
+    def __init__(self, rho=1.0, lr=0.1, **params):
+        super().__init__(rho=rho, lr=lr, **params)
+        self.rho = rho
+        self.lr = lr
+    
+    def __call__(self, t, y, params):
+        m, q = y
+        rho = params.get('rho', self.rho)
+        lr = params.get('lr', self.lr)
+        
+        # ODE 右辺を定義: dy/dt = F(t, y; params)
+        dm_dt = lr * (rho - m)
+        dq_dt = lr**2 * (rho - 2*m + q) + 2*lr*(m - q)
+        
+        return np.array([dm_dt, dq_dt])
+    
+    def generalization_error(self, y, **kwargs):
+        m, q = y
+        rho = kwargs.get('rho', self.rho)
+        return 0.5 * (rho - 2*m + q)
+```
+
+---
+
+## カスタムODE方程式の詳細な書き方
+
+新しいモデルのODE方程式を追加する際の詳細なガイドを示す.
+
+### 基本構造
+
+```python
+# models/my_custom_model.py
+import numpy as np
+from statphys.theory.online.models.base import OnlineEquations
+
+# 特殊関数はutilsから取得する（自作しない）
+from statphys.utils.special_functions import (
+    gaussian_pdf,      # ガウスPDF: φ(x)
+    gaussian_cdf,      # ガウスCDF: Φ(x)
+    gaussian_tail,     # ガウス尾確率: H(x) = 1 - Φ(x)
+    sigmoid,           # シグモイド関数
+    erf_activation,    # erf活性化
+    soft_threshold,    # ソフト閾値（L1のproximal）
+    I2, I3, I4,        # 委員会マシン相関関数
+    classification_error_linear,  # 分類誤差
+    regression_error_linear,      # 回帰誤差
+)
+from statphys.utils.integration import (
+    gaussian_integral_1d,      # 1次元ガウス積分
+    gaussian_integral_2d,      # 2次元ガウス積分
+    teacher_student_integral,  # Teacher-Student積分
+    conditional_expectation,   # 条件付き期待値
+)
+
+
+class MyCustomOnlineEquations(OnlineEquations):
+    """
+    カスタムモデルのODE方程式.
+    
+    数学的定義:
+        dm/dt = F_m(m, q, t; η, ρ, λ, ...)
+        dq/dt = F_q(m, q, t; η, ρ, λ, ...)
+    
+    ここで:
+        - t = τ/d : 正規化時間（τはサンプル数）
+        - m = w^T W_0 / d : Teacher-Studentオーバーラップ
+        - q = ||w||^2 / d : 自己オーバーラップ
+    """
+    
+    def __init__(
+        self,
+        rho: float = 1.0,      # Teacherノルム ||W_0||^2/d
+        eta_noise: float = 0.0, # 出力ノイズ分散 σ^2
+        lr: float = 0.1,       # 学習率 η
+        reg_param: float = 0.0, # 正則化パラメータ λ
+        custom_param: float = 1.0,  # カスタムパラメータ
+        **params,
+    ):
+        super().__init__(
+            rho=rho, 
+            eta_noise=eta_noise, 
+            lr=lr, 
+            reg_param=reg_param,
+            custom_param=custom_param,
+            **params
+        )
+        self.rho = rho
+        self.eta_noise = eta_noise
+        self.lr = lr
+        self.reg_param = reg_param
+        self.custom_param = custom_param
+    
+    def __call__(self, t: float, y: np.ndarray, params: dict) -> np.ndarray:
+        """
+        ODE右辺 dy/dt を計算.
+        
+        Args:
+            t: 正規化時間 t = τ/d
+            y: オーダーパラメータ [m, q, ...] (np.ndarray)
+            params: パラメータ辞書（__init__の値を上書き可能）
+        
+        Returns:
+            dy/dt = [dm/dt, dq/dt, ...] (np.ndarray)
+        """
+        m, q = y
+        
+        # パラメータ取得（引数から上書き可能）
+        rho = params.get('rho', self.rho)
+        eta_noise = params.get('eta_noise', self.eta_noise)
+        lr = params.get('lr', self.lr)
+        lam = params.get('reg_param', self.reg_param)
+        
+        # 残差分散（訓練損失に比例）
+        V = rho - 2*m + q + eta_noise
+        
+        # ========================================
+        # ここにODE方程式を実装
+        # ========================================
+        
+        # 例: 標準的なオンラインSGD
+        dm_dt = lr * (rho - m) - lr * lam * m
+        dq_dt = lr**2 * V + 2*lr*(m - q) - 2*lr*lam*q
+        
+        # 分類問題の場合（ガウス積分を使用）
+        # from statphys.utils.integration import teacher_student_integral
+        # def gradient_func(u, z):
+        #     y = np.sign(u)
+        #     g = y * sigmoid(-y * z)  # ロジスティック勾配
+        #     return g
+        # E_g_u = teacher_student_integral(
+        #     lambda u, z: gradient_func(u, z) * u / np.sqrt(rho),
+        #     m=m, q=q, rho=rho
+        # )
+        # dm_dt = lr * np.sqrt(rho) * E_g_u - lr * lam * m
+        
+        return np.array([dm_dt, dq_dt])
+    
+    def generalization_error(self, y: np.ndarray, **kwargs) -> float:
+        """
+        汎化誤差を計算.
+        
+        回帰: E_g = (1/2)(ρ - 2m + q)
+        分類: P(error) = (1/π) arccos(m / √(qρ))
+        """
+        m, q = y
+        rho = kwargs.get('rho', self.rho)
+        
+        # 回帰の場合
+        return regression_error_linear(m, q, rho)
+        
+        # 分類の場合
+        # return classification_error_linear(m, q, rho)
+    
+    def get_order_param_names(self) -> list[str]:
+        """オーダーパラメータ名を返す（デフォルトは['m', 'q']）"""
+        return ['m', 'q']
+    
+    def get_default_init(self) -> tuple[float, ...]:
+        """デフォルト初期値を返す"""
+        return (0.0, 0.01)  # m=0, q=0.01
+```
+
+### 使用例
+
+```python
+from statphys.theory.online import ODESolver
+from models.my_custom_model import MyCustomOnlineEquations
+
+# 方程式を作成
+equations = MyCustomOnlineEquations(
+    rho=1.0,
+    eta_noise=0.1,
+    lr=0.5,
+    reg_param=0.01,
+    custom_param=2.0,
+)
+
+# ソルバーを作成
+solver = ODESolver(
+    equations=equations,
+    order_params=equations.get_order_param_names(),
+    method='RK45',
+    tol=1e-8,
+)
+
+# ODEを解く
+result = solver.solve(
+    t_span=(0, 10),
+    init_values=equations.get_default_init(),
+    n_points=100,
+)
+
+# 汎化誤差付きで解く
+result = solver.solve_with_generalization_error(
+    t_span=(0, 10),
+    eg_formula=equations.generalization_error,
+    init_values=equations.get_default_init(),
+    rho=1.0,
+)
+```
+
+### 特殊関数の使用（utils）
+
+**重要**: 特殊関数は自作せず、必ず `statphys.utils` から取得すること.
+
+```python
+# 正しい使用法
+from statphys.utils.special_functions import gaussian_pdf, sigmoid, H
+
+# 間違った使用法（自作しない）
+# def my_sigmoid(x):  # ← これは避ける
+#     return 1 / (1 + np.exp(-x))
+```
+
+#### 利用可能な特殊関数（`statphys.utils.special_functions`）
+
+| 関数 | 説明 | 数式 |
+|------|------|------|
+| `gaussian_pdf(x)` | ガウスPDF | φ(x) = (1/√(2π)) exp(-x²/2) |
+| `gaussian_cdf(x)` | ガウスCDF | Φ(x) |
+| `gaussian_tail(x)` / `H(x)` | 尾確率 | H(x) = 1 - Φ(x) |
+| `sigmoid(x)` | シグモイド | σ(x) = 1/(1+exp(-x)) |
+| `erf_activation(x)` | erf活性化 | erf(x/√2) |
+| `soft_threshold(x, λ)` | ソフト閾値 | sign(x)·max(\|x\|-λ, 0) |
+| `I2(Q)` | 2点相関 | 委員会マシン用 |
+| `classification_error_linear(m, q, ρ)` | 分類誤差 | (1/π) arccos(m/√(qρ)) |
+| `regression_error_linear(m, q, ρ)` | 回帰誤差 | (1/2)(ρ - 2m + q) |
+
+#### 利用可能な積分ユーティリティ（`statphys.utils.integration`）
+
+| 関数 | 説明 |
+|------|------|
+| `gaussian_integral_1d(f, μ, σ²)` | E[f(z)], z ~ N(μ, σ²) |
+| `gaussian_integral_2d(f, μ, Σ)` | 2変数ガウス積分 |
+| `teacher_student_integral(f, m, q, ρ)` | Teacher-Student場の積分 |
+| `conditional_expectation(f, u, m, q, ρ)` | 条件付き期待値 E[f(z)\|u] |

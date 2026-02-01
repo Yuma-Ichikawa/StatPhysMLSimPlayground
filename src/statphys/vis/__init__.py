@@ -8,6 +8,10 @@ This module provides:
 - PhaseDiagramPlotter: Phase diagram visualization
 - Default plotting functions for publication-quality figures
 
+Requirements:
+    This module requires optional visualization dependencies.
+    Install them with: pip install statphys-ml[vis]
+
 Example:
     >>> from statphys.vis import plot_from_replica_results
     >>> plot_from_replica_results(results, plot_type="all")
@@ -16,6 +20,14 @@ Example:
     >>> plot_generalization_error_alpha(alpha, eg_mean, eg_std)
 
 """
+
+try:
+    import matplotlib  # noqa: F401
+except ImportError as e:
+    raise ImportError(
+        "Visualization module requires matplotlib. "
+        "Install with: pip install statphys-ml[vis]"
+    ) from e
 
 from statphys.vis.comparison import ComparisonPlotter
 from statphys.vis.default_plots import (

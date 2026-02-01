@@ -87,6 +87,9 @@ class SimulationConfig:
     verbose: bool = True
     verbose_interval: int = 5000
 
+    # Auto order parameter calculation
+    auto_order_params: bool = False
+
     def __post_init__(self):
         """Post-initialization processing."""
         # Generate alpha values if not provided
@@ -130,6 +133,7 @@ class SimulationConfig:
             "reg_param": self.reg_param,
             "verbose": self.verbose,
             "verbose_interval": self.verbose_interval,
+            "auto_order_params": self.auto_order_params,
         }
 
     @classmethod
@@ -146,14 +150,30 @@ class SimulationConfig:
         alpha_range: tuple[float, float] = (0.1, 5.0),
         alpha_steps: int = 20,
         n_seeds: int = 5,
+        auto_order_params: bool = False,
         **kwargs: Any,
     ) -> "SimulationConfig":
-        """Create configuration for replica experiments."""
+        """
+        Create configuration for replica experiments.
+
+        Args:
+            alpha_range: Range of alpha values (min, max).
+            alpha_steps: Number of alpha values.
+            n_seeds: Number of random seeds for averaging.
+            auto_order_params: If True, automatically compute all order parameters
+                              using OrderParameterCalculator. Prints detected model
+                              type and computed parameters at simulation start.
+            **kwargs: Additional configuration options.
+
+        Returns:
+            SimulationConfig instance.
+        """
         return cls(
             theory_type=TheoryType.REPLICA,
             alpha_range=alpha_range,
             alpha_steps=alpha_steps,
             n_seeds=n_seeds,
+            auto_order_params=auto_order_params,
             **kwargs,
         )
 
@@ -163,13 +183,29 @@ class SimulationConfig:
         t_max: float = 10.0,
         t_steps: int = 100,
         n_seeds: int = 5,
+        auto_order_params: bool = False,
         **kwargs: Any,
     ) -> "SimulationConfig":
-        """Create configuration for online learning experiments."""
+        """
+        Create configuration for online learning experiments.
+
+        Args:
+            t_max: Maximum time (in units of n/d).
+            t_steps: Number of time steps.
+            n_seeds: Number of random seeds for averaging.
+            auto_order_params: If True, automatically compute all order parameters
+                              using OrderParameterCalculator. Prints detected model
+                              type and computed parameters at simulation start.
+            **kwargs: Additional configuration options.
+
+        Returns:
+            SimulationConfig instance.
+        """
         return cls(
             theory_type=TheoryType.ONLINE,
             t_max=t_max,
             t_steps=t_steps,
             n_seeds=n_seeds,
+            auto_order_params=auto_order_params,
             **kwargs,
         )

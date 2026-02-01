@@ -536,3 +536,149 @@ result = solver.solve(
 - **Optimal learning rate** for online SGD: $\eta^* = 1/(1 + \sigma^2/\rho)$
 - **Asymptotic error** decay: $E_g(t) \sim 1/t$ for optimal $\eta$
 - **Critical learning rate**: $\eta_c = 2$ (divergence threshold for SGD without regularization)
+
+---
+
+## Default Supported Models
+
+This module provides default ODE equations for the following models.
+
+### Model List
+
+| Model | Class | Description | File |
+|-------|-------|-------------|------|
+| **Linear Regression (SGD)** | `OnlineSGDEquations` | Online SGD with MSE loss | `models/linear.py` |
+| **Ridge Regression** | `OnlineRidgeEquations` | Online regression with L2 regularization | `models/linear.py` |
+| **Perceptron** | `OnlinePerceptronEquations` | Online perceptron learning | `models/perceptron.py` |
+| **Logistic Regression** | `OnlineLogisticEquations` | Online logistic regression | `models/logistic.py` |
+| **SVM (Hinge Loss)** | `OnlineHingeEquations` | Online SVM/hinge loss learning | `models/hinge.py` |
+| **Committee Machine** | `OnlineCommitteeEquations` | Two-layer network (template) | `models/committee.py` |
+
+### File Structure
+
+```
+theory/online/
+├── __init__.py          # Module entry point
+├── solver.py            # ODESolver, AdaptiveODESolver
+├── equations.py         # Legacy equations (backward compatibility)
+├── README.md            # English documentation
+├── README_ja.md         # Japanese documentation
+└── models/              # Model-specific ODE equations
+    ├── __init__.py      # Model registry
+    ├── base.py          # OnlineEquations base class
+    ├── linear.py        # OnlineSGDEquations, OnlineRidgeEquations
+    ├── perceptron.py    # OnlinePerceptronEquations
+    ├── logistic.py      # OnlineLogisticEquations
+    ├── hinge.py         # OnlineHingeEquations
+    └── committee.py     # OnlineCommitteeEquations
+```
+
+### Easy Model Access
+
+```python
+from statphys.theory.online import get_online_equations, ONLINE_MODELS
+
+# Check available models
+print(ONLINE_MODELS.keys())
+# dict_keys(['sgd', 'ridge', 'perceptron', 'logistic', 'hinge', 'committee'])
+
+# Get model by name
+equations = get_online_equations("sgd", rho=1.0, lr=0.5)
+```
+
+---
+
+## Writing Custom ODE Equations
+
+A detailed guide for adding new model ODE equations.
+
+### Basic Structure
+
+```python
+# models/my_custom_model.py
+import numpy as np
+from statphys.theory.online.models.base import OnlineEquations
+
+# Import special functions from utils (DO NOT implement your own)
+from statphys.utils.special_functions import (
+    gaussian_pdf, gaussian_cdf, gaussian_tail,  # Gaussian functions
+    sigmoid, erf_activation,                     # Activation functions
+    soft_threshold,                              # Proximal operators
+    I2, I3, I4,                                  # Committee machine correlations
+    classification_error_linear,                 # Classification error
+    regression_error_linear,                     # Regression error
+)
+from statphys.utils.integration import (
+    gaussian_integral_1d,      # 1D Gaussian integral
+    gaussian_integral_2d,      # 2D Gaussian integral
+    teacher_student_integral,  # Teacher-Student field integral
+    conditional_expectation,   # Conditional expectation
+)
+
+
+class MyCustomOnlineEquations(OnlineEquations):
+    """Custom ODE equations for online learning."""
+    
+    def __init__(self, rho=1.0, eta_noise=0.0, lr=0.1, reg_param=0.0, **params):
+        super().__init__(rho=rho, eta_noise=eta_noise, lr=lr, reg_param=reg_param, **params)
+        self.rho = rho
+        self.eta_noise = eta_noise
+        self.lr = lr
+        self.reg_param = reg_param
+    
+    def __call__(self, t: float, y: np.ndarray, params: dict) -> np.ndarray:
+        """
+        Compute ODE right-hand side dy/dt.
+        
+        Args:
+            t: Normalized time t = τ/d
+            y: Order parameters [m, q, ...] as numpy array
+            params: Parameter dict (can override __init__ values)
+        
+        Returns:
+            dy/dt = [dm/dt, dq/dt, ...] as numpy array
+        """
+        m, q = y
+        rho = params.get('rho', self.rho)
+        lr = params.get('lr', self.lr)
+        lam = params.get('reg_param', self.reg_param)
+        eta_noise = params.get('eta_noise', self.eta_noise)
+        
+        V = rho - 2*m + q + eta_noise  # Residual variance
+        
+        # Implement your ODE equations here
+        dm_dt = lr * (rho - m) - lr * lam * m
+        dq_dt = lr**2 * V + 2*lr*(m - q) - 2*lr*lam*q
+        
+        return np.array([dm_dt, dq_dt])
+    
+    def generalization_error(self, y: np.ndarray, **kwargs) -> float:
+        m, q = y
+        rho = kwargs.get('rho', self.rho)
+        return regression_error_linear(m, q, rho)
+```
+
+### Using Special Functions (from utils)
+
+**Important**: Always use functions from `statphys.utils` instead of implementing your own.
+
+#### Available Functions (`statphys.utils.special_functions`)
+
+| Function | Description |
+|----------|-------------|
+| `gaussian_pdf(x)` / `phi(x)` | Gaussian PDF |
+| `gaussian_cdf(x)` / `Phi(x)` | Gaussian CDF |
+| `gaussian_tail(x)` / `H(x)` | Tail probability |
+| `sigmoid(x)` | Sigmoid function |
+| `soft_threshold(x, λ)` | Soft thresholding |
+| `classification_error_linear(m, q, ρ)` | Classification error |
+| `regression_error_linear(m, q, ρ)` | Regression error |
+
+#### Available Integration Utilities (`statphys.utils.integration`)
+
+| Function | Description |
+|----------|-------------|
+| `gaussian_integral_1d(f, μ, σ²)` | E[f(z)], z ~ N(μ, σ²) |
+| `gaussian_integral_2d(f, μ, Σ)` | 2D Gaussian integral |
+| `teacher_student_integral(f, m, q, ρ)` | Teacher-Student integral |
+| `conditional_expectation(f, u, m, q, ρ)` | E[f(z)|u] |

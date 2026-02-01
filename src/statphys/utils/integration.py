@@ -430,3 +430,98 @@ def logistic_gaussian_integral(
     return gaussian_integral_2d(
         integrand, mean=np.zeros(2), cov=cov, method=method, n_points=n_points
     )
+
+
+# =============================================================================
+# Proximal Operators and Thresholding
+# =============================================================================
+
+
+def soft_threshold(x: float | np.ndarray, threshold: float) -> float | np.ndarray:
+    """
+    Soft thresholding operator (proximal of L1 norm).
+
+    S_λ(x) = sign(x) · max(|x| - λ, 0)
+
+    Args:
+        x: Input value(s).
+        threshold: Threshold parameter λ.
+
+    Returns:
+        Soft-thresholded value(s).
+    """
+    return np.sign(x) * np.maximum(np.abs(x) - threshold, 0)
+
+
+def hard_threshold(x: float | np.ndarray, threshold: float) -> float | np.ndarray:
+    """
+    Hard thresholding operator (proximal of L0 norm).
+
+    H_λ(x) = x if |x| > λ else 0
+
+    Args:
+        x: Input value(s).
+        threshold: Threshold.
+
+    Returns:
+        Hard-thresholded value(s).
+    """
+    return np.where(np.abs(x) > threshold, x, 0)
+
+
+def moreau_envelope(
+    func: Callable[[float], float],
+    x: float,
+    gamma: float,
+    n_points: int = 200,
+) -> float:
+    """
+    Compute Moreau envelope of a function.
+
+    M_γf(x) = min_y [f(y) + (1/2γ)||x - y||²]
+
+    Args:
+        func: Function to compute envelope of.
+        x: Point to evaluate at.
+        gamma: Smoothing parameter.
+        n_points: Points for numerical optimization.
+
+    Returns:
+        Moreau envelope value.
+    """
+    search_range = 5 * np.sqrt(gamma)
+    y_vals = np.linspace(x - search_range, x + search_range, n_points)
+    envelope_vals = [func(y) + 0.5 / gamma * (x - y) ** 2 for y in y_vals]
+    return min(envelope_vals)
+
+
+def proximal_operator(
+    func: Callable[[float], float],
+    x: float,
+    gamma: float,
+    n_points: int = 200,
+) -> float:
+    """
+    Compute proximal operator of a function.
+
+    prox_γf(x) = argmin_y [f(y) + (1/2γ)||x - y||²]
+
+    Args:
+        func: Function.
+        x: Point.
+        gamma: Step size.
+        n_points: Points for optimization.
+
+    Returns:
+        Proximal operator value.
+    """
+    search_range = 5 * np.sqrt(gamma)
+    y_vals = np.linspace(x - search_range, x + search_range, n_points)
+    envelope_vals = [func(y) + 0.5 / gamma * (x - y) ** 2 for y in y_vals]
+    min_idx = np.argmin(envelope_vals)
+    return y_vals[min_idx]
+
+
+# Legacy aliases for backward compatibility
+gaussian_integral = gaussian_integral_1d
+double_gaussian_integral = gaussian_integral_2d

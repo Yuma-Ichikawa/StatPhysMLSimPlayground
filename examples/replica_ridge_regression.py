@@ -19,7 +19,7 @@ from statphys.dataset import GaussianDataset
 from statphys.model import LinearRegression
 from statphys.loss import RidgeLoss
 from statphys.simulation import ReplicaSimulation, SimulationConfig
-from statphys.theory.replica import SaddlePointSolver, RidgeRegressionEquations
+from statphys.theory.replica import SaddlePointSolver, GaussianLinearRidgeEquations
 from statphys.vis import ComparisonPlotter
 from statphys.utils import fix_seed
 
@@ -65,7 +65,7 @@ def main():
     print("\n[Step 2] Setting up replica theory solver...")
 
     # Define saddle-point equations for ridge regression
-    ridge_equations = RidgeRegressionEquations(
+    ridge_equations = GaussianLinearRidgeEquations(
         rho=rho,
         eta=eta,
         reg_param=reg_param,

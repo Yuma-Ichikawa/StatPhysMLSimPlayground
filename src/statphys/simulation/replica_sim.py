@@ -10,6 +10,7 @@ import torch.nn as nn
 from statphys.simulation.base import BaseSimulation, SimulationResult
 from statphys.simulation.config import TheoryType
 from statphys.utils.seed import fix_seed
+from statphys.utils.order_params import OrderParameterCalculator, ModelType
 
 
 class ReplicaSimulation(BaseSimulation):
@@ -48,6 +49,7 @@ class ReplicaSimulation(BaseSimulation):
             loss_fn: Loss function.
             calc_order_params: Function to compute order parameters.
                               Signature: calc_order_params(dataset, model) -> dict
+                              If None and config.auto_order_params=True, uses OrderParameterCalculator.
             theory_solver: Replica theory solver for comparison.
             **kwargs: Additional arguments passed to training.
 
@@ -64,9 +66,13 @@ class ReplicaSimulation(BaseSimulation):
         all_train_losses = []
         all_converged = []
 
-        # Default order params calculator
+        # Order params calculator setup
         if calc_order_params is None:
-            calc_order_params = self._default_calc_order_params
+            if self.config.auto_order_params:
+                # Use automatic order parameter calculator
+                calc_order_params = self._setup_auto_order_params(dataset, model_class)
+            else:
+                calc_order_params = self._default_calc_order_params
 
         for seed_idx, seed in enumerate(seed_list):
             self._print_progress(f"【TRIAL {seed_idx + 1}/{len(seed_list)}, SEED {seed}】")
@@ -175,11 +181,12 @@ class ReplicaSimulation(BaseSimulation):
         for iteration in range(self.config.max_iter):
             optimizer.zero_grad()
             y_pred = model(X_data)
-            loss = loss_fn(y_pred, y_data, model, online=False)
+            # Use for_replica for proper scaling: L = (1/n)Σℓ + λ||w||² (O(d))
+            loss = loss_fn.for_replica(y_pred, y_data, model)
             loss.backward()
             optimizer.step()
 
-            # Check convergence
+            # Check convergence (loss_value is O(d) due to regularization)
             loss_value = loss.item() / n_samples
             if abs(prev_loss - loss_value) < self.config.tol:
                 no_improvement_count += 1
@@ -215,6 +222,67 @@ class ReplicaSimulation(BaseSimulation):
             "train_loss": loss_value,
             "converged": converged,
         }
+
+    def _setup_auto_order_params(
+        self,
+        dataset: Any,
+        model_class: type[nn.Module],
+    ) -> Callable:
+        """
+        Setup automatic order parameter calculator and print info.
+
+        Args:
+            dataset: Dataset instance.
+            model_class: Model class.
+
+        Returns:
+            Callable for order parameter calculation.
+        """
+        # Create a temporary model to detect type
+        temp_model = model_class(d=dataset.d)
+        calculator = OrderParameterCalculator(return_format="list", verbose=False)
+
+        # Detect model and task types
+        model_type = calculator._detect_model_type(temp_model)
+        task_type = calculator._detect_task_type(dataset)
+
+        # Print information about what will be calculated
+        self._print_progress("=" * 60)
+        self._print_progress("【AUTO ORDER PARAMETER CALCULATION ENABLED】")
+        self._print_progress("=" * 60)
+        self._print_progress(f"  Model Type: {model_type.value}")
+        self._print_progress(f"  Task Type:  {task_type.value}")
+        self._print_progress("")
+        self._print_progress("  Order Parameters to be computed:")
+
+        param_names = OrderParameterCalculator.get_param_names(model_type)
+        param_descriptions = {
+            "m": "Student-Teacher overlap (M = W^T @ W0 / d)",
+            "q": "Student self-overlap (Q = W^T @ W / d)",
+            "eg": "Generalization error (E_g)",
+            "m_avg": "Average Student-Teacher overlap",
+            "q_diag_avg": "Average diagonal of Q matrix",
+            "q_offdiag_avg": "Average off-diagonal of Q matrix",
+            "a_norm": "Second-layer weight norm",
+        }
+
+        for i, name in enumerate(param_names):
+            desc = param_descriptions.get(name, name)
+            self._print_progress(f"    [{i}] {name}: {desc}")
+
+        self._print_progress("")
+        self._print_progress("  Additional computed quantities:")
+        self._print_progress("    - All Student-Teacher overlaps (M matrix)")
+        self._print_progress("    - All Student self-overlaps (Q matrix)")
+        self._print_progress("    - Teacher self-overlaps (R matrix)")
+        self._print_progress("    - O(1) scalars (bias, second-layer weights)")
+        self._print_progress("=" * 60)
+        self._print_progress("")
+
+        # Clean up temporary model
+        del temp_model
+
+        return calculator
 
     def _default_calc_order_params(
         self,

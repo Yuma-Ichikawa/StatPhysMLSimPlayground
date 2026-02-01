@@ -7,6 +7,8 @@ Example scripts and notebooks demonstrating `statphys-ml` usage.
 | File | Description |
 |------|-------------|
 | `basic_usage.ipynb` | Comprehensive tutorial covering all features |
+| `theory_vs_simulation_verification_en.ipynb` | **Theory vs Simulation verification** (Online ODE & Replica) |
+| `theory_vs_simulation_verification_ja.ipynb` | **理論 vs シミュレーション検証**（日本語版） |
 | `custom_components_tutorial.ipynb` | Create custom datasets, models, and losses |
 | `custom_components_tutorial_ja.ipynb` | カスタムコンポーネントチュートリアル（日本語版） |
 | `dataset_gallery.ipynb` | Visualization of all 22 supported datasets |
@@ -30,11 +32,27 @@ jupyter notebook examples/basic_usage.ipynb
 
 ## Notebooks
 
+### `theory_vs_simulation_verification_en.ipynb` / `theory_vs_simulation_verification_ja.ipynb`
+**Verifies that thermodynamic limit theory matches finite-dimensional simulations:**
+- **Online Learning (ODE)**: Order parameter trajectories as a function of normalized time $t = \tau/d$
+- **Replica Method**: Equilibrium order parameters as a function of sample ratio $\alpha = n/d$
+
+Uses Ridge Regression as a simple example to demonstrate:
+- ODE solver for online learning dynamics
+- Closed-form Ridge regression solution vs analytical theory
+- Comparison plots showing theory vs simulation agreement
+
+**Key features:**
+- Standard Gaussian initialization ($m(0) \approx 0$, $q(0) \approx 1$)
+- Error bars computed from multiple seeds
+- Initial conditions matched between simulation and theory
+
 ### `basic_usage.ipynb`
 Comprehensive tutorial covering:
 - Package import and setup
 - Dataset generation (Gaussian, Classification)
 - Model creation (Linear, Committee)
+- **Automatic Order Parameter Calculation** - Using `OrderParameterCalculator` and `auto_calc_order_params`
 - Loss functions (Ridge, MSE)
 - Running simulations (Replica, Online)
 - Visualization tools

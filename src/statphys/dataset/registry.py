@@ -1,6 +1,6 @@
 """Dataset registry for dynamic dataset creation."""
 
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from statphys.dataset.base import BaseDataset
 
@@ -87,7 +87,7 @@ class DatasetRegistry:
 _global_registry = DatasetRegistry()
 
 
-def register_dataset(name: str) -> callable:
+def register_dataset(name: str) -> Callable[[type[BaseDataset]], type[BaseDataset]]:
     """
     Decorator to register a dataset class.
 

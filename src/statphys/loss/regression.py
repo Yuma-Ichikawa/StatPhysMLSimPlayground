@@ -81,7 +81,13 @@ class LassoLoss(BaseLoss):
     """
     LASSO regression loss (MSE + L1 regularization).
 
-    L(y, ŷ, w) = (1/n) * Σ(y - ŷ)² + λ||w||₁
+    Scaling conventions:
+    -------------------
+    **Replica**: L = (1/n) * Σ(y - ŷ)² + λ||w||₁
+        - Regularization: λ * ||w||₁ → O(√d) since ||w||₁ ~ √d * ||w||₂/√d
+
+    **Online**: L = (1/d) * (y - ŷ)² + (λ/d)||w||₁
+        - Regularization normalized by d
 
     Important for studying sparse solutions and compressed sensing.
     """
@@ -110,12 +116,15 @@ class LassoLoss(BaseLoss):
         """Compute MSE loss."""
         return (y_pred - y_true) ** 2
 
-    def _compute_regularization(
+    def _compute_regularization_replica(
         self,
         model: nn.Module,
-        online: bool = False,
     ) -> torch.Tensor:
-        """Compute L1 regularization."""
+        """
+        Compute L1 regularization for replica/batch learning.
+
+        Replica scaling: λ * ||w||₁ (no 1/d normalization)
+        """
         if self.reg_param == 0:
             return torch.tensor(0.0, device=next(model.parameters()).device)
 
@@ -123,20 +132,52 @@ class LassoLoss(BaseLoss):
         for param in model.parameters():
             reg = reg + torch.sum(torch.abs(param))
 
-        if online:
-            d = sum(p.numel() for p in model.parameters())
-            reg = self.reg_param * reg / d
-        else:
-            reg = self.reg_param * reg
+        return self.reg_param * reg
 
-        return reg
+    def _compute_regularization_online(
+        self,
+        model: nn.Module,
+    ) -> torch.Tensor:
+        """
+        Compute L1 regularization for online learning.
+
+        Online scaling: (λ/d) * ||w||₁
+        """
+        if self.reg_param == 0:
+            return torch.tensor(0.0, device=next(model.parameters()).device)
+
+        reg = torch.tensor(0.0, device=next(model.parameters()).device)
+        d = 0
+        for param in model.parameters():
+            reg = reg + torch.sum(torch.abs(param))
+            d += param.numel()
+
+        return self.reg_param * reg / d
+
+    def _compute_regularization(
+        self,
+        model: nn.Module,
+        online: bool = False,
+    ) -> torch.Tensor:
+        """Compute L1 regularization (backward compatible)."""
+        if online:
+            return self._compute_regularization_online(model)
+        else:
+            return self._compute_regularization_replica(model)
 
 
 class ElasticNetLoss(BaseLoss):
     """
     Elastic Net loss (MSE + L1 + L2 regularization).
 
-    L(y, ŷ, w) = (1/n) * Σ(y - ŷ)² + λ₁||w||₁ + λ₂||w||²
+    Scaling conventions:
+    -------------------
+    **Replica**: L = (1/n) * Σ(y - ŷ)² + λ * (α||w||₁ + (1-α)||w||²)
+        - L1: λ * α * ||w||₁
+        - L2: λ * (1-α) * ||w||² → O(d)
+
+    **Online**: L = (1/d) * (y - ŷ)² + (λ/d) * (α||w||₁ + (1-α)||w||²)
+        - All terms normalized by d
 
     Combines benefits of LASSO and Ridge.
     """
@@ -168,12 +209,15 @@ class ElasticNetLoss(BaseLoss):
         """Compute MSE loss."""
         return (y_pred - y_true) ** 2
 
-    def _compute_regularization(
+    def _compute_regularization_replica(
         self,
         model: nn.Module,
-        online: bool = False,
     ) -> torch.Tensor:
-        """Compute Elastic Net regularization (L1 + L2)."""
+        """
+        Compute Elastic Net regularization for replica/batch learning.
+
+        Replica scaling: λ * (α||w||₁ + (1-α)||w||²) (no 1/d normalization)
+        """
         if self.reg_param == 0:
             return torch.tensor(0.0, device=next(model.parameters()).device)
 
@@ -185,14 +229,42 @@ class ElasticNetLoss(BaseLoss):
             l2_reg = l2_reg + torch.sum(param**2)
 
         reg = self.l1_ratio * l1_reg + (1 - self.l1_ratio) * l2_reg
+        return self.reg_param * reg
 
+    def _compute_regularization_online(
+        self,
+        model: nn.Module,
+    ) -> torch.Tensor:
+        """
+        Compute Elastic Net regularization for online learning.
+
+        Online scaling: (λ/d) * (α||w||₁ + (1-α)||w||²)
+        """
+        if self.reg_param == 0:
+            return torch.tensor(0.0, device=next(model.parameters()).device)
+
+        l1_reg = torch.tensor(0.0, device=next(model.parameters()).device)
+        l2_reg = torch.tensor(0.0, device=next(model.parameters()).device)
+        d = 0
+
+        for param in model.parameters():
+            l1_reg = l1_reg + torch.sum(torch.abs(param))
+            l2_reg = l2_reg + torch.sum(param**2)
+            d += param.numel()
+
+        reg = self.l1_ratio * l1_reg + (1 - self.l1_ratio) * l2_reg
+        return self.reg_param * reg / d
+
+    def _compute_regularization(
+        self,
+        model: nn.Module,
+        online: bool = False,
+    ) -> torch.Tensor:
+        """Compute Elastic Net regularization (backward compatible)."""
         if online:
-            d = sum(p.numel() for p in model.parameters())
-            reg = self.reg_param * reg / d
+            return self._compute_regularization_online(model)
         else:
-            reg = self.reg_param * reg
-
-        return reg
+            return self._compute_regularization_replica(model)
 
     def get_config(self) -> dict[str, Any]:
         """Get loss configuration."""

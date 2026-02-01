@@ -181,6 +181,49 @@ class BaseModel(nn.Module, OrderParamsMixin, ABC):
             if hasattr(module, "reset_parameters") and module is not self:
                 module.reset_parameters()
 
+    @staticmethod
+    def init_weight_(
+        tensor: torch.Tensor,
+        method: str = "normal",
+        scale: float = 1.0,
+    ) -> None:
+        """
+        Initialize a weight tensor in-place.
+
+        This is a shared utility for weight initialization across all models.
+        Supports common initialization methods used in statistical mechanics.
+
+        Args:
+            tensor: Weight tensor to initialize.
+            method: Initialization method. Options:
+                - "normal": N(0, scale²) - standard Gaussian
+                - "zero": All zeros
+                - "uniform": Uniform[-bound, bound] where bound = scale * √3
+                - "xavier": Xavier/Glorot initialization
+                - "orthogonal": Orthogonal initialization
+            scale: Scale factor (std for normal, bound factor for uniform).
+
+        Raises:
+            ValueError: If method is unknown.
+        """
+        if method == "normal":
+            torch.nn.init.normal_(tensor, mean=0.0, std=scale)
+        elif method == "zero":
+            torch.nn.init.zeros_(tensor)
+        elif method == "uniform":
+            import math
+            bound = scale * math.sqrt(3.0)
+            torch.nn.init.uniform_(tensor, -bound, bound)
+        elif method == "xavier":
+            torch.nn.init.xavier_uniform_(tensor)
+        elif method == "orthogonal":
+            torch.nn.init.orthogonal_(tensor, gain=scale)
+        else:
+            raise ValueError(
+                f"Unknown init_method: {method}. "
+                f"Choose from: normal, zero, uniform, xavier, orthogonal"
+            )
+
     @property
     def num_parameters(self) -> int:
         """Return total number of trainable parameters."""

@@ -1,6 +1,6 @@
 """Loss function registry."""
 
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from statphys.loss.base import BaseLoss
 
@@ -55,7 +55,7 @@ class LossRegistry:
 _global_registry = LossRegistry()
 
 
-def register_loss(name: str) -> callable:
+def register_loss(name: str) -> Callable[[type[BaseLoss]], type[BaseLoss]]:
     """
     Decorator to register a loss class.
 

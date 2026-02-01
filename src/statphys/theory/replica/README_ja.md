@@ -561,3 +561,456 @@ $$
 
 - Engel, Van den Broeck (2001). *Statistical Mechanics of Learning*. Cambridge University Press.
 - Mézard, Montanari (2009). *Information, Physics, and Computation*. Oxford University Press.
+
+---
+
+## デフォルトでサポートされているモデル
+
+本モジュールは以下のモデルに対する鞍点方程式をデフォルトでサポートしている.
+
+### モデル一覧
+
+| モデル名 | クラス | 説明 | ファイル |
+|---------|-------|------|---------|
+| **Ridge 回帰** | `RidgeRegressionEquations` | L2 正則化付き線形回帰 | `models/linear.py` |
+| **LASSO** | `LassoEquations` | L1 正則化付き線形回帰 | `models/lasso.py` |
+| **ロジスティック回帰** | `LogisticRegressionEquations` | 二値分類（ロジスティック損失） | `models/logistic.py` |
+| **パーセプトロン/SVM** | `PerceptronEquations` | パーセプトロン・SVM（ヒンジ損失） | `models/perceptron.py` |
+| **プロビット回帰** | `ProbitEquations` | ガウス CDF Teacher | `models/probit.py` |
+| **委員会マシン** | `CommitteeMachineEquations` | 2 層ニューラルネットワーク | `models/committee.py` |
+
+### ファイル構造
+
+```
+theory/replica/
+├── __init__.py          # モジュールエントリポイント
+├── solver.py            # SaddlePointSolver
+├── equations.py         # レガシー方程式（後方互換性）
+├── integration.py       # ガウス積分ユーティリティ
+└── models/              # モデル別鞍点方程式
+    ├── __init__.py      # モデルレジストリ
+    ├── base.py          # ReplicaEquations 基底クラス
+    ├── linear.py        # RidgeRegressionEquations
+    ├── lasso.py         # LassoEquations
+    ├── logistic.py      # LogisticRegressionEquations
+    ├── perceptron.py    # PerceptronEquations
+    ├── probit.py        # ProbitEquations
+    └── committee.py     # CommitteeMachineEquations
+```
+
+### モデルの簡単な取得方法
+
+```python
+from statphys.theory.replica import get_replica_equations, REPLICA_MODELS
+
+# 利用可能なモデルを確認
+print(REPLICA_MODELS.keys())
+# dict_keys(['ridge', 'lasso', 'logistic', 'perceptron', 'probit', 'committee'])
+
+# 名前でモデルを取得
+equations = get_replica_equations("ridge", rho=1.0, eta=0.1, reg_param=0.01)
+```
+
+---
+
+## デフォルトでサポートされているモデル
+
+本モジュールは以下のモデルに対する鞍点方程式をデフォルトでサポートしている.
+
+### モデル一覧
+
+| モデル名 | クラス | 説明 | ファイル |
+|---------|-------|------|---------|
+| **Ridge 回帰** | `RidgeRegressionEquations` | L2 正則化付き線形回帰 | `models/linear.py` |
+| **LASSO** | `LassoEquations` | L1 正則化付き線形回帰 | `models/lasso.py` |
+| **ロジスティック回帰** | `LogisticRegressionEquations` | 二値分類（ロジスティック損失） | `models/logistic.py` |
+| **パーセプトロン/SVM** | `PerceptronEquations` | パーセプトロン・SVM（ヒンジ損失） | `models/perceptron.py` |
+| **プロビット回帰** | `ProbitEquations` | ガウス CDF Teacher | `models/probit.py` |
+| **委員会マシン** | `CommitteeMachineEquations` | 2 層ニューラルネットワーク | `models/committee.py` |
+
+### ファイル構造
+
+```
+theory/replica/
+├── __init__.py          # モジュールエントリポイント
+├── solver.py            # SaddlePointSolver
+├── equations.py         # レガシー方程式（後方互換性）
+├── integration.py       # ガウス積分ユーティリティ
+├── README.md            # 英語ドキュメント
+├── README_ja.md         # 日本語ドキュメント
+└── models/              # モデル別鞍点方程式
+    ├── __init__.py      # モデルレジストリ
+    ├── base.py          # ReplicaEquations 基底クラス
+    ├── linear.py        # RidgeRegressionEquations
+    ├── lasso.py         # LassoEquations
+    ├── logistic.py      # LogisticRegressionEquations
+    ├── perceptron.py    # PerceptronEquations
+    ├── probit.py        # ProbitEquations
+    └── committee.py     # CommitteeMachineEquations
+```
+
+### モデルの簡単な取得方法
+
+```python
+from statphys.theory.replica import get_replica_equations, REPLICA_MODELS
+
+# 利用可能なモデルを確認
+print(REPLICA_MODELS.keys())
+# dict_keys(['ridge', 'lasso', 'logistic', 'perceptron', 'probit', 'committee'])
+
+# 名前でモデルを取得
+equations = get_replica_equations("ridge", rho=1.0, eta=0.1, reg_param=0.01)
+```
+
+### 鞍点方程式の形式
+
+鞍点方程式は2つの形式で記述できる:
+
+1. **固定点形式**（現在のソルバーが使用）:
+   ```
+   (m_new, q_new, ...) = F(m, q, ...; α, params)
+   ```
+   ソルバーは以下を反復: x_{n+1} = (1-γ)x_n + γF(x_n)
+
+2. **残差形式**（0 = 右辺）:
+   ```
+   0 = G(m, q, ...; α, params) = F(m, q, ...) - (m, q, ...)
+   ```
+
+`ReplicaEquations` 基底クラスは `residual()` メソッドを提供し, どちらの形式でも使用可能.
+
+### カスタムモデルの追加方法
+
+新しいモデルを追加するには:
+
+1. `models/` フォルダに新しいファイルを作成（例: `models/my_model.py`）
+2. `ReplicaEquations` を継承したクラスを定義
+3. `__call__` メソッドで固定点更新則を実装
+4. `generalization_error` メソッドで汎化誤差を実装
+5. `models/__init__.py` の `REPLICA_MODELS` に追加
+
+```python
+# models/my_model.py
+from statphys.theory.replica.models.base import ReplicaEquations
+
+class MyCustomEquations(ReplicaEquations):
+    def __init__(self, rho=1.0, eta=0.0, reg_param=0.01, **params):
+        super().__init__(rho=rho, eta=eta, reg_param=reg_param, **params)
+        self.rho = rho
+        self.eta = eta
+        self.reg_param = reg_param
+    
+    def __call__(self, m, q, alpha, **kwargs):
+        rho = kwargs.get('rho', self.rho)
+        eta = kwargs.get('eta', self.eta)
+        lam = kwargs.get('reg_param', self.reg_param)
+        
+        # 固定点更新則を定義
+        # 鞍点方程式: 0 = m_new - m, 0 = q_new - q
+        V = rho - 2*m + q + eta
+        hat_m = alpha * m / (1 + alpha*q/(lam + 1e-6))
+        hat_q = alpha * (V + m**2) / (1 + alpha*q/(lam + 1e-6))**2
+        
+        new_m = rho * hat_m / (lam + hat_q + 1e-6)
+        new_q = (rho * hat_m**2 + hat_q*(rho + eta)) / (lam + hat_q + 1e-6)**2
+        
+        return new_m, new_q
+    
+    def generalization_error(self, m, q, **kwargs):
+        rho = kwargs.get('rho', self.rho)
+        return 0.5 * (rho - 2*m + q)
+```
+
+---
+
+## カスタム鞍点方程式の詳細な書き方
+
+新しいモデルの鞍点方程式を追加する際の詳細なガイドを示す.
+
+### 基本構造
+
+```python
+# models/my_custom_model.py
+import numpy as np
+from scipy.integrate import quad
+from statphys.theory.replica.models.base import ReplicaEquations
+
+# 特殊関数はutilsから取得する（自作しない）
+from statphys.utils.special_functions import (
+    gaussian_pdf,      # ガウスPDF: φ(x)
+    gaussian_cdf,      # ガウスCDF: Φ(x)
+    gaussian_tail,     # ガウス尾確率: H(x) = 1 - Φ(x)
+    sigmoid,           # シグモイド関数
+    erf_activation,    # erf活性化
+    soft_threshold,    # ソフト閾値（L1のproximal）
+    I2, I3, I4,        # 委員会マシン相関関数
+    classification_error_linear,  # 分類誤差
+    regression_error_linear,      # 回帰誤差
+)
+from statphys.utils.integration import (
+    gaussian_integral_1d,      # 1次元ガウス積分
+    gaussian_integral_2d,      # 2次元ガウス積分
+    teacher_student_integral,  # Teacher-Student積分
+    conditional_expectation,   # 条件付き期待値
+)
+
+
+class MyCustomReplicaEquations(ReplicaEquations):
+    """
+    カスタムモデルの鞍点方程式.
+    
+    鞍点方程式は2つの形式で書ける:
+    
+    1. 固定点形式（ソルバーが使用）:
+       (m_new, q_new) = F(m, q; α, params)
+       
+    2. 残差形式（0 = 右辺）:
+       0 = F(m, q; α, params) - (m, q)
+    
+    ここで:
+        - α = n/d : サンプル比
+        - m = w^T W_0 / d : Teacher-Studentオーバーラップ
+        - q = ||w||^2 / d : 自己オーバーラップ
+    """
+    
+    def __init__(
+        self,
+        rho: float = 1.0,       # Teacherノルム ||W_0||^2/d
+        eta: float = 0.0,       # ノイズ分散 σ^2
+        reg_param: float = 0.01, # 正則化パラメータ λ
+        custom_param: float = 1.0,  # カスタムパラメータ
+        **params,
+    ):
+        super().__init__(
+            rho=rho, 
+            eta=eta, 
+            reg_param=reg_param,
+            custom_param=custom_param,
+            **params
+        )
+        self.rho = rho
+        self.eta = eta
+        self.reg_param = reg_param
+        self.custom_param = custom_param
+    
+    def __call__(
+        self, 
+        m: float, 
+        q: float, 
+        alpha: float, 
+        **kwargs
+    ) -> tuple[float, float]:
+        """
+        固定点更新則を計算.
+        
+        ソルバーは以下を反復:
+            x_{n+1} = (1-γ)x_n + γF(x_n)
+        
+        収束条件: ||x_{n+1} - x_n|| < tol
+        
+        Args:
+            m: 現在のTeacher-Studentオーバーラップ
+            q: 現在の自己オーバーラップ
+            alpha: サンプル比 n/d
+            **kwargs: パラメータ（__init__を上書き可能）
+        
+        Returns:
+            (m_new, q_new): 更新されたオーダーパラメータ
+        """
+        # パラメータ取得（引数から上書き可能）
+        rho = kwargs.get('rho', self.rho)
+        eta = kwargs.get('eta', self.eta)
+        lam = kwargs.get('reg_param', self.reg_param)
+        
+        # 数値安定性のための制約
+        q = max(q, 1e-10)
+        
+        # ========================================
+        # ここに鞍点方程式を実装
+        # ========================================
+        
+        # 例: Ridge回帰の鞍点方程式
+        # 残差分散
+        V = rho - 2*m + q + eta
+        
+        # 共役変数（レプリカ計算から導出）
+        denom = 1 + alpha * q / (lam + 1e-6)
+        hat_m = alpha * m / denom
+        hat_q = alpha * (V + m**2) / denom**2
+        
+        # 更新方程式
+        new_m = rho * hat_m / (lam + hat_q + 1e-6)
+        new_q = (rho * hat_m**2 + hat_q*(rho + eta)) / (lam + hat_q + 1e-6)**2
+        
+        # ガウス積分を使う場合の例（LASSO等）
+        # def integrand_m(z):
+        #     effective = sqrt(rho)*m/sqrt(q) + sqrt(hat_q)*z
+        #     prox = soft_threshold(effective, lam/sqrt(hat_q))
+        #     return prox * sqrt(rho)/sqrt(q) * gaussian_pdf(z)
+        # new_m = gaussian_integral_1d(integrand_m, mean=0, variance=1)
+        
+        return new_m, new_q
+    
+    def residual(
+        self, 
+        m: float, 
+        q: float, 
+        alpha: float, 
+        **kwargs
+    ) -> tuple[float, float]:
+        """
+        残差形式（0 = 右辺）を計算.
+        
+        鞍点条件: 0 = F(m, q) - (m, q)
+        
+        これは収束チェックやNewton法で使用可能.
+        """
+        new_m, new_q = self(m, q, alpha, **kwargs)
+        return (new_m - m, new_q - q)
+    
+    def generalization_error(
+        self, 
+        m: float, 
+        q: float, 
+        **kwargs
+    ) -> float:
+        """
+        汎化誤差を計算.
+        
+        回帰: E_g = (1/2)(ρ - 2m + q)
+        分類: P(error) = (1/π) arccos(m / √(qρ))
+        """
+        rho = kwargs.get('rho', self.rho)
+        
+        # 回帰の場合
+        return regression_error_linear(m, q, rho)
+        
+        # 分類の場合
+        # return classification_error_linear(m, q, rho)
+    
+    def get_order_param_names(self) -> list[str]:
+        """オーダーパラメータ名を返す"""
+        return ['m', 'q']
+    
+    def get_default_init(self) -> tuple[float, ...]:
+        """デフォルト初期値（収束しやすい値を選ぶ）"""
+        return (0.5, 0.5)
+    
+    def is_physical(self, m: float, q: float, **kwargs) -> bool:
+        """物理的制約のチェック"""
+        rho = kwargs.get('rho', self.rho)
+        # q >= 0 かつ m^2 <= q*rho（Cauchy-Schwarz）
+        return q >= 0 and m**2 <= q * rho * (1 + 1e-6)
+```
+
+### 使用例
+
+```python
+from statphys.theory.replica import SaddlePointSolver
+from models.my_custom_model import MyCustomReplicaEquations
+import numpy as np
+
+# 方程式を作成
+equations = MyCustomReplicaEquations(
+    rho=1.0,
+    eta=0.1,
+    reg_param=0.01,
+    custom_param=2.0,
+)
+
+# ソルバーを作成
+solver = SaddlePointSolver(
+    equations=equations,
+    order_params=equations.get_order_param_names(),
+    damping=0.5,       # ダンピング係数（振動防止）
+    tol=1e-8,
+    max_iter=10000,
+    n_restarts=3,      # ランダム再起動回数
+    verbose=True,
+)
+
+# αの範囲で解く
+alpha_values = np.linspace(0.1, 5.0, 50)
+result = solver.solve(
+    alpha_values=alpha_values,
+    use_continuation=True,  # 前のαの解を次の初期値に使用
+    rho=1.0,
+    eta=0.1,
+    reg_param=0.01,
+)
+
+# 汎化誤差付きで解く
+result = solver.solve_with_generalization_error(
+    alpha_values=alpha_values,
+    eg_formula=equations.generalization_error,
+    rho=1.0,
+    eta=0.1,
+    reg_param=0.01,
+)
+
+# 結果にアクセス
+m_values = result.order_params['m']
+q_values = result.order_params['q']
+eg_values = result.order_params['eg']
+```
+
+### 特殊関数の使用（utils）
+
+**重要**: 特殊関数は自作せず、必ず `statphys.utils` から取得すること.
+
+```python
+# 正しい使用法
+from statphys.utils.special_functions import gaussian_pdf, sigmoid, H, soft_threshold
+from statphys.utils.integration import gaussian_integral_1d, teacher_student_integral
+
+# 間違った使用法（自作しない）
+# def my_gaussian_pdf(x):  # ← これは避ける
+#     return np.exp(-x**2/2) / np.sqrt(2*np.pi)
+```
+
+#### 利用可能な特殊関数（`statphys.utils.special_functions`）
+
+| 関数 | 説明 | 数式 |
+|------|------|------|
+| `gaussian_pdf(x)` / `phi(x)` | ガウスPDF | φ(x) = (1/√(2π)) exp(-x²/2) |
+| `gaussian_cdf(x)` / `Phi(x)` | ガウスCDF | Φ(x) |
+| `gaussian_tail(x)` / `H(x)` | 尾確率 | H(x) = 1 - Φ(x) |
+| `sigmoid(x)` | シグモイド | σ(x) = 1/(1+exp(-x)) |
+| `erf_activation(x)` | erf活性化 | erf(x/√2) |
+| `soft_threshold(x, λ)` | ソフト閾値 | sign(x)·max(\|x\|-λ, 0) |
+| `I2(Q, activation)` | 2点相関 | 委員会マシン用 |
+| `I3(Q_ab, Q_ac, Q_bc)` | 3点相関 | 委員会マシン用 |
+| `classification_error_linear(m, q, ρ)` | 分類誤差 | (1/π) arccos(m/√(qρ)) |
+| `regression_error_linear(m, q, ρ)` | 回帰誤差 | (1/2)(ρ - 2m + q) |
+| `moreau_envelope(f, x, γ)` | Moreauエンベロープ | proximal計算用 |
+
+#### 利用可能な積分ユーティリティ（`statphys.utils.integration`）
+
+| 関数 | 説明 | 使用例 |
+|------|------|--------|
+| `gaussian_integral_1d(f, μ, σ²)` | 1変数ガウス積分 | E[f(z)], z ~ N(μ, σ²) |
+| `gaussian_integral_2d(f, μ, Σ)` | 2変数ガウス積分 | 相関変数の期待値 |
+| `gaussian_integral_nd(f, μ, Σ)` | 多変数ガウス積分 | 委員会マシン等 |
+| `teacher_student_integral(f, m, q, ρ)` | T-S積分 | E[f(u,z)]の計算 |
+| `conditional_expectation(f, u, m, q, ρ)` | 条件付き期待値 | E[f(z)\|u=value] |
+
+### 鞍点方程式導出のヒント
+
+レプリカ法から鞍点方程式を導出する際の一般的な構造:
+
+1. **自由エネルギー**を計算（レプリカ・トリック使用）
+2. **レプリカ対称仮定**を適用
+3. **鞍点条件**: ∂f/∂m = 0, ∂f/∂q = 0, ...
+4. **固定点形式**に変形: (m, q, ...) = F(m, q, ...)
+
+典型的な鞍点方程式の構造:
+
+```
+# 共役変数（チャネル側）
+hat_m = α × (mに関する項) / (正則化+分散項)
+hat_q = α × (qに関する項) / (正則化+分散項)²
+
+# 更新方程式（事前分布側）
+m_new = ガウス積分[proximal(有効場) × Teacher成分]
+q_new = ガウス積分[proximal(有効場)²]
+```

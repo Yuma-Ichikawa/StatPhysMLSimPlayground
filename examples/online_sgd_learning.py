@@ -19,7 +19,7 @@ from statphys.dataset import GaussianDataset
 from statphys.model import LinearRegression
 from statphys.loss import RidgeLoss
 from statphys.simulation import OnlineSimulation, SimulationConfig
-from statphys.theory.online import ODESolver, OnlineSGDEquations
+from statphys.theory.online import ODESolver, GaussianLinearMseEquations
 from statphys.vis import ComparisonPlotter, OrderParamPlotter
 from statphys.utils import fix_seed
 
@@ -68,7 +68,7 @@ def main():
     print("\n[Step 2] Setting up ODE theory solver...")
 
     # Define ODE equations for online SGD
-    sgd_equations = OnlineSGDEquations(
+    sgd_equations = GaussianLinearMseEquations(
         rho=rho,
         eta_noise=eta,
         lr=lr / d,  # Scaled learning rate

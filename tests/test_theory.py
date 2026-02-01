@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 
 from statphys.theory.base import TheoryResult, TheoryType
-from statphys.theory.online import ODESolver, OnlineSGDEquations
-from statphys.theory.replica import RidgeRegressionEquations, SaddlePointSolver
+from statphys.theory.online import ODESolver, GaussianLinearMseEquations
+from statphys.theory.replica import GaussianLinearRidgeEquations, SaddlePointSolver
 
 
 class TestSaddlePointSolver:
@@ -75,12 +75,12 @@ class TestSaddlePointSolver:
         assert sum(result.converged) > 5
 
 
-class TestRidgeRegressionEquations:
-    """Tests for RidgeRegressionEquations."""
+class TestGaussianLinearRidgeEquations:
+    """Tests for GaussianLinearRidgeEquations."""
 
     def test_init(self):
         """Test initialization."""
-        equations = RidgeRegressionEquations(rho=1.0, eta=0.1, reg_param=0.01)
+        equations = GaussianLinearRidgeEquations(rho=1.0, eta=0.1, reg_param=0.01)
 
         assert equations.rho == 1.0
         assert equations.eta == 0.1
@@ -88,7 +88,7 @@ class TestRidgeRegressionEquations:
 
     def test_generalization_error(self):
         """Test generalization error formula."""
-        equations = RidgeRegressionEquations(rho=1.0)
+        equations = GaussianLinearRidgeEquations(rho=1.0)
 
         # At perfect learning: m=1, q=1, E_g should be 0
         eg = equations.generalization_error(m=1.0, q=1.0, rho=1.0)
@@ -133,12 +133,12 @@ class TestODESolver:
         assert solver.get_theory_type() == TheoryType.ONLINE
 
 
-class TestOnlineSGDEquations:
-    """Tests for OnlineSGDEquations."""
+class TestGaussianLinearMseEquations:
+    """Tests for GaussianLinearMseEquations."""
 
     def test_init(self):
         """Test initialization."""
-        equations = OnlineSGDEquations(rho=1.0, eta_noise=0.1, lr=0.1)
+        equations = GaussianLinearMseEquations(rho=1.0, eta_noise=0.1, lr=0.1)
 
         assert equations.rho == 1.0
         assert equations.eta_noise == 0.1
@@ -146,7 +146,7 @@ class TestOnlineSGDEquations:
 
     def test_equilibrium(self):
         """Test that equations have sensible equilibrium."""
-        equations = OnlineSGDEquations(rho=1.0, eta_noise=0.0, lr=0.1, reg_param=0.0)
+        equations = GaussianLinearMseEquations(rho=1.0, eta_noise=0.0, lr=0.1, reg_param=0.0)
 
         # At m=rho, q=rho, derivatives should be small
         dy = equations(t=10.0, y=np.array([1.0, 1.0]), params={})

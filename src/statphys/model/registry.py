@@ -1,6 +1,6 @@
 """Model registry for dynamic model creation."""
 
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from statphys.model.base import BaseModel
 
@@ -57,7 +57,7 @@ class ModelRegistry:
 _global_registry = ModelRegistry()
 
 
-def register_model(name: str) -> callable:
+def register_model(name: str) -> Callable[[type[BaseModel]], type[BaseModel]]:
     """
     Decorator to register a model class.
 
