@@ -1,11 +1,9 @@
-"""
-Base classes for theoretical calculations.
-"""
+"""Base classes for theoretical calculations."""
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any
 
 import numpy as np
 
@@ -31,16 +29,17 @@ class TheoryResult:
         converged: Whether the solver converged at each point.
         iterations: Number of iterations at each point.
         metadata: Additional metadata about the calculation.
+
     """
 
     theory_type: TheoryType
-    order_params: Dict[str, List[float]]
-    param_values: List[float]
-    converged: List[bool]
-    iterations: List[int]
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    order_params: dict[str, list[float]]
+    param_values: list[float]
+    converged: list[bool]
+    iterations: list[int]
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "theory_type": self.theory_type.value,
@@ -52,7 +51,7 @@ class TheoryResult:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "TheoryResult":
+    def from_dict(cls, data: dict[str, Any]) -> "TheoryResult":
         """Create from dictionary."""
         return cls(
             theory_type=TheoryType(data["theory_type"]),
@@ -97,6 +96,7 @@ class BaseTheory(ABC):
             tol: Convergence tolerance.
             max_iter: Maximum iterations.
             verbose: Whether to print progress.
+
         """
         self.tol = tol
         self.max_iter = max_iter
@@ -109,6 +109,7 @@ class BaseTheory(ABC):
 
         Returns:
             TheoryResult containing the solution.
+
         """
         pass
 
@@ -117,7 +118,7 @@ class BaseTheory(ABC):
         """Return the theory type."""
         pass
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get solver configuration."""
         return {
             "class": self.__class__.__name__,

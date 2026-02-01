@@ -1,15 +1,11 @@
-"""
-Pre-defined saddle-point equations for common problems.
-"""
+"""Pre-defined saddle-point equations for common problems."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Tuple
+from typing import Any
 
 import numpy as np
 from scipy.integrate import quad
 from scipy.special import erf
-
-from statphys.theory.replica.integration import gaussian_integral
 
 
 class ReplicaEquations(ABC):
@@ -25,6 +21,7 @@ class ReplicaEquations(ABC):
 
         Args:
             **params: Parameters like rho, eta, lambda, etc.
+
         """
         self.params = params
 
@@ -34,7 +31,7 @@ class ReplicaEquations(ABC):
         *order_params: float,
         alpha: float,
         **kwargs: Any,
-    ) -> Tuple[float, ...]:
+    ) -> tuple[float, ...]:
         """
         Compute updated order parameters.
 
@@ -45,6 +42,7 @@ class ReplicaEquations(ABC):
 
         Returns:
             Tuple of updated order parameter values.
+
         """
         pass
 
@@ -63,6 +61,7 @@ class ReplicaEquations(ABC):
 
         Returns:
             Generalization error.
+
         """
         pass
 
@@ -100,6 +99,7 @@ class RidgeRegressionEquations(ReplicaEquations):
             rho: Teacher norm (||W0||^2 / d).
             eta: Noise variance.
             reg_param: Ridge parameter λ.
+
         """
         super().__init__(rho=rho, eta=eta, reg_param=reg_param, **params)
         self.rho = rho
@@ -112,7 +112,7 @@ class RidgeRegressionEquations(ReplicaEquations):
         q: float,
         alpha: float,
         **kwargs: Any,
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Compute updated m and q.
 
@@ -174,6 +174,7 @@ class LassoEquations(ReplicaEquations):
             rho: Teacher norm.
             eta: Noise variance.
             reg_param: LASSO parameter λ.
+
         """
         super().__init__(rho=rho, eta=eta, reg_param=reg_param, **params)
         self.rho = rho
@@ -190,7 +191,7 @@ class LassoEquations(ReplicaEquations):
         q: float,
         alpha: float,
         **kwargs: Any,
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Compute updated m and q using LASSO equations.
 
@@ -213,13 +214,19 @@ class LassoEquations(ReplicaEquations):
             """Integrand for m update."""
             effective_signal = np.sqrt(rho) * m / np.sqrt(q + 0.001) + np.sqrt(hat_q) * z
             proximal = self._soft_threshold(effective_signal, lam / np.sqrt(hat_q + 0.001))
-            return proximal * np.sqrt(rho) / np.sqrt(q + 0.001) * np.exp(-z**2 / 2) / np.sqrt(2 * np.pi)
+            return (
+                proximal
+                * np.sqrt(rho)
+                / np.sqrt(q + 0.001)
+                * np.exp(-(z**2) / 2)
+                / np.sqrt(2 * np.pi)
+            )
 
         def integrand_q(z):
             """Integrand for q update."""
             effective_signal = np.sqrt(rho) * m / np.sqrt(q + 0.001) + np.sqrt(hat_q) * z
             proximal = self._soft_threshold(effective_signal, lam / np.sqrt(hat_q + 0.001))
-            return proximal**2 * np.exp(-z**2 / 2) / np.sqrt(2 * np.pi)
+            return proximal**2 * np.exp(-(z**2) / 2) / np.sqrt(2 * np.pi)
 
         # Numerical integration
         new_m, _ = quad(integrand_m, -10, 10)
@@ -257,6 +264,7 @@ class LogisticRegressionEquations(ReplicaEquations):
         Args:
             rho: Teacher norm.
             reg_param: L2 regularization parameter.
+
         """
         super().__init__(rho=rho, reg_param=reg_param, **params)
         self.rho = rho
@@ -272,10 +280,8 @@ class LogisticRegressionEquations(ReplicaEquations):
         q: float,
         alpha: float,
         **kwargs: Any,
-    ) -> Tuple[float, float]:
-        """
-        Compute updated m and q for logistic regression.
-        """
+    ) -> tuple[float, float]:
+        """Compute updated m and q for logistic regression."""
         rho = kwargs.get("rho", self.rho)
         lam = kwargs.get("reg_param", self.reg_param)
 
@@ -283,7 +289,7 @@ class LogisticRegressionEquations(ReplicaEquations):
         # Full version requires more complex integration
 
         # Effective field variance
-        sigma_sq = rho - 2 * m + q + 0.001
+        rho - 2 * m + q + 0.001
 
         # Update equations (approximate)
         scale = alpha / (1 + lam)
@@ -293,14 +299,14 @@ class LogisticRegressionEquations(ReplicaEquations):
             y_teacher = np.sign(np.sqrt(rho) + 0.1 * z)
             field = m / np.sqrt(q + 0.001) * np.sqrt(rho) + np.sqrt(q) * z
             grad = y_teacher * self._sigmoid(-y_teacher * field)
-            return grad * np.sqrt(rho) * np.exp(-z**2 / 2) / np.sqrt(2 * np.pi)
+            return grad * np.sqrt(rho) * np.exp(-(z**2) / 2) / np.sqrt(2 * np.pi)
 
         def integrand_q(z):
             """Integrand for q."""
             y_teacher = np.sign(np.sqrt(rho) + 0.1 * z)
             field = m / np.sqrt(q + 0.001) * np.sqrt(rho) + np.sqrt(q) * z
             grad = y_teacher * self._sigmoid(-y_teacher * field)
-            return grad**2 * np.exp(-z**2 / 2) / np.sqrt(2 * np.pi)
+            return grad**2 * np.exp(-(z**2) / 2) / np.sqrt(2 * np.pi)
 
         dm, _ = quad(integrand_m, -5, 5)
         dq, _ = quad(integrand_q, -5, 5)
@@ -353,6 +359,7 @@ class PerceptronEquations(ReplicaEquations):
             rho: Teacher norm (||W0||^2 / d).
             margin: Margin parameter (kappa for Gardner volume).
             reg_param: Regularization parameter.
+
         """
         super().__init__(rho=rho, margin=margin, reg_param=reg_param, **params)
         self.rho = rho
@@ -365,7 +372,7 @@ class PerceptronEquations(ReplicaEquations):
         q: float,
         alpha: float,
         **kwargs: Any,
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Compute updated m and q for perceptron.
 
@@ -377,10 +384,7 @@ class PerceptronEquations(ReplicaEquations):
 
         # Correlation between student and teacher fields
         # rho_sq = m^2 / (rho * q) when normalized
-        if q > 0 and rho > 0:
-            rho_corr = m / np.sqrt(rho * q)
-        else:
-            rho_corr = 0.0
+        rho_corr = m / np.sqrt(rho * q) if q > 0 and rho > 0 else 0.0
 
         # Effective variance of student field given teacher label
         Delta = np.sqrt(q * (1 - rho_corr**2) + 1e-10)
@@ -391,7 +395,7 @@ class PerceptronEquations(ReplicaEquations):
 
         def G(x):
             """Gaussian PDF."""
-            return np.exp(-x**2 / 2) / np.sqrt(2 * np.pi)
+            return np.exp(-(x**2) / 2) / np.sqrt(2 * np.pi)
 
         # Integrands for m and q updates (hinge/perceptron)
         def integrand_m(z):
@@ -404,16 +408,13 @@ class PerceptronEquations(ReplicaEquations):
                 indicator = 1.0 if h < kappa else 0.0
             else:
                 indicator = 1.0 if h < 0 else 0.0
-            return indicator * (kappa - h) * np.exp(-z**2 / 2) / np.sqrt(2 * np.pi)
+            return indicator * (kappa - h) * np.exp(-(z**2) / 2) / np.sqrt(2 * np.pi)
 
         def integrand_q(z):
             """Integrand for q update."""
             h = m / np.sqrt(q + 1e-10) + Delta * z
-            if kappa > 0:
-                indicator = 1.0 if h < kappa else 0.0
-            else:
-                indicator = 1.0 if h < 0 else 0.0
-            return indicator * (kappa - h)**2 * np.exp(-z**2 / 2) / np.sqrt(2 * np.pi)
+            indicator = (1.0 if h < kappa else 0.0) if kappa > 0 else 1.0 if h < 0 else 0.0
+            return indicator * (kappa - h) ** 2 * np.exp(-(z**2) / 2) / np.sqrt(2 * np.pi)
 
         # Numerical integration
         dm_contrib, _ = quad(integrand_m, -10, 10)
@@ -467,6 +468,7 @@ class ProbitEquations(ReplicaEquations):
         Args:
             rho: Teacher norm.
             reg_param: L2 regularization parameter.
+
         """
         super().__init__(rho=rho, reg_param=reg_param, **params)
         self.rho = rho
@@ -478,10 +480,8 @@ class ProbitEquations(ReplicaEquations):
         q: float,
         alpha: float,
         **kwargs: Any,
-    ) -> Tuple[float, float]:
-        """
-        Compute updated m and q for probit model.
-        """
+    ) -> tuple[float, float]:
+        """Compute updated m and q for probit model."""
         rho = kwargs.get("rho", self.rho)
         lam = kwargs.get("reg_param", self.reg_param)
 
@@ -490,17 +490,14 @@ class ProbitEquations(ReplicaEquations):
 
         # Variance components
         V_teacher = rho  # Teacher signal variance
-        V_student = q    # Student self-overlap
+        V_student = q  # Student self-overlap
 
         # Correlation
-        if V_teacher > 0 and V_student > 0:
-            corr = m / np.sqrt(V_teacher * V_student)
-        else:
-            corr = 0.0
+        corr = m / np.sqrt(V_teacher * V_student) if V_teacher > 0 and V_student > 0 else 0.0
 
         def G(x):
             """Gaussian PDF."""
-            return np.exp(-x**2 / 2) / np.sqrt(2 * np.pi)
+            return np.exp(-(x**2) / 2) / np.sqrt(2 * np.pi)
 
         def Phi(x):
             """Gaussian CDF."""
@@ -511,7 +508,9 @@ class ProbitEquations(ReplicaEquations):
             """Integrand for m update."""
             # Joint Gaussian structure
             prob_y1 = Phi(u * np.sqrt(rho))
-            student_field = m * u / np.sqrt(rho + 1e-10) + np.sqrt(q - m**2 / (rho + 1e-10) + 1e-10) * z
+            student_field = (
+                m * u / np.sqrt(rho + 1e-10) + np.sqrt(q - m**2 / (rho + 1e-10) + 1e-10) * z
+            )
             # Gradient contribution
             y_eff = 2 * prob_y1 - 1
             grad = y_eff * G(student_field) / (Phi(y_eff * student_field) + 1e-10)
@@ -532,9 +531,7 @@ class ProbitEquations(ReplicaEquations):
         q: float,
         **kwargs: Any,
     ) -> float:
-        """
-        Compute classification error for probit.
-        """
+        """Compute classification error for probit."""
         rho = kwargs.get("rho", self.rho)
         if q > 0 and rho > 0:
             cos_angle = np.clip(m / np.sqrt(q * rho), -1, 1)
@@ -575,10 +572,10 @@ class CommitteeMachineEquations(ReplicaEquations):
             eta: Noise variance.
             activation: Activation function ('erf', 'tanh', 'sign').
             reg_param: L2 regularization parameter.
+
         """
         super().__init__(
-            K=K, M=M, rho=rho, eta=eta, activation=activation,
-            reg_param=reg_param, **params
+            K=K, M=M, rho=rho, eta=eta, activation=activation, reg_param=reg_param, **params
         )
         self.K = K
         self.M = M
@@ -606,7 +603,7 @@ class CommitteeMachineEquations(ReplicaEquations):
         q: float,
         alpha: float,
         **kwargs: Any,
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Compute updated m and q.
 
@@ -614,7 +611,7 @@ class CommitteeMachineEquations(ReplicaEquations):
         (all student units have same statistics).
         """
         rho = kwargs.get("rho", self.rho)
-        eta = kwargs.get("eta", self.eta)
+        kwargs.get("eta", self.eta)
         lam = kwargs.get("reg_param", self.reg_param)
         K = kwargs.get("K", self.K)
 
@@ -636,7 +633,7 @@ class CommitteeMachineEquations(ReplicaEquations):
 
         # Approximate updates
         new_m = m + lr * (alpha * np.sqrt(rho / K) * (rho - m) / (1 + eg + lam) - lam * m)
-        new_q = q + lr * (alpha * (eg + m**2) / ((1 + eg + lam)**2) - lam * q)
+        new_q = q + lr * (alpha * (eg + m**2) / ((1 + eg + lam) ** 2) - lam * q)
 
         return max(new_m, 1e-10), max(new_q, 1e-10)
 
@@ -654,7 +651,7 @@ class CommitteeMachineEquations(ReplicaEquations):
         """
         rho = kwargs.get("rho", self.rho)
         eta = kwargs.get("eta", self.eta)
-        K = kwargs.get("K", self.K)
+        kwargs.get("K", self.K)
 
         # MSE-like error for regression
         eg = 0.5 * (rho - 2 * m + q)

@@ -1,15 +1,12 @@
-"""
-Base plotter and utilities.
-"""
+"""Base plotter and utilities."""
 
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple, Union
+from dataclasses import dataclass
+from typing import Any
 
-import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib as mpl
-from matplotlib.figure import Figure
+import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 
 
 @dataclass
@@ -27,14 +24,15 @@ class PlotStyle:
         grid: Whether to show grid.
         grid_style: Grid line style.
         legend_loc: Legend location.
+
     """
 
-    figsize: Tuple[float, float] = (8, 6)
+    figsize: tuple[float, float] = (8, 6)
     dpi: int = 100
     font_size: int = 12
     line_width: float = 2.0
     marker_size: float = 8.0
-    colors: Optional[List[str]] = None
+    colors: list[str] | None = None
     grid: bool = True
     grid_style: str = "--"
     grid_alpha: float = 0.3
@@ -59,23 +57,27 @@ class PlotStyle:
 
     def apply(self) -> None:
         """Apply style to matplotlib."""
-        plt.rcParams.update({
-            "figure.figsize": self.figsize,
-            "figure.dpi": self.dpi,
-            "font.size": self.font_size,
-            "lines.linewidth": self.line_width,
-            "lines.markersize": self.marker_size,
-            "axes.grid": self.grid,
-            "grid.linestyle": self.grid_style,
-            "grid.alpha": self.grid_alpha,
-            "legend.loc": self.legend_loc,
-        })
+        plt.rcParams.update(
+            {
+                "figure.figsize": self.figsize,
+                "figure.dpi": self.dpi,
+                "font.size": self.font_size,
+                "lines.linewidth": self.line_width,
+                "lines.markersize": self.marker_size,
+                "axes.grid": self.grid,
+                "grid.linestyle": self.grid_style,
+                "grid.alpha": self.grid_alpha,
+                "legend.loc": self.legend_loc,
+            }
+        )
 
         if self.latex:
-            plt.rcParams.update({
-                "text.usetex": True,
-                "font.family": "serif",
-            })
+            plt.rcParams.update(
+                {
+                    "text.usetex": True,
+                    "font.family": "serif",
+                }
+            )
 
 
 class Plotter:
@@ -86,12 +88,13 @@ class Plotter:
     visualizations of simulation results.
     """
 
-    def __init__(self, style: Optional[PlotStyle] = None):
+    def __init__(self, style: PlotStyle | None = None):
         """
         Initialize Plotter.
 
         Args:
             style: Plot style configuration. Uses default if None.
+
         """
         self.style = style or PlotStyle()
         self.style.apply()
@@ -100,9 +103,9 @@ class Plotter:
         self,
         nrows: int = 1,
         ncols: int = 1,
-        figsize: Optional[Tuple[float, float]] = None,
+        figsize: tuple[float, float] | None = None,
         **kwargs: Any,
-    ) -> Tuple[Figure, Union[Axes, np.ndarray]]:
+    ) -> tuple[Figure, Axes | np.ndarray]:
         """
         Create figure and axes.
 
@@ -114,6 +117,7 @@ class Plotter:
 
         Returns:
             Tuple of (Figure, Axes or array of Axes).
+
         """
         figsize = figsize or self.style.figsize
         fig, axes = plt.subplots(nrows, ncols, figsize=figsize, **kwargs)
@@ -124,10 +128,10 @@ class Plotter:
         ax: Axes,
         x: np.ndarray,
         y: np.ndarray,
-        label: Optional[str] = None,
-        color: Optional[str] = None,
+        label: str | None = None,
+        color: str | None = None,
         linestyle: str = "-",
-        marker: Optional[str] = None,
+        marker: str | None = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -142,6 +146,7 @@ class Plotter:
             linestyle: Line style.
             marker: Marker style.
             **kwargs: Additional plot arguments.
+
         """
         ax.plot(
             x,
@@ -161,8 +166,8 @@ class Plotter:
         x: np.ndarray,
         y: np.ndarray,
         yerr: np.ndarray,
-        label: Optional[str] = None,
-        color: Optional[str] = None,
+        label: str | None = None,
+        color: str | None = None,
         marker: str = "o",
         capsize: float = 5,
         **kwargs: Any,
@@ -180,6 +185,7 @@ class Plotter:
             marker: Marker style.
             capsize: Error bar cap size.
             **kwargs: Additional arguments.
+
         """
         ax.errorbar(
             x,
@@ -200,8 +206,8 @@ class Plotter:
         x: np.ndarray,
         y: np.ndarray,
         yerr: np.ndarray,
-        label: Optional[str] = None,
-        color: Optional[str] = None,
+        label: str | None = None,
+        color: str | None = None,
         alpha: float = 0.3,
         **kwargs: Any,
     ) -> None:
@@ -217,6 +223,7 @@ class Plotter:
             color: Color.
             alpha: Fill transparency.
             **kwargs: Additional arguments.
+
         """
         ax.plot(
             x,
@@ -237,9 +244,9 @@ class Plotter:
     def set_labels(
         self,
         ax: Axes,
-        xlabel: Optional[str] = None,
-        ylabel: Optional[str] = None,
-        title: Optional[str] = None,
+        xlabel: str | None = None,
+        ylabel: str | None = None,
+        title: str | None = None,
     ) -> None:
         """Set axis labels and title."""
         if xlabel:
@@ -252,7 +259,7 @@ class Plotter:
     def add_legend(
         self,
         ax: Axes,
-        loc: Optional[str] = None,
+        loc: str | None = None,
         **kwargs: Any,
     ) -> None:
         """Add legend to axes."""
@@ -267,7 +274,7 @@ class Plotter:
         self,
         fig: Figure,
         filepath: str,
-        dpi: Optional[int] = None,
+        dpi: int | None = None,
         bbox_inches: str = "tight",
         **kwargs: Any,
     ) -> None:
@@ -280,6 +287,7 @@ class Plotter:
             dpi: Resolution.
             bbox_inches: Bounding box setting.
             **kwargs: Additional arguments.
+
         """
         dpi = dpi or self.style.dpi
         fig.savefig(filepath, dpi=dpi, bbox_inches=bbox_inches, **kwargs)

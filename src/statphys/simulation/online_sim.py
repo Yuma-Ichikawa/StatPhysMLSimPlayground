@@ -1,16 +1,14 @@
-"""
-Online learning simulation.
-"""
+"""Online learning simulation."""
 
-from typing import Any, Callable, Dict, List, Optional, Type
+from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 import torch
 import torch.nn as nn
-import copy
 
 from statphys.simulation.base import BaseSimulation, SimulationResult
-from statphys.simulation.config import SimulationConfig, TheoryType
+from statphys.simulation.config import TheoryType
 from statphys.utils.seed import fix_seed
 
 
@@ -25,15 +23,16 @@ class OnlineSimulation(BaseSimulation):
         >>> config = SimulationConfig.for_online(t_max=10.0, t_steps=100)
         >>> sim = OnlineSimulation(config)
         >>> results = sim.run(dataset, LinearRegression, RidgeLoss(0.01))
+
     """
 
     def run(
         self,
         dataset: Any,
-        model_class: Type[nn.Module],
+        model_class: type[nn.Module],
         loss_fn: Callable,
-        calc_order_params: Optional[Callable] = None,
-        theory_solver: Optional[Any] = None,
+        calc_order_params: Callable | None = None,
+        theory_solver: Any | None = None,
         **kwargs: Any,
     ) -> SimulationResult:
         """
@@ -49,6 +48,7 @@ class OnlineSimulation(BaseSimulation):
 
         Returns:
             SimulationResult with experiment and theory results.
+
         """
         d = dataset.d
         t_values = self.config.get_time_values()
@@ -121,19 +121,20 @@ class OnlineSimulation(BaseSimulation):
     def _run_single_seed(
         self,
         dataset: Any,
-        model_class: Type[nn.Module],
+        model_class: type[nn.Module],
         loss_fn: Callable,
         calc_order_params: Callable,
         n_epochs: int,
         eval_indices: np.ndarray,
         seed: int,
         **kwargs: Any,
-    ) -> List[List[float]]:
+    ) -> list[list[float]]:
         """
         Run online learning for a single seed.
 
         Returns:
             List of order parameters at each evaluation point.
+
         """
         fix_seed(seed)
 
@@ -163,7 +164,11 @@ class OnlineSimulation(BaseSimulation):
             # Generate single sample
             x_sample, y_sample = dataset.generate_sample()
             x_sample = x_sample.unsqueeze(0).to(self.device)
-            y_sample = y_sample.unsqueeze(0).to(self.device) if y_sample.dim() == 0 else y_sample.to(self.device)
+            y_sample = (
+                y_sample.unsqueeze(0).to(self.device)
+                if y_sample.dim() == 0
+                else y_sample.to(self.device)
+            )
 
             # SGD step
             optimizer.zero_grad()
@@ -191,7 +196,7 @@ class OnlineSimulation(BaseSimulation):
         self,
         dataset: Any,
         model: nn.Module,
-    ) -> List[float]:
+    ) -> list[float]:
         """Default order parameter calculation."""
         teacher_params = dataset.get_teacher_params()
         W0 = teacher_params.get("W0")

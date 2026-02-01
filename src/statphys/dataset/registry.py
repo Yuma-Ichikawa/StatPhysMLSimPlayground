@@ -1,8 +1,6 @@
-"""
-Dataset registry for dynamic dataset creation.
-"""
+"""Dataset registry for dynamic dataset creation."""
 
-from typing import Any, Dict, Optional, Type
+from typing import Any, Optional
 
 from statphys.dataset.base import BaseDataset
 
@@ -18,10 +16,11 @@ class DatasetRegistry:
         >>> registry = DatasetRegistry()
         >>> registry.register("gaussian", GaussianDataset)
         >>> dataset = registry.create("gaussian", d=500, rho=1.0)
+
     """
 
     _instance: Optional["DatasetRegistry"] = None
-    _registry: Dict[str, Type[BaseDataset]] = {}
+    _registry: dict[str, type[BaseDataset]] = {}
 
     def __new__(cls) -> "DatasetRegistry":
         """Singleton pattern."""
@@ -29,17 +28,18 @@ class DatasetRegistry:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def register(self, name: str, dataset_class: Type[BaseDataset]) -> None:
+    def register(self, name: str, dataset_class: type[BaseDataset]) -> None:
         """
         Register a dataset class.
 
         Args:
             name: Name to register the dataset under.
             dataset_class: Dataset class to register.
+
         """
         self._registry[name.lower()] = dataset_class
 
-    def get(self, name: str) -> Type[BaseDataset]:
+    def get(self, name: str) -> type[BaseDataset]:
         """
         Get a registered dataset class.
 
@@ -51,6 +51,7 @@ class DatasetRegistry:
 
         Raises:
             KeyError: If the dataset is not registered.
+
         """
         name_lower = name.lower()
         if name_lower not in self._registry:
@@ -68,6 +69,7 @@ class DatasetRegistry:
 
         Returns:
             Dataset instance.
+
         """
         dataset_class = self.get(name)
         return dataset_class(**kwargs)
@@ -93,9 +95,10 @@ def register_dataset(name: str) -> callable:
         >>> @register_dataset("my_dataset")
         ... class MyDataset(BaseDataset):
         ...     pass
+
     """
 
-    def decorator(cls: Type[BaseDataset]) -> Type[BaseDataset]:
+    def decorator(cls: type[BaseDataset]) -> type[BaseDataset]:
         _global_registry.register(name, cls)
         return cls
 
@@ -112,6 +115,7 @@ def get_dataset(name: str, **kwargs: Any) -> BaseDataset:
 
     Returns:
         Dataset instance.
+
     """
     return _global_registry.create(name, **kwargs)
 
@@ -120,15 +124,15 @@ def get_dataset(name: str, **kwargs: Any) -> BaseDataset:
 def _register_defaults() -> None:
     """Register default dataset classes."""
     from statphys.dataset.gaussian import (
-        GaussianDataset,
         GaussianClassificationDataset,
+        GaussianDataset,
         GaussianMultiOutputDataset,
     )
-    from statphys.dataset.sparse import SparseDataset, BernoulliGaussianDataset
+    from statphys.dataset.sparse import BernoulliGaussianDataset, SparseDataset
     from statphys.dataset.structured import (
-        StructuredDataset,
         CorrelatedGaussianDataset,
         SpikedCovarianceDataset,
+        StructuredDataset,
     )
 
     _global_registry.register("gaussian", GaussianDataset)

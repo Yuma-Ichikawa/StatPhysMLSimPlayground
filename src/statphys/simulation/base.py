@@ -1,10 +1,9 @@
-"""
-Base classes for simulations.
-"""
+"""Base classes for simulations."""
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Type, Union
+from typing import Any
 
 import numpy as np
 import torch
@@ -24,13 +23,14 @@ class SimulationResult:
         theory_results: Results from theoretical calculations (if computed).
         config: Simulation configuration used.
         metadata: Additional metadata.
+
     """
 
     theory_type: TheoryType
-    experiment_results: Dict[str, Any]
-    theory_results: Optional[TheoryResult] = None
-    config: Optional[SimulationConfig] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    experiment_results: dict[str, Any]
+    theory_results: TheoryResult | None = None
+    config: SimulationConfig | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def get_experiment_mean(self, key: str) -> np.ndarray:
         """Get mean of experiment results across seeds."""
@@ -48,7 +48,7 @@ class SimulationResult:
             raise ValueError("No theory results available")
         return np.array(self.theory_results.order_params[key])
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "theory_type": self.theory_type.value,
@@ -73,6 +73,7 @@ class BaseSimulation(ABC):
 
         Args:
             config: Simulation configuration.
+
         """
         self.config = config
         self.device = torch.device(config.device)
@@ -81,10 +82,10 @@ class BaseSimulation(ABC):
     def run(
         self,
         dataset: Any,
-        model_class: Type,
+        model_class: type,
         loss_fn: Callable,
-        calc_order_params: Optional[Callable] = None,
-        theory_solver: Optional[Any] = None,
+        calc_order_params: Callable | None = None,
+        theory_solver: Any | None = None,
         **kwargs: Any,
     ) -> SimulationResult:
         """
@@ -100,6 +101,7 @@ class BaseSimulation(ABC):
 
         Returns:
             SimulationResult containing experiment and theory results.
+
         """
         pass
 

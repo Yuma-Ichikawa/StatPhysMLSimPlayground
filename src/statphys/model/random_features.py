@@ -5,11 +5,11 @@ These models fix the first layer randomly and only train the final linear layer.
 This is the basis for kernel ridge regression and neural tangent kernel analysis.
 """
 
-from typing import Any, Dict, Optional, List
+from typing import Any
 
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
 
 from statphys.model.base import BaseModel
 
@@ -30,6 +30,7 @@ class RandomFeaturesModel(BaseModel):
         activation: Activation function.
         B: Fixed random projection matrix (p, d).
         a: Learnable output weights (p,).
+
     """
 
     def __init__(
@@ -54,6 +55,7 @@ class RandomFeaturesModel(BaseModel):
             feature_scale: Scale for random feature matrix B.
             device: Computation device.
             dtype: Data type.
+
         """
         super().__init__(d=d, **kwargs)
 
@@ -63,15 +65,10 @@ class RandomFeaturesModel(BaseModel):
         self.feature_scale = feature_scale
 
         # Fixed random projection matrix (not trainable)
-        self.register_buffer(
-            "B",
-            torch.randn(p, d, dtype=dtype) * np.sqrt(feature_scale)
-        )
+        self.register_buffer("B", torch.randn(p, d, dtype=dtype) * np.sqrt(feature_scale))
 
         # Learnable output weights
-        self.a = nn.Parameter(
-            torch.randn(p, dtype=dtype) * init_scale / np.sqrt(p)
-        )
+        self.a = nn.Parameter(torch.randn(p, dtype=dtype) * init_scale / np.sqrt(p))
 
         # Activation function
         self._setup_activation(activation)
@@ -102,6 +99,7 @@ class RandomFeaturesModel(BaseModel):
 
         Returns:
             Output tensor of shape (batch_size,) or scalar.
+
         """
         if x.dim() == 1:
             x = x.unsqueeze(0)
@@ -133,6 +131,7 @@ class RandomFeaturesModel(BaseModel):
 
         Returns:
             Feature tensor of shape (batch_size, p) or (p,).
+
         """
         if x.dim() == 1:
             x = x.unsqueeze(0)
@@ -149,9 +148,9 @@ class RandomFeaturesModel(BaseModel):
 
     def compute_order_params(
         self,
-        teacher_params: Dict[str, Any],
+        teacher_params: dict[str, Any],
         include_generalization_error: bool = True,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Compute order parameters.
 
@@ -163,8 +162,9 @@ class RandomFeaturesModel(BaseModel):
 
         Returns:
             Dictionary of order parameters.
+
         """
-        q = torch.sum(self.a ** 2).item() / self.p
+        q = torch.sum(self.a**2).item() / self.p
 
         result = {
             "q": q,
@@ -172,15 +172,17 @@ class RandomFeaturesModel(BaseModel):
 
         return result
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get model configuration."""
         config = super().get_config()
-        config.update({
-            "p": self.p,
-            "activation": self.activation_name,
-            "init_scale": self.init_scale,
-            "feature_scale": self.feature_scale,
-        })
+        config.update(
+            {
+                "p": self.p,
+                "activation": self.activation_name,
+                "init_scale": self.init_scale,
+                "feature_scale": self.feature_scale,
+            }
+        )
         return config
 
 
@@ -208,6 +210,7 @@ class KernelRidgeModel(RandomFeaturesModel):
             p: Number of random features for kernel approximation.
             kernel: Kernel type ('rbf' -> relu, 'ntk' -> relu, 'polynomial' -> linear+squared).
             init_scale: Scale for weight initialization.
+
         """
         # Map kernel to activation
         kernel_to_activation = {
@@ -220,13 +223,7 @@ class KernelRidgeModel(RandomFeaturesModel):
 
         activation = kernel_to_activation.get(kernel, "relu")
 
-        super().__init__(
-            d=d,
-            p=p,
-            activation=activation,
-            init_scale=init_scale,
-            **kwargs
-        )
+        super().__init__(d=d, p=p, activation=activation, init_scale=init_scale, **kwargs)
 
         self.kernel_type = kernel
 
@@ -249,14 +246,15 @@ class DeepLinearNetwork(BaseModel):
         d: Input dimension.
         depth: Number of layers.
         widths: List of layer widths.
+
     """
 
     def __init__(
         self,
         d: int,
         depth: int = 3,
-        width: Optional[int] = None,
-        widths: Optional[List[int]] = None,
+        width: int | None = None,
+        widths: list[int] | None = None,
         init_scale: float = 1.0,
         init_method: str = "orthogonal",
         **kwargs: Any,
@@ -272,6 +270,7 @@ class DeepLinearNetwork(BaseModel):
                    Input is d_0 = d, output is d_L = 1.
             init_scale: Scale for weight initialization.
             init_method: Initialization method ('orthogonal', 'normal', 'identity').
+
         """
         super().__init__(d=d, **kwargs)
 
@@ -308,8 +307,7 @@ class DeepLinearNetwork(BaseModel):
             with torch.no_grad():
                 if d_in == d_out:
                     layer.weight.copy_(
-                        torch.eye(d_out) * self.init_scale + 
-                        torch.randn(d_out, d_in) * 0.01
+                        torch.eye(d_out) * self.init_scale + torch.randn(d_out, d_in) * 0.01
                     )
                 else:
                     nn.init.normal_(layer.weight, std=self.init_scale / np.sqrt(d_in))
@@ -325,6 +323,7 @@ class DeepLinearNetwork(BaseModel):
 
         Returns:
             Output tensor.
+
         """
         if x.dim() == 1:
             x = x.unsqueeze(0)
@@ -357,15 +356,15 @@ class DeepLinearNetwork(BaseModel):
             W_eff = self.layers[l].weight @ W_eff
         return W_eff.flatten()
 
-    def get_layer_weights(self) -> List[torch.Tensor]:
+    def get_layer_weights(self) -> list[torch.Tensor]:
         """Return list of weight matrices for each layer."""
         return [layer.weight for layer in self.layers]
 
     def compute_order_params(
         self,
-        teacher_params: Dict[str, Any],
+        teacher_params: dict[str, Any],
         include_generalization_error: bool = True,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Compute order parameters.
 
@@ -380,13 +379,14 @@ class DeepLinearNetwork(BaseModel):
 
         Returns:
             Dictionary of order parameters.
+
         """
         W0 = teacher_params.get("W0")
         rho = teacher_params.get("rho", 1.0)
 
         # Effective weight
         w_eff = self.get_weight_vector()
-        q = torch.sum(w_eff ** 2).item() / self.d
+        q = torch.sum(w_eff**2).item() / self.d
 
         result = {"q": q}
 
@@ -401,13 +401,15 @@ class DeepLinearNetwork(BaseModel):
 
         return result
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get model configuration."""
         config = super().get_config()
-        config.update({
-            "depth": self.depth,
-            "widths": self.widths,
-            "init_scale": self.init_scale,
-            "init_method": self.init_method,
-        })
+        config.update(
+            {
+                "depth": self.depth,
+                "widths": self.widths,
+                "init_scale": self.init_scale,
+                "init_method": self.init_method,
+            }
+        )
         return config

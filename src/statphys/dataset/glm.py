@@ -7,13 +7,12 @@ Provides datasets with probabilistic label generation following:
 - Custom link functions
 """
 
-from typing import Any, Dict, Optional, Tuple, Callable
+from typing import Any
 
-import torch
 import numpy as np
-from scipy import special
+import torch
 
-from statphys.dataset.base import BaseDataset, TeacherType
+from statphys.dataset.base import BaseDataset
 
 
 class LogisticTeacherDataset(BaseDataset):
@@ -32,13 +31,14 @@ class LogisticTeacherDataset(BaseDataset):
         d: Input dimension.
         rho: Norm of teacher weights (||W0||^2 / d).
         W0: Teacher weight vector.
+
     """
 
     def __init__(
         self,
         d: int,
         rho: float = 1.0,
-        W0: Optional[torch.Tensor] = None,
+        W0: torch.Tensor | None = None,
         device: str = "cpu",
         dtype: torch.dtype = torch.float32,
         **kwargs: Any,
@@ -52,6 +52,7 @@ class LogisticTeacherDataset(BaseDataset):
             W0: Teacher weights. If None, sampled from N(0, rho*I).
             device: Computation device.
             dtype: Data type.
+
         """
         super().__init__(d=d, device=device, dtype=dtype, **kwargs)
 
@@ -69,12 +70,13 @@ class LogisticTeacherDataset(BaseDataset):
             "teacher_type": "logistic",
         }
 
-    def generate_sample(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def generate_sample(self) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Generate a single (x, y) sample.
 
         Returns:
             Tuple of input x (d,) and label y (+1 or -1).
+
         """
         # Generate input x ~ N(0, I)
         x = torch.randn(self.d, device=self.device, dtype=self.dtype)
@@ -91,17 +93,19 @@ class LogisticTeacherDataset(BaseDataset):
 
         return x, y.to(dtype=self.dtype)
 
-    def get_teacher_params(self) -> Dict[str, Any]:
+    def get_teacher_params(self) -> dict[str, Any]:
         """Return teacher parameters."""
         return self._teacher_params
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get dataset configuration."""
         config = super().get_config()
-        config.update({
-            "rho": self.rho,
-            "teacher_type": "logistic",
-        })
+        config.update(
+            {
+                "rho": self.rho,
+                "teacher_type": "logistic",
+            }
+        )
         return config
 
 
@@ -121,13 +125,14 @@ class ProbitTeacherDataset(BaseDataset):
         d: Input dimension.
         rho: Norm of teacher weights.
         W0: Teacher weight vector.
+
     """
 
     def __init__(
         self,
         d: int,
         rho: float = 1.0,
-        W0: Optional[torch.Tensor] = None,
+        W0: torch.Tensor | None = None,
         device: str = "cpu",
         dtype: torch.dtype = torch.float32,
         **kwargs: Any,
@@ -141,6 +146,7 @@ class ProbitTeacherDataset(BaseDataset):
             W0: Teacher weights. If None, sampled from N(0, rho*I).
             device: Computation device.
             dtype: Data type.
+
         """
         super().__init__(d=d, device=device, dtype=dtype, **kwargs)
 
@@ -158,12 +164,13 @@ class ProbitTeacherDataset(BaseDataset):
             "teacher_type": "probit",
         }
 
-    def generate_sample(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def generate_sample(self) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Generate a single (x, y) sample.
 
         Returns:
             Tuple of input x (d,) and label y (+1 or -1).
+
         """
         x = torch.randn(self.d, device=self.device, dtype=self.dtype)
 
@@ -180,17 +187,19 @@ class ProbitTeacherDataset(BaseDataset):
 
         return x, y.to(dtype=self.dtype)
 
-    def get_teacher_params(self) -> Dict[str, Any]:
+    def get_teacher_params(self) -> dict[str, Any]:
         """Return teacher parameters."""
         return self._teacher_params
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get dataset configuration."""
         config = super().get_config()
-        config.update({
-            "rho": self.rho,
-            "teacher_type": "probit",
-        })
+        config.update(
+            {
+                "rho": self.rho,
+                "teacher_type": "probit",
+            }
+        )
         return config
 
 
@@ -208,13 +217,14 @@ class GaussianMixtureDataset(BaseDataset):
         d: Input dimension.
         mu: Class mean direction (scaled so ||mu||^2/d = signal).
         signal: Signal-to-noise ratio (||mu||^2 / d).
+
     """
 
     def __init__(
         self,
         d: int,
         signal: float = 1.0,
-        mu: Optional[torch.Tensor] = None,
+        mu: torch.Tensor | None = None,
         prior: float = 0.5,
         device: str = "cpu",
         dtype: torch.dtype = torch.float32,
@@ -230,6 +240,7 @@ class GaussianMixtureDataset(BaseDataset):
             prior: Prior probability of y=+1. Defaults to 0.5.
             device: Computation device.
             dtype: Data type.
+
         """
         super().__init__(d=d, device=device, dtype=dtype, **kwargs)
 
@@ -240,7 +251,7 @@ class GaussianMixtureDataset(BaseDataset):
         if mu is not None:
             self.mu = mu.to(device=self.device, dtype=self.dtype)
             # Rescale to have correct signal strength
-            mu_norm_sq = torch.sum(self.mu ** 2).item()
+            mu_norm_sq = torch.sum(self.mu**2).item()
             self.mu = self.mu * np.sqrt(signal * d / mu_norm_sq)
         else:
             # Default: mu = sqrt(signal) * e_1 direction
@@ -254,12 +265,13 @@ class GaussianMixtureDataset(BaseDataset):
             "teacher_type": "gaussian_mixture",
         }
 
-    def generate_sample(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def generate_sample(self) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Generate a single (x, y) sample.
 
         Returns:
             Tuple of input x (d,) and label y (+1 or -1).
+
         """
         # Generate label y ~ Bernoulli(prior)
         if torch.rand(1).item() < self.prior:
@@ -283,22 +295,26 @@ class GaussianMixtureDataset(BaseDataset):
 
         Returns:
             Bayes optimal error probability.
+
         """
         from scipy.stats import norm
+
         return norm.cdf(-np.sqrt(self.signal / 2.0))
 
-    def get_teacher_params(self) -> Dict[str, Any]:
+    def get_teacher_params(self) -> dict[str, Any]:
         """Return teacher parameters."""
         return self._teacher_params
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get dataset configuration."""
         config = super().get_config()
-        config.update({
-            "signal": self.signal,
-            "prior": self.prior,
-            "teacher_type": "gaussian_mixture",
-        })
+        config.update(
+            {
+                "signal": self.signal,
+                "prior": self.prior,
+                "teacher_type": "gaussian_mixture",
+            }
+        )
         return config
 
 
@@ -316,6 +332,7 @@ class MulticlassGaussianMixtureDataset(BaseDataset):
         d: Input dimension.
         n_classes: Number of classes.
         means: Class means (n_classes, d).
+
     """
 
     def __init__(
@@ -323,8 +340,8 @@ class MulticlassGaussianMixtureDataset(BaseDataset):
         d: int,
         n_classes: int = 3,
         signal: float = 1.0,
-        priors: Optional[torch.Tensor] = None,
-        means: Optional[torch.Tensor] = None,
+        priors: torch.Tensor | None = None,
+        means: torch.Tensor | None = None,
         device: str = "cpu",
         dtype: torch.dtype = torch.float32,
         **kwargs: Any,
@@ -340,6 +357,7 @@ class MulticlassGaussianMixtureDataset(BaseDataset):
             means: Class means (K, d). If None, uses orthogonal directions.
             device: Computation device.
             dtype: Data type.
+
         """
         super().__init__(d=d, device=device, dtype=dtype, **kwargs)
 
@@ -369,12 +387,13 @@ class MulticlassGaussianMixtureDataset(BaseDataset):
             "teacher_type": "multiclass_gmm",
         }
 
-    def generate_sample(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def generate_sample(self) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Generate a single (x, y) sample.
 
         Returns:
             Tuple of input x (d,) and label y (class index 0 to K-1).
+
         """
         # Sample class from categorical
         y_idx = torch.multinomial(self.priors, 1).item()
@@ -386,16 +405,18 @@ class MulticlassGaussianMixtureDataset(BaseDataset):
 
         return x, y
 
-    def get_teacher_params(self) -> Dict[str, Any]:
+    def get_teacher_params(self) -> dict[str, Any]:
         """Return teacher parameters."""
         return self._teacher_params
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get dataset configuration."""
         config = super().get_config()
-        config.update({
-            "n_classes": self.n_classes,
-            "signal": self.signal,
-            "teacher_type": "multiclass_gmm",
-        })
+        config.update(
+            {
+                "n_classes": self.n_classes,
+                "signal": self.signal,
+                "teacher_type": "multiclass_gmm",
+            }
+        )
         return config

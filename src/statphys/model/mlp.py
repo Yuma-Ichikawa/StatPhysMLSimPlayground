@@ -1,12 +1,10 @@
-"""
-Multi-layer perceptron models.
-"""
+"""Multi-layer perceptron models."""
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
 
 from statphys.model.base import BaseModel
 
@@ -48,6 +46,7 @@ class TwoLayerNetwork(BaseModel):
             second_layer_init: Init for second layer ('ones', 'random', 'alternating').
             init_scale: Scale for weight initialization.
             init_method: Initialization method for first layer.
+
         """
         super().__init__(d=d, **kwargs)
 
@@ -105,9 +104,7 @@ class TwoLayerNetwork(BaseModel):
             nn.init.normal_(self.a, mean=0.0, std=1.0)
         elif second_layer_init == "alternating":
             # +1, -1, +1, -1, ...
-            self.a.data = torch.tensor(
-                [(-1) ** i for i in range(self.k)], dtype=self.W.dtype
-            )
+            self.a.data = torch.tensor([(-1) ** i for i in range(self.k)], dtype=self.W.dtype)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -118,6 +115,7 @@ class TwoLayerNetwork(BaseModel):
 
         Returns:
             Output tensor.
+
         """
         if x.dim() == 1:
             x = x.unsqueeze(0)
@@ -137,58 +135,63 @@ class TwoLayerNetwork(BaseModel):
         """Return first layer weights (flattened)."""
         return self.W.flatten()
 
-    def get_all_weights(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def get_all_weights(self) -> tuple[torch.Tensor, torch.Tensor]:
         """Return both layer weights."""
         return self.W, self.a
 
     def compute_order_params(
         self,
-        teacher_params: Dict[str, Any],
+        teacher_params: dict[str, Any],
         include_generalization_error: bool = True,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Compute order parameters for two-layer network.
 
         Computes Q (student-student overlap) and M (student-teacher overlap).
         """
         W0 = teacher_params.get("W0")
-        a0 = teacher_params.get("a0")  # Teacher second layer
+        teacher_params.get("a0")  # Teacher second layer
 
         # Student self-overlap
-        Q = (self.W @ self.W.T / self.d)
+        Q = self.W @ self.W.T / self.d
 
         result = {
             "Q_diag_mean": torch.diag(Q).mean().item(),
-            "Q_offdiag_mean": (Q.sum() - torch.diag(Q).sum()).item() / (self.k * (self.k - 1))
-            if self.k > 1 else 0.0,
+            "Q_offdiag_mean": (
+                (Q.sum() - torch.diag(Q).sum()).item() / (self.k * (self.k - 1))
+                if self.k > 1
+                else 0.0
+            ),
         }
 
         if W0 is not None:
             if W0.dim() == 2 and W0.shape[0] > 1:
                 # Teacher also has hidden layer
-                M = (self.W @ W0.T / self.d)
+                M = self.W @ W0.T / self.d
                 result["M_mean"] = M.mean().item()
             else:
                 # Linear teacher
                 W0_flat = W0.flatten()
-                m_vec = (self.W @ W0_flat / self.d)
+                m_vec = self.W @ W0_flat / self.d
                 result["m_vec_mean"] = m_vec.mean().item()
 
         # Second layer norms
-        result["a_norm"] = (self.a ** 2).sum().item() / self.k
+        result["a_norm"] = (self.a**2).sum().item() / self.k
 
         return result
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get model configuration."""
         config = super().get_config()
-        config.update({
-            "k": self.k,
-            "activation": self.activation_name,
-            "second_layer_fixed": self.second_layer_fixed,
-            "init_scale": self.init_scale,
-            "init_method": self.init_method,
-        })
+        config.update(
+            {
+                "k": self.k,
+                "activation": self.activation_name,
+                "second_layer_fixed": self.second_layer_fixed,
+                "init_scale": self.init_scale,
+                "init_method": self.init_method,
+            }
+        )
         return config
 
 
@@ -219,6 +222,7 @@ class TwoLayerNetworkReLU(TwoLayerNetwork):
             second_layer_init: Initialization for second layer.
             init_scale: Scale for weight initialization.
             init_method: Initialization method.
+
         """
         super().__init__(
             d=d,
@@ -244,7 +248,7 @@ class DeepNetwork(BaseModel):
     def __init__(
         self,
         d: int,
-        hidden_dims: List[int],
+        hidden_dims: list[int],
         activation: str = "relu",
         init_scale: float = 1.0,
         init_method: str = "kaiming",
@@ -259,6 +263,7 @@ class DeepNetwork(BaseModel):
             activation: Activation function.
             init_scale: Scale for weight initialization.
             init_method: Initialization method.
+
         """
         super().__init__(d=d, **kwargs)
 
@@ -308,7 +313,7 @@ class DeepNetwork(BaseModel):
             x = x.unsqueeze(0)
 
         h = x
-        for i, layer in enumerate(self.layers[:-1]):
+        for _i, layer in enumerate(self.layers[:-1]):
             h = layer(h) / np.sqrt(layer.in_features)
             h = self.activation(h)
 
@@ -321,38 +326,40 @@ class DeepNetwork(BaseModel):
         """Return first layer weights."""
         return self.layers[0].weight.flatten()
 
-    def get_all_weights(self) -> List[torch.Tensor]:
+    def get_all_weights(self) -> list[torch.Tensor]:
         """Return all layer weights."""
         return [layer.weight for layer in self.layers]
 
     def compute_order_params(
         self,
-        teacher_params: Dict[str, Any],
+        teacher_params: dict[str, Any],
         include_generalization_error: bool = True,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Compute order parameters (first layer only for simplicity)."""
         W = self.layers[0].weight
         W0 = teacher_params.get("W0")
 
-        Q = (W @ W.T / self.d)
+        Q = W @ W.T / self.d
 
         result = {
             "Q_diag_mean": torch.diag(Q).mean().item(),
         }
 
         if W0 is not None and W0.shape == W.shape:
-            M = (W @ W0.T / self.d)
+            M = W @ W0.T / self.d
             result["M_mean"] = M.mean().item()
 
         return result
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get model configuration."""
         config = super().get_config()
-        config.update({
-            "hidden_dims": self.hidden_dims,
-            "activation": self.activation_name,
-            "init_scale": self.init_scale,
-            "init_method": self.init_method,
-        })
+        config.update(
+            {
+                "hidden_dims": self.hidden_dims,
+                "activation": self.activation_name,
+                "init_scale": self.init_scale,
+                "init_method": self.init_method,
+            }
+        )
         return config

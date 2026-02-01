@@ -8,13 +8,12 @@ This module provides ready-to-use plotting functions for:
 - All order parameters vs t (Online)
 """
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
-import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
+import numpy as np
 from matplotlib.axes import Axes
-
+from matplotlib.figure import Figure
 
 # Publication-quality style settings
 PAPER_STYLE = {
@@ -60,7 +59,7 @@ def _setup_ax(
     ax: Axes,
     xlabel: str,
     ylabel: str,
-    title: Optional[str] = None,
+    title: str | None = None,
     legend: bool = True,
     grid: bool = True,
 ) -> None:
@@ -78,17 +77,17 @@ def _setup_ax(
 def plot_generalization_error_alpha(
     alpha_values: np.ndarray,
     eg_mean: np.ndarray,
-    eg_std: Optional[np.ndarray] = None,
-    eg_theory: Optional[np.ndarray] = None,
-    title: Optional[str] = None,
+    eg_std: np.ndarray | None = None,
+    eg_theory: np.ndarray | None = None,
+    title: str | None = None,
     xlabel: str = r"$\alpha = n/d$",
     ylabel: str = r"$E_g$ (Generalization Error)",
     exp_label: str = "Experiment",
     theory_label: str = "Theory",
-    figsize: Tuple[float, float] = DEFAULT_FIGSIZE,
-    save_path: Optional[str] = None,
+    figsize: tuple[float, float] = DEFAULT_FIGSIZE,
+    save_path: str | None = None,
     show: bool = True,
-) -> Tuple[Figure, Axes]:
+) -> tuple[Figure, Axes]:
     """
     Plot generalization error vs alpha.
 
@@ -108,6 +107,7 @@ def plot_generalization_error_alpha(
 
     Returns:
         Tuple of (Figure, Axes).
+
     """
     apply_paper_style()
 
@@ -166,17 +166,17 @@ def plot_order_params_alpha(
     m_mean: np.ndarray,
     q_mean: np.ndarray,
     eg_mean: np.ndarray,
-    m_std: Optional[np.ndarray] = None,
-    q_std: Optional[np.ndarray] = None,
-    eg_std: Optional[np.ndarray] = None,
-    m_theory: Optional[np.ndarray] = None,
-    q_theory: Optional[np.ndarray] = None,
-    eg_theory: Optional[np.ndarray] = None,
-    title: Optional[str] = None,
-    figsize: Optional[Tuple[float, float]] = None,
-    save_path: Optional[str] = None,
+    m_std: np.ndarray | None = None,
+    q_std: np.ndarray | None = None,
+    eg_std: np.ndarray | None = None,
+    m_theory: np.ndarray | None = None,
+    q_theory: np.ndarray | None = None,
+    eg_theory: np.ndarray | None = None,
+    title: str | None = None,
+    figsize: tuple[float, float] | None = None,
+    save_path: str | None = None,
     show: bool = True,
-) -> Tuple[Figure, np.ndarray]:
+) -> tuple[Figure, np.ndarray]:
     """
     Plot all order parameters (m, q, Eg) vs alpha in a single figure.
 
@@ -198,6 +198,7 @@ def plot_order_params_alpha(
 
     Returns:
         Tuple of (Figure, array of Axes).
+
     """
     apply_paper_style()
 
@@ -212,7 +213,7 @@ def plot_order_params_alpha(
         (eg_mean, eg_std, eg_theory, r"$E_g$ (Gen. Error)"),
     ]
 
-    for i, (ax, (mean, std, theory, ylabel)) in enumerate(zip(axes, data)):
+    for i, (ax, (mean, std, theory, ylabel)) in enumerate(zip(axes, data, strict=False)):
         # Plot experimental data
         if std is not None:
             ax.errorbar(
@@ -267,17 +268,17 @@ def plot_order_params_alpha(
 def plot_generalization_error_time(
     t_values: np.ndarray,
     eg_mean: np.ndarray,
-    eg_std: Optional[np.ndarray] = None,
-    eg_theory: Optional[np.ndarray] = None,
-    title: Optional[str] = None,
+    eg_std: np.ndarray | None = None,
+    eg_theory: np.ndarray | None = None,
+    title: str | None = None,
     xlabel: str = r"$t = \tau / d$",
     ylabel: str = r"$E_g$ (Generalization Error)",
     exp_label: str = "Experiment",
     theory_label: str = "Theory",
-    figsize: Tuple[float, float] = DEFAULT_FIGSIZE,
-    save_path: Optional[str] = None,
+    figsize: tuple[float, float] = DEFAULT_FIGSIZE,
+    save_path: str | None = None,
     show: bool = True,
-) -> Tuple[Figure, Axes]:
+) -> tuple[Figure, Axes]:
     """
     Plot generalization error vs time for online learning.
 
@@ -297,6 +298,7 @@ def plot_generalization_error_time(
 
     Returns:
         Tuple of (Figure, Axes).
+
     """
     apply_paper_style()
 
@@ -356,17 +358,17 @@ def plot_order_params_time(
     m_mean: np.ndarray,
     q_mean: np.ndarray,
     eg_mean: np.ndarray,
-    m_std: Optional[np.ndarray] = None,
-    q_std: Optional[np.ndarray] = None,
-    eg_std: Optional[np.ndarray] = None,
-    m_theory: Optional[np.ndarray] = None,
-    q_theory: Optional[np.ndarray] = None,
-    eg_theory: Optional[np.ndarray] = None,
-    title: Optional[str] = None,
-    figsize: Optional[Tuple[float, float]] = None,
-    save_path: Optional[str] = None,
+    m_std: np.ndarray | None = None,
+    q_std: np.ndarray | None = None,
+    eg_std: np.ndarray | None = None,
+    m_theory: np.ndarray | None = None,
+    q_theory: np.ndarray | None = None,
+    eg_theory: np.ndarray | None = None,
+    title: str | None = None,
+    figsize: tuple[float, float] | None = None,
+    save_path: str | None = None,
     show: bool = True,
-) -> Tuple[Figure, np.ndarray]:
+) -> tuple[Figure, np.ndarray]:
     """
     Plot all order parameters (m, q, Eg) vs time for online learning.
 
@@ -388,6 +390,7 @@ def plot_order_params_time(
 
     Returns:
         Tuple of (Figure, array of Axes).
+
     """
     apply_paper_style()
 
@@ -402,7 +405,7 @@ def plot_order_params_time(
         (eg_mean, eg_std, eg_theory, r"$E_g$ (Gen. Error)"),
     ]
 
-    for i, (ax, (mean, std, theory, ylabel)) in enumerate(zip(axes, data)):
+    for i, (ax, (mean, std, theory, ylabel)) in enumerate(zip(axes, data, strict=False)):
         # Plot experimental data with shaded region
         if std is not None:
             ax.plot(
@@ -458,10 +461,10 @@ def plot_order_params_time(
 def plot_from_replica_results(
     results: Any,
     plot_type: str = "all",
-    title: Optional[str] = None,
-    save_path: Optional[str] = None,
+    title: str | None = None,
+    save_path: str | None = None,
     show: bool = True,
-) -> Union[Tuple[Figure, Axes], Tuple[Figure, np.ndarray]]:
+) -> tuple[Figure, Axes] | tuple[Figure, np.ndarray]:
     """
     Plot from ReplicaSimulation results.
 
@@ -474,6 +477,7 @@ def plot_from_replica_results(
 
     Returns:
         Tuple of (Figure, Axes or array of Axes).
+
     """
     exp_results = results.experiment_results
     alpha_values = np.array(exp_results["alpha_values"])
@@ -525,10 +529,10 @@ def plot_from_replica_results(
 def plot_from_online_results(
     results: Any,
     plot_type: str = "all",
-    title: Optional[str] = None,
-    save_path: Optional[str] = None,
+    title: str | None = None,
+    save_path: str | None = None,
     show: bool = True,
-) -> Union[Tuple[Figure, Axes], Tuple[Figure, np.ndarray]]:
+) -> tuple[Figure, Axes] | tuple[Figure, np.ndarray]:
     """
     Plot from OnlineSimulation results.
 
@@ -541,6 +545,7 @@ def plot_from_online_results(
 
     Returns:
         Tuple of (Figure, Axes or array of Axes).
+
     """
     exp_results = results.experiment_results
     t_values = np.array(exp_results["t_values"])

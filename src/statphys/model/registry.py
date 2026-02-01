@@ -1,8 +1,6 @@
-"""
-Model registry for dynamic model creation.
-"""
+"""Model registry for dynamic model creation."""
 
-from typing import Any, Dict, Optional, Type
+from typing import Any, Optional
 
 from statphys.model.base import BaseModel
 
@@ -17,10 +15,11 @@ class ModelRegistry:
         >>> registry = ModelRegistry()
         >>> registry.register("linear", LinearRegression)
         >>> model = registry.create("linear", d=500)
+
     """
 
     _instance: Optional["ModelRegistry"] = None
-    _registry: Dict[str, Type[BaseModel]] = {}
+    _registry: dict[str, type[BaseModel]] = {}
 
     def __new__(cls) -> "ModelRegistry":
         """Singleton pattern."""
@@ -28,11 +27,11 @@ class ModelRegistry:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def register(self, name: str, model_class: Type[BaseModel]) -> None:
+    def register(self, name: str, model_class: type[BaseModel]) -> None:
         """Register a model class."""
         self._registry[name.lower()] = model_class
 
-    def get(self, name: str) -> Type[BaseModel]:
+    def get(self, name: str) -> type[BaseModel]:
         """Get a registered model class."""
         name_lower = name.lower()
         if name_lower not in self._registry:
@@ -66,9 +65,10 @@ def register_model(name: str) -> callable:
         >>> @register_model("my_model")
         ... class MyModel(BaseModel):
         ...     pass
+
     """
 
-    def decorator(cls: Type[BaseModel]) -> Type[BaseModel]:
+    def decorator(cls: type[BaseModel]) -> type[BaseModel]:
         _global_registry.register(name, cls)
         return cls
 
@@ -85,6 +85,7 @@ def get_model(name: str, **kwargs: Any) -> BaseModel:
 
     Returns:
         Model instance.
+
     """
     return _global_registry.create(name, **kwargs)
 
@@ -92,9 +93,9 @@ def get_model(name: str, **kwargs: Any) -> BaseModel:
 # Register default models
 def _register_defaults() -> None:
     """Register default model classes."""
-    from statphys.model.linear import LinearRegression, LinearClassifier, RidgeRegression
     from statphys.model.committee import CommitteeMachine, SoftCommitteeMachine
-    from statphys.model.mlp import TwoLayerNetwork, TwoLayerNetworkReLU, DeepNetwork
+    from statphys.model.linear import LinearClassifier, LinearRegression, RidgeRegression
+    from statphys.model.mlp import DeepNetwork, TwoLayerNetwork, TwoLayerNetworkReLU
     from statphys.model.transformer import SingleLayerAttention, SingleLayerTransformer
 
     _global_registry.register("linear", LinearRegression)

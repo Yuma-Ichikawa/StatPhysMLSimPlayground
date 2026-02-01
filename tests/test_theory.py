@@ -1,13 +1,11 @@
-"""
-Tests for theory module.
-"""
+"""Tests for theory module."""
 
-import pytest
 import numpy as np
+import pytest
 
-from statphys.theory.replica import SaddlePointSolver, RidgeRegressionEquations
-from statphys.theory.online import ODESolver, OnlineSGDEquations
 from statphys.theory.base import TheoryResult, TheoryType
+from statphys.theory.online import ODESolver, OnlineSGDEquations
+from statphys.theory.replica import RidgeRegressionEquations, SaddlePointSolver
 
 
 class TestSaddlePointSolver:

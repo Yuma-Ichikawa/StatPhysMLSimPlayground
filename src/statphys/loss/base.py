@@ -1,9 +1,7 @@
-"""
-Base class for loss functions.
-"""
+"""Base class for loss functions."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -22,6 +20,7 @@ class BaseLoss(ABC):
     Attributes:
         reg_param: Regularization parameter (λ).
         reduction: How to reduce the loss ('mean', 'sum', 'none').
+
     """
 
     def __init__(
@@ -36,6 +35,7 @@ class BaseLoss(ABC):
         Args:
             reg_param: Regularization parameter. Defaults to 0.0.
             reduction: Reduction method. Defaults to 'mean'.
+
         """
         self.reg_param = reg_param
         self.reduction = reduction
@@ -55,6 +55,7 @@ class BaseLoss(ABC):
 
         Returns:
             Loss tensor (before reduction).
+
         """
         pass
 
@@ -72,6 +73,7 @@ class BaseLoss(ABC):
 
         Returns:
             Regularization term.
+
         """
         if self.reg_param == 0:
             return torch.tensor(0.0, device=next(model.parameters()).device)
@@ -105,7 +107,7 @@ class BaseLoss(ABC):
         self,
         y_pred: torch.Tensor,
         y_true: torch.Tensor,
-        model: Optional[nn.Module] = None,
+        model: nn.Module | None = None,
         online: bool = False,
     ) -> torch.Tensor:
         """
@@ -119,6 +121,7 @@ class BaseLoss(ABC):
 
         Returns:
             Total loss value.
+
         """
         # Compute main loss
         loss = self._compute_loss(y_pred, y_true)
@@ -131,7 +134,7 @@ class BaseLoss(ABC):
 
         return loss
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get loss configuration."""
         return {
             "class": self.__class__.__name__,

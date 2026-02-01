@@ -10,30 +10,31 @@ Example:
     >>> from statphys.loss import RidgeLoss
     >>> loss_fn = RidgeLoss(reg_param=0.01)
     >>> loss = loss_fn(y_pred, y_true, model)
+
 """
 
 from statphys.loss.base import BaseLoss
-from statphys.loss.regression import (
-    MSELoss,
-    RidgeLoss,
-    LassoLoss,
-    ElasticNetLoss,
-    HuberLoss,
-    PseudoHuberLoss,
-)
 from statphys.loss.classification import (
     CrossEntropyLoss,
-    HingeLoss,
-    SquaredHingeLoss,
-    LogisticLoss,
-    PerceptronLoss,
     ExponentialLoss,
-    RampLoss,
-    ProbitLoss,
-    SoftmaxCrossEntropyLoss,
+    HingeLoss,
+    LogisticLoss,
     MultiMarginLoss,
+    PerceptronLoss,
+    ProbitLoss,
+    RampLoss,
+    SoftmaxCrossEntropyLoss,
+    SquaredHingeLoss,
 )
-from statphys.loss.registry import LossRegistry, register_loss, get_loss
+from statphys.loss.registry import LossRegistry, get_loss, register_loss
+from statphys.loss.regression import (
+    ElasticNetLoss,
+    HuberLoss,
+    LassoLoss,
+    MSELoss,
+    PseudoHuberLoss,
+    RidgeLoss,
+)
 
 __all__ = [
     # Base class

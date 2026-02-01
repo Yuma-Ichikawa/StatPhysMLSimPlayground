@@ -16,20 +16,21 @@ Example:
     >>> from statphys.model import LinearRegression
     >>> model = LinearRegression(d=500)
     >>> y_pred = model(X)
+
 """
 
 from statphys.model.base import BaseModel, OrderParamsMixin
-from statphys.model.linear import LinearRegression, LinearClassifier, RidgeRegression
 from statphys.model.committee import CommitteeMachine, SoftCommitteeMachine
-from statphys.model.mlp import TwoLayerNetwork, TwoLayerNetworkReLU, DeepNetwork
-from statphys.model.transformer import SingleLayerTransformer, SingleLayerAttention
+from statphys.model.linear import LinearClassifier, LinearRegression, RidgeRegression
+from statphys.model.mlp import DeepNetwork, TwoLayerNetwork, TwoLayerNetworkReLU
 from statphys.model.random_features import (
-    RandomFeaturesModel,
-    KernelRidgeModel,
     DeepLinearNetwork,
+    KernelRidgeModel,
+    RandomFeaturesModel,
 )
+from statphys.model.registry import ModelRegistry, get_model, register_model
 from statphys.model.softmax import SoftmaxRegression, SoftmaxRegressionWithBias
-from statphys.model.registry import ModelRegistry, register_model, get_model
+from statphys.model.transformer import SingleLayerAttention, SingleLayerTransformer
 
 __all__ = [
     # Base classes

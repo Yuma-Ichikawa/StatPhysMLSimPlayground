@@ -1,12 +1,10 @@
-"""
-Committee machine models.
-"""
+"""Committee machine models."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
 
 from statphys.model.base import BaseModel
 
@@ -24,6 +22,7 @@ class CommitteeMachine(BaseModel):
         d: Input dimension.
         k: Number of hidden units (committee size).
         W: Weight matrix of shape (K, d).
+
     """
 
     def __init__(
@@ -42,6 +41,7 @@ class CommitteeMachine(BaseModel):
             k: Number of hidden units.
             init_scale: Scale for weight initialization.
             init_method: Initialization method.
+
         """
         super().__init__(d=d, **kwargs)
 
@@ -72,6 +72,7 @@ class CommitteeMachine(BaseModel):
 
         Returns:
             Output tensor of shape (batch_size,) or scalar.
+
         """
         if x.dim() == 1:
             x = x.unsqueeze(0)
@@ -95,19 +96,19 @@ class CommitteeMachine(BaseModel):
 
     def compute_order_params(
         self,
-        teacher_params: Dict[str, Any],
+        teacher_params: dict[str, Any],
         include_generalization_error: bool = True,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Compute order parameters for committee machine.
 
         Returns overlap matrices Q (student-student) and M (student-teacher).
         """
         W0 = teacher_params.get("W0")  # Teacher weights (K0, d) or (d, 1)
-        k0 = teacher_params.get("k", 1)  # Teacher committee size
+        teacher_params.get("k", 1)  # Teacher committee size
 
         # Student self-overlap matrix Q: Q_ij = (1/d) * W_i^T @ W_j
-        Q = (self.W @ self.W.T / self.d)
+        Q = self.W @ self.W.T / self.d
 
         result = {
             "Q": Q.detach().cpu().numpy().tolist(),
@@ -118,26 +119,28 @@ class CommitteeMachine(BaseModel):
             if W0.dim() == 2 and W0.shape[0] > 1:
                 # Multi-output teacher
                 # M_ij = (1/d) * W_i^T @ W0_j
-                M = (self.W @ W0.T / self.d)
+                M = self.W @ W0.T / self.d
                 result["M"] = M.detach().cpu().numpy().tolist()
                 result["m_avg"] = M.mean().item()
             else:
                 # Single output teacher
                 W0_flat = W0.flatten()
-                m_vec = (self.W @ W0_flat / self.d)
+                m_vec = self.W @ W0_flat / self.d
                 result["m_vec"] = m_vec.detach().cpu().numpy().tolist()
                 result["m_avg"] = m_vec.mean().item()
 
         return result
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get model configuration."""
         config = super().get_config()
-        config.update({
-            "k": self.k,
-            "init_scale": self.init_scale,
-            "init_method": self.init_method,
-        })
+        config.update(
+            {
+                "k": self.k,
+                "init_scale": self.init_scale,
+                "init_method": self.init_method,
+            }
+        )
         return config
 
 
@@ -171,6 +174,7 @@ class SoftCommitteeMachine(BaseModel):
             activation: Activation function ('erf', 'tanh', 'sigmoid', 'relu').
             init_scale: Scale for weight initialization.
             init_method: Initialization method.
+
         """
         super().__init__(d=d, **kwargs)
 
@@ -218,6 +222,7 @@ class SoftCommitteeMachine(BaseModel):
 
         Returns:
             Output tensor.
+
         """
         if x.dim() == 1:
             x = x.unsqueeze(0)
@@ -238,13 +243,13 @@ class SoftCommitteeMachine(BaseModel):
 
     def compute_order_params(
         self,
-        teacher_params: Dict[str, Any],
+        teacher_params: dict[str, Any],
         include_generalization_error: bool = True,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Compute order parameters."""
         W0 = teacher_params.get("W0")
 
-        Q = (self.W @ self.W.T / self.d)
+        Q = self.W @ self.W.T / self.d
 
         result = {
             "Q": Q.detach().cpu().numpy().tolist(),
@@ -253,24 +258,26 @@ class SoftCommitteeMachine(BaseModel):
 
         if W0 is not None:
             if W0.dim() == 2 and W0.shape[0] > 1:
-                M = (self.W @ W0.T / self.d)
+                M = self.W @ W0.T / self.d
                 result["M"] = M.detach().cpu().numpy().tolist()
                 result["m_avg"] = M.mean().item()
             else:
                 W0_flat = W0.flatten()
-                m_vec = (self.W @ W0_flat / self.d)
+                m_vec = self.W @ W0_flat / self.d
                 result["m_vec"] = m_vec.detach().cpu().numpy().tolist()
                 result["m_avg"] = m_vec.mean().item()
 
         return result
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get model configuration."""
         config = super().get_config()
-        config.update({
-            "k": self.k,
-            "activation": self.activation_name,
-            "init_scale": self.init_scale,
-            "init_method": self.init_method,
-        })
+        config.update(
+            {
+                "k": self.k,
+                "activation": self.activation_name,
+                "init_scale": self.init_scale,
+                "init_method": self.init_method,
+            }
+        )
         return config

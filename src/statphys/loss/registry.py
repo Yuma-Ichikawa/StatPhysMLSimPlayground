@@ -1,8 +1,6 @@
-"""
-Loss function registry.
-"""
+"""Loss function registry."""
 
-from typing import Any, Dict, Optional, Type
+from typing import Any, Optional
 
 from statphys.loss.base import BaseLoss
 
@@ -15,10 +13,11 @@ class LossRegistry:
         >>> registry = LossRegistry()
         >>> registry.register("ridge", RidgeLoss)
         >>> loss_fn = registry.create("ridge", reg_param=0.01)
+
     """
 
     _instance: Optional["LossRegistry"] = None
-    _registry: Dict[str, Type[BaseLoss]] = {}
+    _registry: dict[str, type[BaseLoss]] = {}
 
     def __new__(cls) -> "LossRegistry":
         """Singleton pattern."""
@@ -26,11 +25,11 @@ class LossRegistry:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def register(self, name: str, loss_class: Type[BaseLoss]) -> None:
+    def register(self, name: str, loss_class: type[BaseLoss]) -> None:
         """Register a loss class."""
         self._registry[name.lower()] = loss_class
 
-    def get(self, name: str) -> Type[BaseLoss]:
+    def get(self, name: str) -> type[BaseLoss]:
         """Get a registered loss class."""
         name_lower = name.lower()
         if name_lower not in self._registry:
@@ -64,9 +63,10 @@ def register_loss(name: str) -> callable:
         >>> @register_loss("my_loss")
         ... class MyLoss(BaseLoss):
         ...     pass
+
     """
 
-    def decorator(cls: Type[BaseLoss]) -> Type[BaseLoss]:
+    def decorator(cls: type[BaseLoss]) -> type[BaseLoss]:
         _global_registry.register(name, cls)
         return cls
 
@@ -83,6 +83,7 @@ def get_loss(name: str, **kwargs: Any) -> BaseLoss:
 
     Returns:
         Loss instance.
+
     """
     return _global_registry.create(name, **kwargs)
 
@@ -90,22 +91,22 @@ def get_loss(name: str, **kwargs: Any) -> BaseLoss:
 # Register default losses
 def _register_defaults() -> None:
     """Register default loss classes."""
-    from statphys.loss.regression import (
-        MSELoss,
-        RidgeLoss,
-        LassoLoss,
-        ElasticNetLoss,
-        HuberLoss,
-        PseudoHuberLoss,
-    )
     from statphys.loss.classification import (
         CrossEntropyLoss,
-        LogisticLoss,
-        HingeLoss,
-        SquaredHingeLoss,
-        PerceptronLoss,
         ExponentialLoss,
+        HingeLoss,
+        LogisticLoss,
+        PerceptronLoss,
         RampLoss,
+        SquaredHingeLoss,
+    )
+    from statphys.loss.regression import (
+        ElasticNetLoss,
+        HuberLoss,
+        LassoLoss,
+        MSELoss,
+        PseudoHuberLoss,
+        RidgeLoss,
     )
 
     # Regression losses

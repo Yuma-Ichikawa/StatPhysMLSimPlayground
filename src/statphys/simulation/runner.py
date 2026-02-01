@@ -1,15 +1,14 @@
-"""
-Unified simulation runner.
-"""
+"""Unified simulation runner."""
 
-from typing import Any, Callable, Dict, Optional, Type
+from collections.abc import Callable
+from typing import Any
 
 import torch.nn as nn
 
-from statphys.simulation.config import SimulationConfig, TheoryType
 from statphys.simulation.base import SimulationResult
-from statphys.simulation.replica_sim import ReplicaSimulation
+from statphys.simulation.config import SimulationConfig, TheoryType
 from statphys.simulation.online_sim import OnlineSimulation
+from statphys.simulation.replica_sim import ReplicaSimulation
 
 
 class SimulationRunner:
@@ -27,6 +26,7 @@ class SimulationRunner:
         ...     model_class=LinearRegression,
         ...     loss_fn=RidgeLoss(0.01)
         ... )
+
     """
 
     def __init__(self):
@@ -40,10 +40,10 @@ class SimulationRunner:
         self,
         config: SimulationConfig,
         dataset: Any,
-        model_class: Type[nn.Module],
+        model_class: type[nn.Module],
         loss_fn: Callable,
-        calc_order_params: Optional[Callable] = None,
-        theory_solver: Optional[Any] = None,
+        calc_order_params: Callable | None = None,
+        theory_solver: Any | None = None,
         **kwargs: Any,
     ) -> SimulationResult:
         """
@@ -60,6 +60,7 @@ class SimulationRunner:
 
         Returns:
             SimulationResult.
+
         """
         # Get appropriate simulation class
         sim_class = self._simulations.get(config.theory_type)
@@ -81,10 +82,10 @@ class SimulationRunner:
         self,
         config: SimulationConfig,
         dataset: Any,
-        model_classes: Dict[str, Type[nn.Module]],
+        model_classes: dict[str, type[nn.Module]],
         loss_fn: Callable,
         **kwargs: Any,
-    ) -> Dict[str, SimulationResult]:
+    ) -> dict[str, SimulationResult]:
         """
         Run simulations for multiple model classes.
 
@@ -99,6 +100,7 @@ class SimulationRunner:
 
         Returns:
             Dictionary mapping model names to results.
+
         """
         results = {}
 
@@ -121,12 +123,12 @@ class SimulationRunner:
         self,
         base_config: SimulationConfig,
         dataset: Any,
-        model_class: Type[nn.Module],
+        model_class: type[nn.Module],
         loss_fn: Callable,
         param_name: str,
         param_values: list,
         **kwargs: Any,
-    ) -> Dict[Any, SimulationResult]:
+    ) -> dict[Any, SimulationResult]:
         """
         Run simulations across parameter sweep.
 
@@ -141,6 +143,7 @@ class SimulationRunner:
 
         Returns:
             Dictionary mapping parameter values to results.
+
         """
         results = {}
 

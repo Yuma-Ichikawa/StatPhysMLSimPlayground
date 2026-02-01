@@ -1,11 +1,9 @@
-"""
-Sparse dataset implementations.
-"""
+"""Sparse dataset implementations."""
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
-import torch
 import numpy as np
+import torch
 
 from statphys.dataset.base import BaseDataset
 
@@ -24,6 +22,7 @@ class SparseDataset(BaseDataset):
         sparsity: Sparsity level (fraction of non-zero elements).
         rho: Teacher weight norm.
         eta: Noise variance.
+
     """
 
     def __init__(
@@ -32,7 +31,7 @@ class SparseDataset(BaseDataset):
         sparsity: float = 0.1,
         rho: float = 1.0,
         eta: float = 0.0,
-        W0: Optional[torch.Tensor] = None,
+        W0: torch.Tensor | None = None,
         device: str = "cpu",
         dtype: torch.dtype = torch.float32,
         **kwargs: Any,
@@ -48,6 +47,7 @@ class SparseDataset(BaseDataset):
             W0: Teacher weights. If None, sampled from N(0, rho*I).
             device: Computation device.
             dtype: Data type.
+
         """
         super().__init__(d=d, device=device, dtype=dtype, **kwargs)
 
@@ -70,12 +70,13 @@ class SparseDataset(BaseDataset):
             "sparsity": self.sparsity,
         }
 
-    def generate_sample(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def generate_sample(self) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Generate a single sparse (x, y) sample.
 
         Returns:
             Tuple of sparse input x (d,) and output y (scalar).
+
         """
         # Generate sparse mask
         mask = torch.bernoulli(
@@ -99,11 +100,11 @@ class SparseDataset(BaseDataset):
 
         return x, y
 
-    def get_teacher_params(self) -> Dict[str, Any]:
+    def get_teacher_params(self) -> dict[str, Any]:
         """Return teacher parameters."""
         return self._teacher_params
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get dataset configuration."""
         config = super().get_config()
         config.update(
@@ -136,7 +137,7 @@ class BernoulliGaussianDataset(BaseDataset):
         rho: float = 1.0,
         eta: float = 0.0,
         sparse_teacher: bool = False,
-        W0: Optional[torch.Tensor] = None,
+        W0: torch.Tensor | None = None,
         device: str = "cpu",
         dtype: torch.dtype = torch.float32,
         **kwargs: Any,
@@ -155,6 +156,7 @@ class BernoulliGaussianDataset(BaseDataset):
             W0: Teacher weights.
             device: Computation device.
             dtype: Data type.
+
         """
         super().__init__(d=d, device=device, dtype=dtype, **kwargs)
 
@@ -171,11 +173,11 @@ class BernoulliGaussianDataset(BaseDataset):
         else:
             if sparse_teacher:
                 # Sparse teacher
-                mask = torch.bernoulli(
-                    torch.full((d, 1), p, device=self.device, dtype=self.dtype)
-                )
-                self.W0 = mask * torch.randn(d, 1, device=self.device, dtype=self.dtype) * np.sqrt(
-                    rho / p
+                mask = torch.bernoulli(torch.full((d, 1), p, device=self.device, dtype=self.dtype))
+                self.W0 = (
+                    mask
+                    * torch.randn(d, 1, device=self.device, dtype=self.dtype)
+                    * np.sqrt(rho / p)
                 )
             else:
                 self.W0 = torch.randn(d, 1, device=self.device, dtype=self.dtype) * np.sqrt(rho)
@@ -188,17 +190,13 @@ class BernoulliGaussianDataset(BaseDataset):
             "sparse_teacher": self.sparse_teacher,
         }
 
-    def generate_sample(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def generate_sample(self) -> tuple[torch.Tensor, torch.Tensor]:
         """Generate a single Bernoulli-Gaussian sample."""
         # Bernoulli mask
-        mask = torch.bernoulli(
-            torch.full((self.d,), self.p, device=self.device, dtype=self.dtype)
-        )
+        mask = torch.bernoulli(torch.full((self.d,), self.p, device=self.device, dtype=self.dtype))
 
         # Gaussian component
-        gaussian = (
-            self.mu + self.sigma * torch.randn(self.d, device=self.device, dtype=self.dtype)
-        )
+        gaussian = self.mu + self.sigma * torch.randn(self.d, device=self.device, dtype=self.dtype)
 
         x = mask * gaussian
 
@@ -215,6 +213,6 @@ class BernoulliGaussianDataset(BaseDataset):
 
         return x, y
 
-    def get_teacher_params(self) -> Dict[str, Any]:
+    def get_teacher_params(self) -> dict[str, Any]:
         """Return teacher parameters."""
         return self._teacher_params

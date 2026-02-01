@@ -1,12 +1,9 @@
-"""
-Numerical integration utilities for replica calculations.
-"""
+"""Numerical integration utilities for replica calculations."""
 
-from typing import Callable, Optional, Tuple
+from collections.abc import Callable
 
 import numpy as np
-from scipy.integrate import quad, dblquad
-from scipy.special import erf
+from scipy.integrate import dblquad, quad
 
 
 def gaussian_integral(
@@ -15,7 +12,7 @@ def gaussian_integral(
     var: float = 1.0,
     n_points: int = 100,
     method: str = "quadrature",
-    limits: Tuple[float, float] = (-10, 10),
+    limits: tuple[float, float] = (-10, 10),
 ) -> float:
     """
     Compute Gaussian integral: E_z[f(z)] where z ~ N(mean, var).
@@ -35,12 +32,14 @@ def gaussian_integral(
         >>> # E[z^2] for z ~ N(0, 1)
         >>> gaussian_integral(lambda z: z**2)
         1.0
+
     """
     std = np.sqrt(var)
 
     if method == "quadrature":
+
         def integrand(z):
-            return func(z) * np.exp(-(z - mean) ** 2 / (2 * var)) / np.sqrt(2 * np.pi * var)
+            return func(z) * np.exp(-((z - mean) ** 2) / (2 * var)) / np.sqrt(2 * np.pi * var)
 
         result, _ = quad(integrand, limits[0] * std + mean, limits[1] * std + mean)
         return result
@@ -50,7 +49,7 @@ def gaussian_integral(
         points, weights = np.polynomial.hermite.hermgauss(n_points)
         # Transform to general Gaussian
         transformed_points = np.sqrt(2 * var) * points + mean
-        result = sum(w * func(x) for x, w in zip(transformed_points, weights))
+        result = sum(w * func(x) for x, w in zip(transformed_points, weights, strict=False))
         return result / np.sqrt(np.pi)
 
     elif method == "monte_carlo":
@@ -86,6 +85,7 @@ def double_gaussian_integral(
 
     Returns:
         Integral value.
+
     """
     # Build covariance matrix and Cholesky decomposition
     sigma = np.array([[var1, cov], [cov, var2]])
@@ -96,17 +96,24 @@ def double_gaussian_integral(
         points = np.sqrt(2) * points
 
         result = 0.0
-        for i, (x1, w1) in enumerate(zip(points, weights)):
-            for j, (x2, w2) in enumerate(zip(points, weights)):
+        for _i, (x1, w1) in enumerate(zip(points, weights, strict=False)):
+            for _j, (x2, w2) in enumerate(zip(points, weights, strict=False)):
                 z = L @ np.array([x1, x2]) + np.array([mean1, mean2])
                 result += w1 * w2 * func(z[0], z[1])
 
         return result / np.pi
 
     elif method == "quadrature":
+
         def integrand(z2, z1):
-            pdf = np.exp(-0.5 * ((z1 - mean1)**2 / var1 + (z2 - mean2)**2 / var2
-                                 - 2 * cov * (z1 - mean1) * (z2 - mean2) / (var1 * var2)))
+            pdf = np.exp(
+                -0.5
+                * (
+                    (z1 - mean1) ** 2 / var1
+                    + (z2 - mean2) ** 2 / var2
+                    - 2 * cov * (z1 - mean1) * (z2 - mean2) / (var1 * var2)
+                )
+            )
             pdf /= 2 * np.pi * np.sqrt(var1 * var2 - cov**2)
             return func(z1, z2) * pdf
 
@@ -142,6 +149,7 @@ def moreau_envelope(
 
     Returns:
         Moreau envelope value.
+
     """
     # Grid search for minimum
     search_range = 5 * np.sqrt(gamma)
@@ -169,6 +177,7 @@ def proximal_operator(
 
     Returns:
         Proximal operator value.
+
     """
     search_range = 5 * np.sqrt(gamma)
     y_vals = np.linspace(x - search_range, x + search_range, n_points)
@@ -189,6 +198,7 @@ def soft_threshold(x: float, threshold: float) -> float:
 
     Returns:
         Soft-thresholded value.
+
     """
     return np.sign(x) * max(abs(x) - threshold, 0)
 
@@ -205,6 +215,7 @@ def hard_threshold(x: float, threshold: float) -> float:
 
     Returns:
         Hard-thresholded value.
+
     """
     return x if abs(x) > threshold else 0
 
@@ -226,6 +237,7 @@ def compute_free_entropy_density(
 
     Returns:
         Free entropy density.
+
     """
     # Template implementation for ridge regression
     m = order_params.get("m", 0)

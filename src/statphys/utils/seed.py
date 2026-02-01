@@ -1,9 +1,6 @@
-"""
-Random seed utilities for reproducible experiments.
-"""
+"""Random seed utilities for reproducible experiments."""
 
 import random
-from typing import Optional
 
 import numpy as np
 import torch
@@ -26,6 +23,7 @@ def fix_seed(seed: int = 42) -> None:
         >>> from statphys.utils import fix_seed
         >>> fix_seed(123)
         >>> # Now all random operations are reproducible
+
     """
     random.seed(seed)
     np.random.seed(seed)
@@ -50,6 +48,7 @@ def get_device(prefer_cuda: bool = True) -> torch.device:
     Example:
         >>> device = get_device()
         >>> model = model.to(device)
+
     """
     if prefer_cuda and torch.cuda.is_available():
         return torch.device("cuda")
@@ -70,5 +69,6 @@ def get_seed_list(num_seeds: int, base_seed: int = 100) -> list[int]:
     Example:
         >>> seeds = get_seed_list(5)
         >>> # seeds = [100, 101, 102, 103, 104]
+
     """
     return [base_seed + i for i in range(num_seeds)]

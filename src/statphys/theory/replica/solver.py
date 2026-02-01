@@ -1,11 +1,9 @@
-"""
-Saddle-point equation solver for replica calculations.
-"""
+"""Saddle-point equation solver for replica calculations."""
 
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from collections.abc import Callable
+from typing import Any
 
 import numpy as np
-from scipy.optimize import brentq, fsolve
 
 from statphys.theory.base import BaseTheory, TheoryResult, TheoryType
 
@@ -29,12 +27,13 @@ class SaddlePointSolver(BaseTheory):
         >>>
         >>> solver = SaddlePointSolver(equations=equations, order_params=['m', 'q'])
         >>> result = solver.solve(alpha_values=[0.1, 0.5, 1.0, 2.0], rho=1.0, eta=0.0)
+
     """
 
     def __init__(
         self,
-        equations: Callable[..., Tuple[float, ...]],
-        order_params: List[str],
+        equations: Callable[..., tuple[float, ...]],
+        order_params: list[str],
         damping: float = 0.5,
         adaptive_damping: bool = True,
         damping_decay: float = 0.9,
@@ -60,6 +59,7 @@ class SaddlePointSolver(BaseTheory):
             max_iter: Maximum iterations.
             n_restarts: Number of random restarts for robustness.
             verbose: Whether to print progress.
+
         """
         super().__init__(tol=tol, max_iter=max_iter, verbose=verbose, **kwargs)
 
@@ -74,10 +74,10 @@ class SaddlePointSolver(BaseTheory):
 
     def _fixed_point_iteration(
         self,
-        init_values: Tuple[float, ...],
+        init_values: tuple[float, ...],
         alpha: float,
-        params: Dict[str, Any],
-    ) -> Tuple[Tuple[float, ...], bool, int]:
+        params: dict[str, Any],
+    ) -> tuple[tuple[float, ...], bool, int]:
         """
         Run fixed-point iteration with damping.
 
@@ -88,6 +88,7 @@ class SaddlePointSolver(BaseTheory):
 
         Returns:
             Tuple of (final_values, converged, iterations).
+
         """
         values = np.array(init_values)
         damping = self.damping
@@ -96,9 +97,7 @@ class SaddlePointSolver(BaseTheory):
 
         for iteration in range(self.max_iter):
             # Compute new values
-            new_values = np.array(
-                self.equations(*values, alpha=alpha, **params)
-            )
+            new_values = np.array(self.equations(*values, alpha=alpha, **params))
 
             # Damped update
             updated_values = damping * new_values + (1 - damping) * values
@@ -132,9 +131,9 @@ class SaddlePointSolver(BaseTheory):
     def _solve_single_alpha(
         self,
         alpha: float,
-        init_values: Optional[Tuple[float, ...]] = None,
-        params: Dict[str, Any] = None,
-    ) -> Tuple[Dict[str, float], bool, int]:
+        init_values: tuple[float, ...] | None = None,
+        params: dict[str, Any] = None,
+    ) -> tuple[dict[str, float], bool, int]:
         """
         Solve for a single alpha value.
 
@@ -145,6 +144,7 @@ class SaddlePointSolver(BaseTheory):
 
         Returns:
             Tuple of (order_params_dict, converged, iterations).
+
         """
         params = params or {}
         best_result = None
@@ -161,30 +161,28 @@ class SaddlePointSolver(BaseTheory):
                 init_list.append(init)
 
         for init in init_list:
-            values, converged, iterations = self._fixed_point_iteration(
-                init, alpha, params
-            )
+            values, converged, iterations = self._fixed_point_iteration(init, alpha, params)
 
             if converged:
-                result = {name: val for name, val in zip(self.order_params, values)}
+                result = dict(zip(self.order_params, values, strict=False))
                 return result, True, iterations
 
             # Track best non-converged result
-            error = np.max(np.abs(
-                np.array(self.equations(*values, alpha=alpha, **params)) - np.array(values)
-            ))
+            error = np.max(
+                np.abs(np.array(self.equations(*values, alpha=alpha, **params)) - np.array(values))
+            )
             if error < best_error:
                 best_error = error
                 best_result = values
 
         # Return best non-converged result
-        result = {name: val for name, val in zip(self.order_params, best_result)}
+        result = dict(zip(self.order_params, best_result, strict=False))
         return result, False, self.max_iter
 
     def solve(
         self,
-        alpha_values: Union[List[float], np.ndarray],
-        init_values: Optional[Tuple[float, ...]] = None,
+        alpha_values: list[float] | np.ndarray,
+        init_values: tuple[float, ...] | None = None,
         use_continuation: bool = True,
         **params: Any,
     ) -> TheoryResult:
@@ -199,6 +197,7 @@ class SaddlePointSolver(BaseTheory):
 
         Returns:
             TheoryResult containing solutions for all alpha values.
+
         """
         alpha_values = np.array(alpha_values)
         n_alphas = len(alpha_values)
@@ -242,7 +241,7 @@ class SaddlePointSolver(BaseTheory):
 
     def solve_with_generalization_error(
         self,
-        alpha_values: Union[List[float], np.ndarray],
+        alpha_values: list[float] | np.ndarray,
         eg_formula: Callable[..., float],
         **params: Any,
     ) -> TheoryResult:
@@ -256,6 +255,7 @@ class SaddlePointSolver(BaseTheory):
 
         Returns:
             TheoryResult with 'eg' added to order_params.
+
         """
         result = self.solve(alpha_values, **params)
 
@@ -273,13 +273,15 @@ class SaddlePointSolver(BaseTheory):
         """Return the theory type."""
         return TheoryType.REPLICA
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get solver configuration."""
         config = super().get_config()
-        config.update({
-            "order_params": self.order_params,
-            "damping": self.damping,
-            "adaptive_damping": self.adaptive_damping,
-            "n_restarts": self.n_restarts,
-        })
+        config.update(
+            {
+                "order_params": self.order_params,
+                "damping": self.damping,
+                "adaptive_damping": self.adaptive_damping,
+                "n_restarts": self.n_restarts,
+            }
+        )
         return config

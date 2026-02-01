@@ -1,18 +1,15 @@
-"""
-Tests for simulation module.
-"""
+"""Tests for simulation module."""
 
-import pytest
-import torch
 import numpy as np
+import pytest
 
 from statphys.dataset import GaussianDataset
-from statphys.model import LinearRegression
 from statphys.loss import RidgeLoss
+from statphys.model import LinearRegression
 from statphys.simulation import (
-    SimulationConfig,
-    ReplicaSimulation,
     OnlineSimulation,
+    ReplicaSimulation,
+    SimulationConfig,
     SimulationRunner,
     TheoryType,
 )

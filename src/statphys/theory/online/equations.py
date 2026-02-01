@@ -1,9 +1,7 @@
-"""
-Pre-defined ODE equations for online learning dynamics.
-"""
+"""Pre-defined ODE equations for online learning dynamics."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 from scipy.special import erf
@@ -23,6 +21,7 @@ class OnlineEquations(ABC):
 
         Args:
             **params: Parameters like rho, eta, lr, reg_param, etc.
+
         """
         self.params = params
 
@@ -31,7 +30,7 @@ class OnlineEquations(ABC):
         self,
         t: float,
         y: np.ndarray,
-        params: Dict[str, Any],
+        params: dict[str, Any],
     ) -> np.ndarray:
         """
         Compute ODE right-hand side dy/dt.
@@ -43,6 +42,7 @@ class OnlineEquations(ABC):
 
         Returns:
             Array of dy/dt values.
+
         """
         pass
 
@@ -61,10 +61,11 @@ class OnlineEquations(ABC):
 
         Returns:
             Generalization error.
+
         """
         pass
 
-    def get_order_param_names(self) -> List[str]:
+    def get_order_param_names(self) -> list[str]:
         """Return names of order parameters."""
         return ["m", "q"]
 
@@ -101,10 +102,9 @@ class OnlineSGDEquations(OnlineEquations):
             eta_noise: Output noise variance.
             lr: Learning rate η.
             reg_param: L2 regularization λ.
+
         """
-        super().__init__(
-            rho=rho, eta_noise=eta_noise, lr=lr, reg_param=reg_param, **params
-        )
+        super().__init__(rho=rho, eta_noise=eta_noise, lr=lr, reg_param=reg_param, **params)
         self.rho = rho
         self.eta_noise = eta_noise
         self.lr = lr
@@ -114,11 +114,9 @@ class OnlineSGDEquations(OnlineEquations):
         self,
         t: float,
         y: np.ndarray,
-        params: Dict[str, Any],
+        params: dict[str, Any],
     ) -> np.ndarray:
-        """
-        Compute dm/dt and dq/dt for online SGD.
-        """
+        """Compute dm/dt and dq/dt for online SGD."""
         m, q = y
 
         # Get parameters (allow override from params dict)
@@ -175,6 +173,7 @@ class OnlinePerceptronEquations(OnlineEquations):
         Args:
             rho: Teacher norm.
             lr: Learning rate.
+
         """
         super().__init__(rho=rho, lr=lr, **params)
         self.rho = rho
@@ -188,11 +187,9 @@ class OnlinePerceptronEquations(OnlineEquations):
         self,
         t: float,
         y: np.ndarray,
-        params: Dict[str, Any],
+        params: dict[str, Any],
     ) -> np.ndarray:
-        """
-        Compute dm/dt and dq/dt for online perceptron.
-        """
+        """Compute dm/dt and dq/dt for online perceptron."""
         m, q = y
 
         rho = params.get("rho", self.rho)
@@ -206,7 +203,7 @@ class OnlinePerceptronEquations(OnlineEquations):
         epsilon = self._H(kappa)
 
         # Gaussian density at stability
-        phi_kappa = np.exp(-kappa**2 / 2) / np.sqrt(2 * np.pi)
+        phi_kappa = np.exp(-(kappa**2) / 2) / np.sqrt(2 * np.pi)
 
         # ODE equations (Saad & Solla style)
         dm_dt = lr * np.sqrt(rho) * phi_kappa / np.sqrt(q + 1e-10)
@@ -268,6 +265,7 @@ class OnlineLogisticEquations(OnlineEquations):
             rho: Teacher norm (||W0||^2 / d).
             lr: Learning rate η.
             reg_param: L2 regularization λ.
+
         """
         super().__init__(rho=rho, lr=lr, reg_param=reg_param, **params)
         self.rho = rho
@@ -282,7 +280,7 @@ class OnlineLogisticEquations(OnlineEquations):
         self,
         t: float,
         y: np.ndarray,
-        params: Dict[str, Any],
+        params: dict[str, Any],
     ) -> np.ndarray:
         """
         Compute dm/dt and dq/dt for online logistic regression.
@@ -297,10 +295,7 @@ class OnlineLogisticEquations(OnlineEquations):
         lam = params.get("reg_param", self.reg_param)
 
         # Correlation and variance
-        if q > 0 and rho > 0:
-            rho_corr = m / np.sqrt(rho * q)
-        else:
-            rho_corr = 0.0
+        rho_corr = m / np.sqrt(rho * q) if q > 0 and rho > 0 else 0.0
         rho_corr = np.clip(rho_corr, -0.999, 0.999)
 
         # Conditional variance of z given u
@@ -376,10 +371,9 @@ class OnlineHingeEquations(OnlineEquations):
             lr: Learning rate.
             margin: Hinge loss margin.
             reg_param: L2 regularization.
+
         """
-        super().__init__(
-            rho=rho, lr=lr, margin=margin, reg_param=reg_param, **params
-        )
+        super().__init__(rho=rho, lr=lr, margin=margin, reg_param=reg_param, **params)
         self.rho = rho
         self.lr = lr
         self.margin = margin
@@ -391,17 +385,15 @@ class OnlineHingeEquations(OnlineEquations):
 
     def _phi(self, x: float) -> float:
         """Gaussian PDF."""
-        return np.exp(-x**2 / 2) / np.sqrt(2 * np.pi)
+        return np.exp(-(x**2) / 2) / np.sqrt(2 * np.pi)
 
     def __call__(
         self,
         t: float,
         y: np.ndarray,
-        params: Dict[str, Any],
+        params: dict[str, Any],
     ) -> np.ndarray:
-        """
-        Compute dm/dt and dq/dt for online hinge loss.
-        """
+        """Compute dm/dt and dq/dt for online hinge loss."""
         m, q = y
 
         rho = params.get("rho", self.rho)
@@ -470,6 +462,7 @@ class OnlineCommitteeEquations(OnlineEquations):
             rho: Teacher norm per unit.
             lr: Learning rate.
             activation: Activation function ('erf', 'relu').
+
         """
         super().__init__(
             k_student=k_student,
@@ -503,7 +496,7 @@ class OnlineCommitteeEquations(OnlineEquations):
         self,
         t: float,
         y: np.ndarray,
-        params: Dict[str, Any],
+        params: dict[str, Any],
     ) -> np.ndarray:
         """
         Compute dynamics for committee machine.
@@ -515,7 +508,7 @@ class OnlineCommitteeEquations(OnlineEquations):
         # For simplicity, assume k_student = k_teacher = 2
         # y = [Q11, Q12, Q22, M11, M12, M21, M22]
 
-        lr = params.get("lr", self.lr)
+        params.get("lr", self.lr)
 
         # This is a placeholder - full implementation needs
         # proper matrix dynamics
@@ -528,13 +521,11 @@ class OnlineCommitteeEquations(OnlineEquations):
         y: np.ndarray,
         **kwargs: Any,
     ) -> float:
-        """
-        Compute generalization error for committee machine.
-        """
+        """Compute generalization error for committee machine."""
         # Placeholder
         return np.sum(y**2) * 0.1
 
-    def get_order_param_names(self) -> List[str]:
+    def get_order_param_names(self) -> list[str]:
         """Return names of order parameters."""
         names = []
         for i in range(self.k_student):

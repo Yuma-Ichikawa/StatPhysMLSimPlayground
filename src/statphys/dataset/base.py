@@ -1,18 +1,16 @@
-"""
-Base classes for dataset generation.
-"""
+"""Base classes for dataset generation."""
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import torch
-import numpy as np
 
 
 class TeacherType(Enum):
     """Enum for different teacher model types."""
+
     LINEAR = "linear"
     COMMITTEE = "committee"
     MLP = "mlp"
@@ -23,11 +21,12 @@ class TeacherType(Enum):
 @dataclass
 class TeacherConfig:
     """Configuration for teacher model in data generation."""
+
     teacher_type: TeacherType = TeacherType.LINEAR
-    hidden_dim: Optional[int] = None  # For committee/MLP
-    num_heads: Optional[int] = None  # For transformer
+    hidden_dim: int | None = None  # For committee/MLP
+    num_heads: int | None = None  # For transformer
     activation: str = "relu"
-    extra_params: Dict[str, Any] = field(default_factory=dict)
+    extra_params: dict[str, Any] = field(default_factory=dict)
 
 
 class BaseDataset(ABC):
@@ -45,6 +44,7 @@ class BaseDataset(ABC):
     Subclasses must implement:
         - generate_sample(): Generate a single (x, y) pair
         - get_teacher_params(): Return teacher model parameters for order param computation
+
     """
 
     def __init__(
@@ -62,14 +62,15 @@ class BaseDataset(ABC):
             device: Device for tensor operations. Defaults to 'cpu'.
             dtype: Data type for tensors. Defaults to torch.float32.
             **kwargs: Additional keyword arguments for subclasses.
+
         """
         self.d = d
         self.device = torch.device(device)
         self.dtype = dtype
-        self._teacher_params: Dict[str, Any] = {}
+        self._teacher_params: dict[str, Any] = {}
 
     @abstractmethod
-    def generate_sample(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def generate_sample(self) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Generate a single data sample (x, y).
 
@@ -77,6 +78,7 @@ class BaseDataset(ABC):
             Tuple of:
                 - x: Input tensor of shape (d,)
                 - y: Output tensor (scalar or vector depending on task)
+
         """
         pass
 
@@ -84,7 +86,7 @@ class BaseDataset(ABC):
         self,
         n_samples: int,
         return_as_batch: bool = True,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Generate a dataset of n_samples.
 
@@ -96,6 +98,7 @@ class BaseDataset(ABC):
             Tuple of:
                 - X: Input tensor of shape (n_samples, d)
                 - y: Output tensor of shape (n_samples,) or (n_samples, output_dim)
+
         """
         X_list = []
         y_list = []
@@ -107,17 +110,21 @@ class BaseDataset(ABC):
 
         if return_as_batch:
             X = torch.stack(X_list, dim=0)
-            y = torch.stack(y_list, dim=0) if y_list[0].dim() > 0 else torch.tensor(
-                [yi.item() if yi.dim() == 0 else yi for yi in y_list],
-                device=self.device,
-                dtype=self.dtype,
+            y = (
+                torch.stack(y_list, dim=0)
+                if y_list[0].dim() > 0
+                else torch.tensor(
+                    [yi.item() if yi.dim() == 0 else yi for yi in y_list],
+                    device=self.device,
+                    dtype=self.dtype,
+                )
             )
             return X, y
         else:
             return X_list, y_list
 
     @abstractmethod
-    def get_teacher_params(self) -> Dict[str, Any]:
+    def get_teacher_params(self) -> dict[str, Any]:
         """
         Get teacher model parameters.
 
@@ -126,15 +133,17 @@ class BaseDataset(ABC):
 
         Returns:
             Dictionary containing teacher parameters (e.g., W0, rho, eta).
+
         """
         pass
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """
         Get dataset configuration as a dictionary.
 
         Returns:
             Dictionary containing dataset configuration.
+
         """
         return {
             "class": self.__class__.__name__,
@@ -149,7 +158,7 @@ class BaseDataset(ABC):
         return self.d
 
     @property
-    def teacher_params(self) -> Dict[str, Any]:
+    def teacher_params(self) -> dict[str, Any]:
         """Return teacher parameters."""
         return self._teacher_params
 
@@ -162,6 +171,7 @@ class BaseDataset(ABC):
 
         Returns:
             Self (for method chaining).
+
         """
         self.device = torch.device(device)
         # Move teacher parameters to new device

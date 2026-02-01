@@ -1,13 +1,11 @@
-"""
-Gaussian dataset implementations for regression and classification.
-"""
+"""Gaussian dataset implementations for regression and classification."""
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
-import torch
 import numpy as np
+import torch
 
-from statphys.dataset.base import BaseDataset, TeacherType
+from statphys.dataset.base import BaseDataset
 
 
 class GaussianDataset(BaseDataset):
@@ -25,6 +23,7 @@ class GaussianDataset(BaseDataset):
         rho: Norm of teacher weights (||W0||^2 / d).
         eta: Noise variance.
         W0: Teacher weight vector.
+
     """
 
     def __init__(
@@ -32,7 +31,7 @@ class GaussianDataset(BaseDataset):
         d: int,
         rho: float = 1.0,
         eta: float = 0.0,
-        W0: Optional[torch.Tensor] = None,
+        W0: torch.Tensor | None = None,
         device: str = "cpu",
         dtype: torch.dtype = torch.float32,
         **kwargs: Any,
@@ -47,6 +46,7 @@ class GaussianDataset(BaseDataset):
             W0: Teacher weights. If None, sampled from N(0, rho*I).
             device: Computation device.
             dtype: Data type.
+
         """
         super().__init__(d=d, device=device, dtype=dtype, **kwargs)
 
@@ -67,12 +67,13 @@ class GaussianDataset(BaseDataset):
             "eta": self.eta,
         }
 
-    def generate_sample(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def generate_sample(self) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Generate a single (x, y) sample.
 
         Returns:
             Tuple of input x (d,) and output y (scalar).
+
         """
         # Generate input x ~ N(0, I)
         x = torch.randn(self.d, device=self.device, dtype=self.dtype)
@@ -90,7 +91,7 @@ class GaussianDataset(BaseDataset):
 
         return x, y
 
-    def get_teacher_params(self) -> Dict[str, Any]:
+    def get_teacher_params(self) -> dict[str, Any]:
         """Return teacher parameters."""
         return {
             "W0": self.W0,
@@ -98,7 +99,7 @@ class GaussianDataset(BaseDataset):
             "eta": self.eta,
         }
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get dataset configuration."""
         config = super().get_config()
         config.update(
@@ -125,6 +126,7 @@ class GaussianClassificationDataset(BaseDataset):
         rho: Norm of teacher weights.
         flip_prob: Label flip probability for noisy classification.
         W0: Teacher weight vector.
+
     """
 
     def __init__(
@@ -132,7 +134,7 @@ class GaussianClassificationDataset(BaseDataset):
         d: int,
         rho: float = 1.0,
         flip_prob: float = 0.0,
-        W0: Optional[torch.Tensor] = None,
+        W0: torch.Tensor | None = None,
         device: str = "cpu",
         dtype: torch.dtype = torch.float32,
         **kwargs: Any,
@@ -147,6 +149,7 @@ class GaussianClassificationDataset(BaseDataset):
             W0: Teacher weights. If None, sampled from N(0, rho*I).
             device: Computation device.
             dtype: Data type.
+
         """
         super().__init__(d=d, device=device, dtype=dtype, **kwargs)
 
@@ -165,12 +168,13 @@ class GaussianClassificationDataset(BaseDataset):
             "flip_prob": self.flip_prob,
         }
 
-    def generate_sample(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def generate_sample(self) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Generate a single (x, y) sample.
 
         Returns:
             Tuple of input x (d,) and label y (+1 or -1).
+
         """
         x = torch.randn(self.d, device=self.device, dtype=self.dtype)
 
@@ -188,7 +192,7 @@ class GaussianClassificationDataset(BaseDataset):
 
         return x, y
 
-    def get_teacher_params(self) -> Dict[str, Any]:
+    def get_teacher_params(self) -> dict[str, Any]:
         """Return teacher parameters."""
         return {
             "W0": self.W0,
@@ -196,7 +200,7 @@ class GaussianClassificationDataset(BaseDataset):
             "flip_prob": self.flip_prob,
         }
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get dataset configuration."""
         config = super().get_config()
         config.update(
@@ -229,7 +233,7 @@ class GaussianMultiOutputDataset(BaseDataset):
         eta: float = 0.0,
         activation: str = "linear",
         aggregation: str = "mean",
-        W0: Optional[torch.Tensor] = None,
+        W0: torch.Tensor | None = None,
         device: str = "cpu",
         dtype: torch.dtype = torch.float32,
         **kwargs: Any,
@@ -247,6 +251,7 @@ class GaussianMultiOutputDataset(BaseDataset):
             W0: Teacher weights (k, d). If None, sampled from N(0, rho*I).
             device: Computation device.
             dtype: Data type.
+
         """
         super().__init__(d=d, device=device, dtype=dtype, **kwargs)
 
@@ -285,12 +290,13 @@ class GaussianMultiOutputDataset(BaseDataset):
         else:
             raise ValueError(f"Unknown activation: {self.activation}")
 
-    def generate_sample(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def generate_sample(self) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Generate a single (x, y) sample.
 
         Returns:
             Tuple of input x (d,) and output y (scalar or k-dim).
+
         """
         x = torch.randn(self.d, device=self.device, dtype=self.dtype)
 
@@ -320,11 +326,11 @@ class GaussianMultiOutputDataset(BaseDataset):
 
         return x, y
 
-    def get_teacher_params(self) -> Dict[str, Any]:
+    def get_teacher_params(self) -> dict[str, Any]:
         """Return teacher parameters."""
         return self._teacher_params
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get dataset configuration."""
         config = super().get_config()
         config.update(

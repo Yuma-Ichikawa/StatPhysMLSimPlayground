@@ -1,12 +1,9 @@
-"""
-Regression loss functions.
-"""
+"""Regression loss functions."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 import torch
 import torch.nn as nn
-import numpy as np
 
 from statphys.loss.base import BaseLoss
 
@@ -33,6 +30,7 @@ class MSELoss(BaseLoss):
         Args:
             reg_param: Regularization parameter (for L2/Ridge).
             reduction: Reduction method.
+
         """
         super().__init__(reg_param=reg_param, reduction=reduction, **kwargs)
 
@@ -66,6 +64,7 @@ class RidgeLoss(BaseLoss):
         Args:
             reg_param: Ridge parameter λ. Defaults to 0.01.
             reduction: Reduction method.
+
         """
         super().__init__(reg_param=reg_param, reduction=reduction, **kwargs)
 
@@ -99,6 +98,7 @@ class LassoLoss(BaseLoss):
         Args:
             reg_param: LASSO parameter λ. Defaults to 0.01.
             reduction: Reduction method.
+
         """
         super().__init__(reg_param=reg_param, reduction=reduction, **kwargs)
 
@@ -155,6 +155,7 @@ class ElasticNetLoss(BaseLoss):
             l1_ratio: Mixing parameter (0=Ridge, 1=LASSO). Defaults to 0.5.
             reg_param: Total regularization strength.
             reduction: Reduction method.
+
         """
         super().__init__(reg_param=reg_param, reduction=reduction, **kwargs)
         self.l1_ratio = l1_ratio
@@ -193,7 +194,7 @@ class ElasticNetLoss(BaseLoss):
 
         return reg
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get loss configuration."""
         config = super().get_config()
         config["l1_ratio"] = self.l1_ratio
@@ -224,6 +225,7 @@ class HuberLoss(BaseLoss):
             delta: Threshold for switching between quadratic and linear.
             reg_param: Regularization parameter.
             reduction: Reduction method.
+
         """
         super().__init__(reg_param=reg_param, reduction=reduction, **kwargs)
         self.delta = delta
@@ -239,7 +241,7 @@ class HuberLoss(BaseLoss):
         linear = self.delta * (diff - 0.5 * self.delta)
         return torch.where(diff <= self.delta, quadratic, linear)
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get loss configuration."""
         config = super().get_config()
         config["delta"] = self.delta
@@ -269,6 +271,7 @@ class PseudoHuberLoss(BaseLoss):
             delta: Scale parameter.
             reg_param: Regularization parameter.
             reduction: Reduction method.
+
         """
         super().__init__(reg_param=reg_param, reduction=reduction, **kwargs)
         self.delta = delta
@@ -282,7 +285,7 @@ class PseudoHuberLoss(BaseLoss):
         diff = (y_pred - y_true) / self.delta
         return self.delta**2 * (torch.sqrt(1 + diff**2) - 1)
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get loss configuration."""
         config = super().get_config()
         config["delta"] = self.delta

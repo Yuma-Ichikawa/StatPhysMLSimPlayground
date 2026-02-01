@@ -15,12 +15,13 @@ Example:
     >>> config = SimulationConfig(n_seeds=5, alpha_range=(0.1, 5.0))
     >>> sim = ReplicaSimulation(config)
     >>> results = sim.run(dataset, LinearRegression, loss_fn)
+
 """
 
-from statphys.simulation.config import SimulationConfig, TheoryType
 from statphys.simulation.base import BaseSimulation, SimulationResult
-from statphys.simulation.replica_sim import ReplicaSimulation
+from statphys.simulation.config import SimulationConfig, TheoryType
 from statphys.simulation.online_sim import OnlineSimulation
+from statphys.simulation.replica_sim import ReplicaSimulation
 from statphys.simulation.runner import SimulationRunner
 
 __all__ = [

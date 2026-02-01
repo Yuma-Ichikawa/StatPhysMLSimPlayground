@@ -1,13 +1,11 @@
-"""
-I/O utilities for saving and loading simulation results.
-"""
+"""I/O utilities for saving and loading simulation results."""
 
 import json
 import pickle
 from dataclasses import asdict, is_dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -32,8 +30,8 @@ class NumpyEncoder(json.JSONEncoder):
 
 
 def save_results(
-    results: Dict[str, Any],
-    filepath: Union[str, Path],
+    results: dict[str, Any],
+    filepath: str | Path,
     format: str = "auto",
 ) -> Path:
     """
@@ -50,6 +48,7 @@ def save_results(
     Example:
         >>> results = {"alpha": [0.1, 0.5, 1.0], "error": [0.5, 0.3, 0.1]}
         >>> save_results(results, "results.json")
+
     """
     filepath = Path(filepath)
     filepath.parent.mkdir(parents=True, exist_ok=True)
@@ -87,9 +86,9 @@ def save_results(
 
 
 def load_results(
-    filepath: Union[str, Path],
+    filepath: str | Path,
     format: str = "auto",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Load simulation results from file.
 
@@ -99,6 +98,7 @@ def load_results(
 
     Returns:
         Dictionary containing loaded results.
+
     """
     filepath = Path(filepath)
 
@@ -106,7 +106,7 @@ def load_results(
         format = filepath.suffix.lstrip(".")
 
     if format == "json":
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             return json.load(f)
 
     elif format == "pickle" or format == "pkl":
@@ -128,12 +128,13 @@ class ResultsManager:
     Attributes:
         base_dir: Base directory for storing results.
         experiment_name: Name of the experiment.
+
     """
 
     def __init__(
         self,
-        base_dir: Union[str, Path] = "./results",
-        experiment_name: Optional[str] = None,
+        base_dir: str | Path = "./results",
+        experiment_name: str | None = None,
     ):
         """
         Initialize ResultsManager.
@@ -141,6 +142,7 @@ class ResultsManager:
         Args:
             base_dir: Base directory for storing results.
             experiment_name: Name of the experiment. If None, uses timestamp.
+
         """
         self.base_dir = Path(base_dir)
         self.experiment_name = experiment_name or datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -148,7 +150,7 @@ class ResultsManager:
         self.experiment_dir.mkdir(parents=True, exist_ok=True)
 
         # Store metadata
-        self._metadata: Dict[str, Any] = {
+        self._metadata: dict[str, Any] = {
             "created_at": datetime.now().isoformat(),
             "experiment_name": self.experiment_name,
         }
@@ -156,7 +158,7 @@ class ResultsManager:
     def save(
         self,
         name: str,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         format: str = "json",
     ) -> Path:
         """
@@ -169,11 +171,12 @@ class ResultsManager:
 
         Returns:
             Path to saved file.
+
         """
         filepath = self.experiment_dir / name
         return save_results(data, filepath, format)
 
-    def load(self, name: str, format: str = "auto") -> Dict[str, Any]:
+    def load(self, name: str, format: str = "auto") -> dict[str, Any]:
         """
         Load data by name.
 
@@ -183,29 +186,30 @@ class ResultsManager:
 
         Returns:
             Loaded data.
+
         """
         filepath = self.experiment_dir / name
         return load_results(filepath, format)
 
-    def save_config(self, config: Dict[str, Any]) -> Path:
+    def save_config(self, config: dict[str, Any]) -> Path:
         """Save experiment configuration."""
         return self.save("config", config, format="json")
 
-    def save_theory_results(self, results: Dict[str, Any]) -> Path:
+    def save_theory_results(self, results: dict[str, Any]) -> Path:
         """Save theory computation results."""
         return self.save("theory_results", results, format="json")
 
-    def save_experiment_results(self, results: Dict[str, Any]) -> Path:
+    def save_experiment_results(self, results: dict[str, Any]) -> Path:
         """Save numerical experiment results."""
         return self.save("experiment_results", results, format="npz")
 
-    def save_metadata(self, metadata: Dict[str, Any]) -> Path:
+    def save_metadata(self, metadata: dict[str, Any]) -> Path:
         """Update and save metadata."""
         self._metadata.update(metadata)
         self._metadata["updated_at"] = datetime.now().isoformat()
         return self.save("metadata", self._metadata, format="json")
 
-    def to_dataframe(self, results: Dict[str, Any]) -> pd.DataFrame:
+    def to_dataframe(self, results: dict[str, Any]) -> pd.DataFrame:
         """
         Convert results to pandas DataFrame.
 
@@ -214,6 +218,7 @@ class ResultsManager:
 
         Returns:
             DataFrame with results.
+
         """
         return pd.DataFrame(results)
 

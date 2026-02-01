@@ -1,10 +1,7 @@
-"""
-Pytest configuration and shared fixtures for StatPhys-ML tests.
-"""
+"""Pytest configuration and shared fixtures for StatPhys-ML tests."""
 
 import pytest
 import torch
-import numpy as np
 
 from statphys.utils import fix_seed
 

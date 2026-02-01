@@ -32,72 +32,72 @@ Example:
     >>> from statphys.vis import ComparisonPlotter
     >>> plotter = ComparisonPlotter()
     >>> plotter.plot_theory_vs_experiment(results)
+
 """
 
 __version__ = "0.1.0"
 __author__ = "Yuma Ichikawa"
 
-# Core imports for convenient access
-from statphys.utils.seed import fix_seed, get_device
-from statphys.utils.io import save_results, load_results, ResultsManager
-
 # Dataset imports
 from statphys.dataset import (
-    GaussianDataset,
     GaussianClassificationDataset,
+    GaussianDataset,
     SparseDataset,
     get_dataset,
 )
 
+# Loss imports
+from statphys.loss import (
+    HingeLoss,
+    LassoLoss,
+    LogisticLoss,
+    MSELoss,
+    RidgeLoss,
+    get_loss,
+)
+
 # Model imports
 from statphys.model import (
-    LinearRegression,
-    LinearClassifier,
-    RidgeRegression,
     CommitteeMachine,
+    LinearClassifier,
+    LinearRegression,
+    RidgeRegression,
     TwoLayerNetwork,
     get_model,
 )
 
-# Loss imports
-from statphys.loss import (
-    MSELoss,
-    RidgeLoss,
-    LassoLoss,
-    HingeLoss,
-    LogisticLoss,
-    get_loss,
-)
-
 # Simulation imports
 from statphys.simulation import (
-    SimulationConfig,
-    ReplicaSimulation,
     OnlineSimulation,
+    ReplicaSimulation,
+    SimulationConfig,
     SimulationRunner,
 )
 
 # Theory imports
 from statphys.theory import (
-    SaddlePointSolver,
     ODESolver,
+    SaddlePointSolver,
     TheoryResult,
 )
+from statphys.utils.io import ResultsManager, load_results, save_results
+
+# Core imports for convenient access
+from statphys.utils.seed import fix_seed, get_device
 
 # Visualization imports
-from statphys.vis import (
-    Plotter,
+from statphys.vis import (  # Default plotting functions
     ComparisonPlotter,
     OrderParamPlotter,
     PhaseDiagramPlotter,
-    # Default plotting functions
+    Plotter,
     apply_paper_style,
-    plot_generalization_error_alpha,
-    plot_order_params_alpha,
-    plot_generalization_error_time,
-    plot_order_params_time,
-    plot_from_replica_results,
     plot_from_online_results,
+    plot_from_replica_results,
+    plot_generalization_error_alpha,
+    plot_generalization_error_time,
+    plot_order_params_alpha,
+    plot_order_params_time,
 )
 
 __all__ = [

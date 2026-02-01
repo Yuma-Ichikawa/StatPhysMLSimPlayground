@@ -1,15 +1,11 @@
-"""
-Tests for model module.
-"""
+"""Tests for model module."""
 
-import pytest
 import torch
-import numpy as np
 
 from statphys.model import (
-    LinearRegression,
-    LinearClassifier,
     CommitteeMachine,
+    LinearClassifier,
+    LinearRegression,
     SoftCommitteeMachine,
     TwoLayerNetwork,
     get_model,
@@ -90,7 +86,7 @@ class TestLinearClassifier:
 
         # Logit output
         model_logit = LinearClassifier(d=d, output_type="logit")
-        y_logit = model_logit(x)
+        model_logit(x)
         # Logits can be any real value
 
         # Probability output

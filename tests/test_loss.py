@@ -1,17 +1,15 @@
-"""
-Tests for loss module.
-"""
+"""Tests for loss module."""
 
 import pytest
 import torch
 import torch.nn as nn
 
 from statphys.loss import (
+    HingeLoss,
+    LassoLoss,
+    LogisticLoss,
     MSELoss,
     RidgeLoss,
-    LassoLoss,
-    HingeLoss,
-    LogisticLoss,
     get_loss,
 )
 
@@ -37,7 +35,7 @@ class TestMSELoss:
         y_true = torch.tensor([2.0, 3.0, 4.0])
 
         loss = loss_fn(y_pred, y_true)
-        expected = ((1.0**2 + 1.0**2 + 1.0**2) / 3)  # Mean of squared errors
+        expected = (1.0**2 + 1.0**2 + 1.0**2) / 3  # Mean of squared errors
         assert loss.item() == pytest.approx(expected, abs=1e-6)
 
 
@@ -59,7 +57,7 @@ class TestRidgeLoss:
         loss = loss_fn(y_pred, y_true, model=model)
 
         # Should include regularization term
-        expected_reg = reg_param * torch.sum(model.weight**2).item()
+        reg_param * torch.sum(model.weight**2).item()
         assert loss.item() > 0  # Should be positive due to regularization
 
 
@@ -137,4 +135,4 @@ class TestRegistry:
         """Test loss aliases."""
         mse = get_loss("mse")
         l2 = get_loss("l2")
-        assert type(mse) == type(l2)
+        assert type(mse) is type(l2)

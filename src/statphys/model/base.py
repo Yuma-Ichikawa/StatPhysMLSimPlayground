@@ -1,13 +1,10 @@
-"""
-Base classes for models.
-"""
+"""Base classes for models."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any
 
 import torch
 import torch.nn as nn
-import numpy as np
 
 
 class OrderParamsMixin:
@@ -27,6 +24,7 @@ class OrderParamsMixin:
 
         Returns:
             Self-overlap value.
+
         """
         if not hasattr(self, "get_weight_vector"):
             raise NotImplementedError("Model must implement get_weight_vector()")
@@ -52,6 +50,7 @@ class OrderParamsMixin:
 
         Returns:
             Teacher overlap value.
+
         """
         if not hasattr(self, "get_weight_vector"):
             raise NotImplementedError("Model must implement get_weight_vector()")
@@ -79,6 +78,7 @@ class BaseModel(nn.Module, OrderParamsMixin, ABC):
         - forward(): Forward pass
         - get_weight_vector(): Return learnable weights as a flat vector
         - compute_order_params(): Compute model-specific order parameters
+
     """
 
     def __init__(self, d: int, **kwargs: Any):
@@ -88,6 +88,7 @@ class BaseModel(nn.Module, OrderParamsMixin, ABC):
         Args:
             d: Input dimension.
             **kwargs: Additional arguments for subclasses.
+
         """
         super().__init__()
         self.d = d
@@ -102,6 +103,7 @@ class BaseModel(nn.Module, OrderParamsMixin, ABC):
 
         Returns:
             Output tensor.
+
         """
         pass
 
@@ -112,14 +114,15 @@ class BaseModel(nn.Module, OrderParamsMixin, ABC):
 
         Returns:
             Weight tensor (flattened if necessary).
+
         """
         pass
 
     def compute_order_params(
         self,
-        teacher_params: Dict[str, Any],
+        teacher_params: dict[str, Any],
         include_generalization_error: bool = True,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Compute order parameters for the model.
 
@@ -129,6 +132,7 @@ class BaseModel(nn.Module, OrderParamsMixin, ABC):
 
         Returns:
             Dictionary of order parameters.
+
         """
         W0 = teacher_params.get("W0")
         rho = teacher_params.get("rho", 1.0)
@@ -154,12 +158,13 @@ class BaseModel(nn.Module, OrderParamsMixin, ABC):
 
         return result
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """
         Get model configuration as a dictionary.
 
         Returns:
             Dictionary containing model configuration.
+
         """
         return {
             "class": self.__class__.__name__,

@@ -1,13 +1,10 @@
-"""
-Classification loss functions.
-"""
+"""Classification loss functions."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import numpy as np
+import torch
+import torch.nn.functional as F
 
 from statphys.loss.base import BaseLoss
 
@@ -35,6 +32,7 @@ class CrossEntropyLoss(BaseLoss):
             reg_param: L2 regularization parameter.
             reduction: Reduction method.
             label_smoothing: Label smoothing factor.
+
         """
         super().__init__(reg_param=reg_param, reduction=reduction, **kwargs)
         self.label_smoothing = label_smoothing
@@ -56,7 +54,7 @@ class CrossEntropyLoss(BaseLoss):
         # Compute BCE with logits for numerical stability
         return F.binary_cross_entropy_with_logits(y_pred, y_true, reduction="none")
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get loss configuration."""
         config = super().get_config()
         config["label_smoothing"] = self.label_smoothing
@@ -84,6 +82,7 @@ class LogisticLoss(BaseLoss):
         Args:
             reg_param: L2 regularization parameter.
             reduction: Reduction method.
+
         """
         super().__init__(reg_param=reg_param, reduction=reduction, **kwargs)
 
@@ -120,6 +119,7 @@ class HingeLoss(BaseLoss):
             margin: Margin parameter. Defaults to 1.0.
             reg_param: L2 regularization parameter.
             reduction: Reduction method.
+
         """
         super().__init__(reg_param=reg_param, reduction=reduction, **kwargs)
         self.margin = margin
@@ -132,7 +132,7 @@ class HingeLoss(BaseLoss):
         """Compute hinge loss."""
         return torch.relu(self.margin - y_true * y_pred)
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get loss configuration."""
         config = super().get_config()
         config["margin"] = self.margin
@@ -162,6 +162,7 @@ class SquaredHingeLoss(BaseLoss):
             margin: Margin parameter.
             reg_param: L2 regularization parameter.
             reduction: Reduction method.
+
         """
         super().__init__(reg_param=reg_param, reduction=reduction, **kwargs)
         self.margin = margin
@@ -197,6 +198,7 @@ class PerceptronLoss(BaseLoss):
         Args:
             reg_param: L2 regularization parameter.
             reduction: Reduction method.
+
         """
         super().__init__(reg_param=reg_param, reduction=reduction, **kwargs)
 
@@ -230,6 +232,7 @@ class ExponentialLoss(BaseLoss):
         Args:
             reg_param: L2 regularization parameter.
             reduction: Reduction method.
+
         """
         super().__init__(reg_param=reg_param, reduction=reduction, **kwargs)
 
@@ -266,6 +269,7 @@ class RampLoss(BaseLoss):
             margin: Margin parameter.
             reg_param: L2 regularization parameter.
             reduction: Reduction method.
+
         """
         super().__init__(reg_param=reg_param, reduction=reduction, **kwargs)
         self.margin = margin
@@ -307,6 +311,7 @@ class ProbitLoss(BaseLoss):
             reg_param: L2 regularization parameter.
             reduction: Reduction method.
             eps: Small value for numerical stability.
+
         """
         super().__init__(reg_param=reg_param, reduction=reduction, **kwargs)
         self.eps = eps
@@ -357,6 +362,7 @@ class SoftmaxCrossEntropyLoss(BaseLoss):
             reg_param: L2 regularization parameter.
             reduction: Reduction method.
             label_smoothing: Label smoothing factor (0 to 1).
+
         """
         super().__init__(reg_param=reg_param, reduction=reduction, **kwargs)
         self.label_smoothing = label_smoothing
@@ -375,6 +381,7 @@ class SoftmaxCrossEntropyLoss(BaseLoss):
 
         Returns:
             Loss values.
+
         """
         if y_pred.dim() == 1:
             y_pred = y_pred.unsqueeze(0)
@@ -388,8 +395,9 @@ class SoftmaxCrossEntropyLoss(BaseLoss):
             n_classes = y_pred.size(-1)
             smooth_targets = torch.zeros_like(y_pred)
             smooth_targets.scatter_(1, y_true.unsqueeze(1), 1.0)
-            smooth_targets = smooth_targets * (1 - self.label_smoothing) + \
-                           self.label_smoothing / n_classes
+            smooth_targets = (
+                smooth_targets * (1 - self.label_smoothing) + self.label_smoothing / n_classes
+            )
 
             log_probs = F.log_softmax(y_pred, dim=-1)
             loss = -(smooth_targets * log_probs).sum(dim=-1)
@@ -398,7 +406,7 @@ class SoftmaxCrossEntropyLoss(BaseLoss):
 
         return loss
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get loss configuration."""
         config = super().get_config()
         config["label_smoothing"] = self.label_smoothing
@@ -428,6 +436,7 @@ class MultiMarginLoss(BaseLoss):
             margin: Margin parameter.
             reg_param: L2 regularization parameter.
             reduction: Reduction method.
+
         """
         super().__init__(reg_param=reg_param, reduction=reduction, **kwargs)
         self.margin = margin
@@ -446,6 +455,7 @@ class MultiMarginLoss(BaseLoss):
 
         Returns:
             Loss values.
+
         """
         if y_pred.dim() == 1:
             y_pred = y_pred.unsqueeze(0)

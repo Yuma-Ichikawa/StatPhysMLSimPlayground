@@ -1,17 +1,13 @@
-"""
-Phase diagram visualization.
-"""
+"""Phase diagram visualization."""
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 from matplotlib.colors import Normalize
-from matplotlib import cm
+from matplotlib.figure import Figure
 
-from statphys.vis.plotter import Plotter, PlotStyle
+from statphys.vis.plotter import PlotStyle, Plotter
 
 
 class PhaseDiagramPlotter(Plotter):
@@ -24,7 +20,7 @@ class PhaseDiagramPlotter(Plotter):
 
     def __init__(
         self,
-        style: Optional[PlotStyle] = None,
+        style: PlotStyle | None = None,
         cmap: str = "viridis",
     ):
         """
@@ -33,6 +29,7 @@ class PhaseDiagramPlotter(Plotter):
         Args:
             style: Plot style.
             cmap: Colormap for heatmaps.
+
         """
         super().__init__(style)
         self.cmap = cmap
@@ -42,14 +39,14 @@ class PhaseDiagramPlotter(Plotter):
         x_values: np.ndarray,
         y_values: np.ndarray,
         z_values: np.ndarray,
-        ax: Optional[Axes] = None,
+        ax: Axes | None = None,
         xlabel: str = r"$\alpha$",
         ylabel: str = r"$\lambda$",
         zlabel: str = r"$E_g$",
-        vmin: Optional[float] = None,
-        vmax: Optional[float] = None,
+        vmin: float | None = None,
+        vmax: float | None = None,
         **kwargs: Any,
-    ) -> Tuple[Figure, Axes]:
+    ) -> tuple[Figure, Axes]:
         """
         Plot 2D heatmap.
 
@@ -66,6 +63,7 @@ class PhaseDiagramPlotter(Plotter):
 
         Returns:
             Tuple of (Figure, Axes).
+
         """
         if ax is None:
             fig, ax = self.create_figure()
@@ -92,14 +90,14 @@ class PhaseDiagramPlotter(Plotter):
         x_values: np.ndarray,
         y_values: np.ndarray,
         z_values: np.ndarray,
-        ax: Optional[Axes] = None,
+        ax: Axes | None = None,
         levels: int = 10,
         xlabel: str = r"$\alpha$",
         ylabel: str = r"$\lambda$",
         zlabel: str = r"$E_g$",
         filled: bool = True,
         **kwargs: Any,
-    ) -> Tuple[Figure, Axes]:
+    ) -> tuple[Figure, Axes]:
         """
         Plot contour plot.
 
@@ -115,6 +113,7 @@ class PhaseDiagramPlotter(Plotter):
 
         Returns:
             Tuple of (Figure, Axes).
+
         """
         if ax is None:
             fig, ax = self.create_figure()
@@ -140,15 +139,15 @@ class PhaseDiagramPlotter(Plotter):
         self,
         x_values: np.ndarray,
         boundary_values: np.ndarray,
-        ax: Optional[Axes] = None,
+        ax: Axes | None = None,
         label: str = "Phase boundary",
         fill_below: bool = True,
         fill_alpha: float = 0.3,
-        fill_color: Optional[str] = None,
+        fill_color: str | None = None,
         xlabel: str = r"$\alpha$",
         ylabel: str = r"$\lambda_c$",
         **kwargs: Any,
-    ) -> Tuple[Figure, Axes]:
+    ) -> tuple[Figure, Axes]:
         """
         Plot phase boundary line.
 
@@ -165,6 +164,7 @@ class PhaseDiagramPlotter(Plotter):
 
         Returns:
             Tuple of (Figure, Axes).
+
         """
         if ax is None:
             fig, ax = self.create_figure()
@@ -202,11 +202,11 @@ class PhaseDiagramPlotter(Plotter):
         self,
         alpha_values: np.ndarray,
         lambda_values: np.ndarray,
-        order_params: Dict[str, np.ndarray],
+        order_params: dict[str, np.ndarray],
         param: str = "m",
-        ax: Optional[Axes] = None,
+        ax: Axes | None = None,
         **kwargs: Any,
-    ) -> Tuple[Figure, Axes]:
+    ) -> tuple[Figure, Axes]:
         """
         Plot order parameter as function of two parameters.
 
@@ -220,6 +220,7 @@ class PhaseDiagramPlotter(Plotter):
 
         Returns:
             Tuple of (Figure, Axes).
+
         """
         z_values = order_params[param]
 
@@ -238,11 +239,11 @@ class PhaseDiagramPlotter(Plotter):
         self,
         critical_alpha: np.ndarray,
         critical_lambda: np.ndarray,
-        ax: Optional[Axes] = None,
+        ax: Axes | None = None,
         label: str = "Critical line",
-        regions: Optional[Dict[str, str]] = None,
+        regions: dict[str, str] | None = None,
         **kwargs: Any,
-    ) -> Tuple[Figure, Axes]:
+    ) -> tuple[Figure, Axes]:
         """
         Plot critical line separating phases.
 
@@ -256,6 +257,7 @@ class PhaseDiagramPlotter(Plotter):
 
         Returns:
             Tuple of (Figure, Axes).
+
         """
         if ax is None:
             fig, ax = self.create_figure()

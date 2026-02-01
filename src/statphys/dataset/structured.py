@@ -1,11 +1,9 @@
-"""
-Structured dataset implementations with correlated inputs.
-"""
+"""Structured dataset implementations with correlated inputs."""
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
-import torch
 import numpy as np
+import torch
 
 from statphys.dataset.base import BaseDataset
 
@@ -23,10 +21,10 @@ class StructuredDataset(BaseDataset):
     def __init__(
         self,
         d: int,
-        cov_matrix: Optional[torch.Tensor] = None,
+        cov_matrix: torch.Tensor | None = None,
         rho: float = 1.0,
         eta: float = 0.0,
-        W0: Optional[torch.Tensor] = None,
+        W0: torch.Tensor | None = None,
         device: str = "cpu",
         dtype: torch.dtype = torch.float32,
         **kwargs: Any,
@@ -42,6 +40,7 @@ class StructuredDataset(BaseDataset):
             W0: Teacher weights.
             device: Computation device.
             dtype: Data type.
+
         """
         super().__init__(d=d, device=device, dtype=dtype, **kwargs)
 
@@ -70,7 +69,7 @@ class StructuredDataset(BaseDataset):
             "cov_matrix": self.cov_matrix,
         }
 
-    def generate_sample(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def generate_sample(self) -> tuple[torch.Tensor, torch.Tensor]:
         """Generate a single sample with correlated inputs."""
         # Sample z ~ N(0, I) and transform to x ~ N(0, Sigma)
         z = torch.randn(self.d, device=self.device, dtype=self.dtype)
@@ -89,7 +88,7 @@ class StructuredDataset(BaseDataset):
 
         return x, y
 
-    def get_teacher_params(self) -> Dict[str, Any]:
+    def get_teacher_params(self) -> dict[str, Any]:
         """Return teacher parameters."""
         return self._teacher_params
 
@@ -110,7 +109,7 @@ class CorrelatedGaussianDataset(BaseDataset):
         correlation: float = 0.5,
         teacher_rho: float = 1.0,
         eta: float = 0.0,
-        W0: Optional[torch.Tensor] = None,
+        W0: torch.Tensor | None = None,
         device: str = "cpu",
         dtype: torch.dtype = torch.float32,
         **kwargs: Any,
@@ -126,6 +125,7 @@ class CorrelatedGaussianDataset(BaseDataset):
             W0: Teacher weights.
             device: Computation device.
             dtype: Data type.
+
         """
         super().__init__(d=d, device=device, dtype=dtype, **kwargs)
 
@@ -156,7 +156,7 @@ class CorrelatedGaussianDataset(BaseDataset):
             "cov_matrix": self.cov_matrix,
         }
 
-    def generate_sample(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def generate_sample(self) -> tuple[torch.Tensor, torch.Tensor]:
         """Generate a sample with exponentially correlated inputs."""
         z = torch.randn(self.d, device=self.device, dtype=self.dtype)
         x = self._cholesky @ z
@@ -173,7 +173,7 @@ class CorrelatedGaussianDataset(BaseDataset):
 
         return x, y
 
-    def get_teacher_params(self) -> Dict[str, Any]:
+    def get_teacher_params(self) -> dict[str, Any]:
         """Return teacher parameters."""
         return self._teacher_params
 
@@ -193,11 +193,11 @@ class SpikedCovarianceDataset(BaseDataset):
         self,
         d: int,
         n_spikes: int = 1,
-        spike_strengths: Optional[list[float]] = None,
-        spike_directions: Optional[torch.Tensor] = None,
+        spike_strengths: list[float] | None = None,
+        spike_directions: torch.Tensor | None = None,
         rho: float = 1.0,
         eta: float = 0.0,
-        W0: Optional[torch.Tensor] = None,
+        W0: torch.Tensor | None = None,
         device: str = "cpu",
         dtype: torch.dtype = torch.float32,
         **kwargs: Any,
@@ -215,6 +215,7 @@ class SpikedCovarianceDataset(BaseDataset):
             W0: Teacher weights.
             device: Computation device.
             dtype: Data type.
+
         """
         super().__init__(d=d, device=device, dtype=dtype, **kwargs)
 
@@ -260,7 +261,7 @@ class SpikedCovarianceDataset(BaseDataset):
             "cov_matrix": self.cov_matrix,
         }
 
-    def generate_sample(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def generate_sample(self) -> tuple[torch.Tensor, torch.Tensor]:
         """Generate a sample from spiked covariance model."""
         z = torch.randn(self.d, device=self.device, dtype=self.dtype)
         x = self._cholesky @ z
@@ -277,6 +278,6 @@ class SpikedCovarianceDataset(BaseDataset):
 
         return x, y
 
-    def get_teacher_params(self) -> Dict[str, Any]:
+    def get_teacher_params(self) -> dict[str, Any]:
         """Return teacher parameters."""
         return self._teacher_params

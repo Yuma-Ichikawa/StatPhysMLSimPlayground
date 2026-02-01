@@ -102,7 +102,16 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "D", "UP", "B", "C4", "SIM"]
-ignore = ["D100", "D104", "D107", "D203", "D213"]
+ignore = [
+    "D100", "D102", "D104", "D105", "D107",  # Missing docstrings
+    "D200",  # One-line docstring should fit on one line
+    "D203", "D212", "D213",  # Docstring formatting
+    "D400", "D401", "D415", "D417",  # Docstring content
+    "N802", "N803", "N806", "N812",  # Naming conventions (allow math notation like W0, X, H)
+    "E741",  # Ambiguous variable name (allow l for lambda)
+    "E501",  # Line too long (handled by black)
+    "SIM108",  # Use ternary operator
+]
 
 # isort configuration
 [tool.isort]

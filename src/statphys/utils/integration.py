@@ -12,15 +12,16 @@ All functions support:
 - Choice of integration method (quadrature, hermite, monte_carlo)
 """
 
-from typing import Callable, Optional, Union, Tuple, List
+from collections.abc import Callable
+
 import numpy as np
 from scipy import integrate
 from scipy.special import roots_hermite
 
-
 # =============================================================================
 # Univariate Gaussian Integration
 # =============================================================================
+
 
 def gaussian_integral_1d(
     func: Callable[[float], float],
@@ -28,7 +29,7 @@ def gaussian_integral_1d(
     variance: float = 1.0,
     method: str = "hermite",
     n_points: int = 100,
-    limits: Tuple[float, float] = (-np.inf, np.inf),
+    limits: tuple[float, float] = (-np.inf, np.inf),
 ) -> float:
     """
     Compute univariate Gaussian integral: E[f(z)] where z ~ N(mean, variance).
@@ -56,6 +57,7 @@ def gaussian_integral_1d(
         >>> # E[z] for z ~ N(3, 2) should be 3
         >>> gaussian_integral_1d(lambda z: z, mean=3, variance=2)
         3.0
+
     """
     std = np.sqrt(variance)
 
@@ -114,10 +116,11 @@ def gaussian_expectation(
 # Bivariate Gaussian Integration
 # =============================================================================
 
+
 def gaussian_integral_2d(
     func: Callable[[float, float], float],
-    mean: Optional[np.ndarray] = None,
-    cov: Optional[np.ndarray] = None,
+    mean: np.ndarray | None = None,
+    cov: np.ndarray | None = None,
     method: str = "hermite",
     n_points: int = 50,
 ) -> float:
@@ -142,6 +145,7 @@ def gaussian_integral_2d(
         >>> cov = np.array([[1, 0.5], [0.5, 1]])
         >>> gaussian_integral_2d(lambda z1, z2: z1 * z2, cov=cov)
         0.5
+
     """
     if mean is None:
         mean = np.zeros(2)
@@ -164,8 +168,8 @@ def gaussian_integral_2d(
         points = np.sqrt(2) * points  # Scale for standard Hermite
 
         result = 0.0
-        for i, (x1, w1) in enumerate(zip(points, weights)):
-            for j, (x2, w2) in enumerate(zip(points, weights)):
+        for _i, (x1, w1) in enumerate(zip(points, weights, strict=False)):
+            for _j, (x2, w2) in enumerate(zip(points, weights, strict=False)):
                 # Transform to correlated Gaussian
                 x_vec = np.array([x1, x2])
                 z = L @ x_vec + mean
@@ -212,10 +216,11 @@ def gaussian_integral_2d(
 # Multivariate Gaussian Integration (General Dimension)
 # =============================================================================
 
+
 def gaussian_integral_nd(
     func: Callable[[np.ndarray], float],
-    mean: Optional[np.ndarray] = None,
-    cov: Optional[np.ndarray] = None,
+    mean: np.ndarray | None = None,
+    cov: np.ndarray | None = None,
     dim: int = 2,
     method: str = "monte_carlo",
     n_points: int = 10000,
@@ -237,6 +242,7 @@ def gaussian_integral_nd(
 
     Returns:
         Integral value.
+
     """
     # Determine dimension from mean if provided
     if mean is not None:
@@ -246,10 +252,7 @@ def gaussian_integral_nd(
         d = dim
         mean = np.zeros(d)
 
-    if cov is None:
-        cov = np.eye(d)
-    else:
-        cov = np.asarray(cov)
+    cov = np.eye(d) if cov is None else np.asarray(cov)
 
     if method == "monte_carlo":
         samples = np.random.multivariate_normal(mean, cov, n_points)
@@ -272,6 +275,7 @@ def gaussian_integral_nd(
 
         # Generate all tensor product combinations
         from itertools import product
+
         grid = list(product(range(n_per_dim), repeat=d))
 
         result = 0.0
@@ -290,6 +294,7 @@ def gaussian_integral_nd(
 # =============================================================================
 # Specialized Integrals for Statistical Mechanics
 # =============================================================================
+
 
 def teacher_student_integral(
     func: Callable[[float, float], float],
@@ -317,16 +322,14 @@ def teacher_student_integral(
 
     Returns:
         Integral value.
+
     """
     # Covariance matrix for (u, z)
     # Var(u) = rho, Var(z) = q, Cov(u, z) = m
-    cov = np.array([
-        [rho, m],
-        [m, q]
-    ])
+    cov = np.array([[rho, m], [m, q]])
 
     # Ensure positive definiteness
-    if rho * q - m ** 2 < 0:
+    if rho * q - m**2 < 0:
         # Clip correlation to valid range
         max_m = np.sqrt(rho * q) * 0.999
         m_clipped = np.clip(m, -max_m, max_m)
@@ -364,22 +367,26 @@ def conditional_expectation(
 
     Returns:
         Conditional expectation value.
+
     """
     if conditional_on == "teacher":
         # E[f(z) | u = given_value]
         cond_mean = (m / (rho + 1e-10)) * given_value
-        cond_var = max(q - m ** 2 / (rho + 1e-10), 1e-10)
+        cond_var = max(q - m**2 / (rho + 1e-10), 1e-10)
     else:
         # E[f(u) | z = given_value]
         cond_mean = (m / (q + 1e-10)) * given_value
-        cond_var = max(rho - m ** 2 / (q + 1e-10), 1e-10)
+        cond_var = max(rho - m**2 / (q + 1e-10), 1e-10)
 
-    return gaussian_integral_1d(func, mean=cond_mean, variance=cond_var, method=method, n_points=n_points)
+    return gaussian_integral_1d(
+        func, mean=cond_mean, variance=cond_var, method=method, n_points=n_points
+    )
 
 
 # =============================================================================
 # Integration with Specific Distributions
 # =============================================================================
+
 
 def logistic_gaussian_integral(
     func: Callable[[float, float], float],
@@ -403,12 +410,13 @@ def logistic_gaussian_integral(
 
     Returns:
         Integral value.
+
     """
     from statphys.utils.special_functions import sigmoid
 
     def integrand(u, z_noise):
         # Student field given teacher field
-        cond_var = max(q - m ** 2 / (rho + 1e-10), 1e-10)
+        cond_var = max(q - m**2 / (rho + 1e-10), 1e-10)
         z = (m / np.sqrt(rho + 1e-10)) * u + np.sqrt(cond_var) * z_noise
 
         # Logistic probability
@@ -419,4 +427,6 @@ def logistic_gaussian_integral(
 
     # Integrate over independent standard normals
     cov = np.array([[rho, 0], [0, 1]])
-    return gaussian_integral_2d(integrand, mean=np.zeros(2), cov=cov, method=method, n_points=n_points)
+    return gaussian_integral_2d(
+        integrand, mean=np.zeros(2), cov=cov, method=method, n_points=n_points
+    )

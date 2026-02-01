@@ -4,12 +4,12 @@ Softmax (Multinomial Logistic) Regression model.
 Standard model for multi-class classification with K classes.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
 
 from statphys.model.base import BaseModel
 
@@ -28,6 +28,7 @@ class SoftmaxRegression(BaseModel):
         d: Input dimension.
         n_classes: Number of classes (K).
         W: Weight matrix (K, d).
+
     """
 
     def __init__(
@@ -46,6 +47,7 @@ class SoftmaxRegression(BaseModel):
             n_classes: Number of classes (K).
             init_scale: Scale for weight initialization.
             init_method: Initialization method ('normal', 'xavier', 'orthogonal').
+
         """
         super().__init__(d=d, **kwargs)
 
@@ -82,6 +84,7 @@ class SoftmaxRegression(BaseModel):
 
         Returns:
             Probabilities or logits of shape (batch_size, K) or (K,).
+
         """
         if x.dim() == 1:
             x = x.unsqueeze(0)
@@ -92,10 +95,7 @@ class SoftmaxRegression(BaseModel):
         # Compute logits: z_k = (1/sqrt(d)) * w_k^T @ x
         logits = (x @ self.W.T) / np.sqrt(self.d)  # (batch_size, K)
 
-        if return_logits:
-            output = logits
-        else:
-            output = F.softmax(logits, dim=-1)
+        output = logits if return_logits else F.softmax(logits, dim=-1)
 
         if squeeze_output:
             return output.squeeze(0)
@@ -110,6 +110,7 @@ class SoftmaxRegression(BaseModel):
 
         Returns:
             Predicted class indices.
+
         """
         logits = self.forward(x, return_logits=True)
         return torch.argmax(logits, dim=-1)
@@ -124,9 +125,9 @@ class SoftmaxRegression(BaseModel):
 
     def compute_order_params(
         self,
-        teacher_params: Dict[str, Any],
+        teacher_params: dict[str, Any],
         include_generalization_error: bool = True,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Compute order parameters for multi-class model.
 
@@ -140,13 +141,15 @@ class SoftmaxRegression(BaseModel):
 
         Returns:
             Dictionary of order parameters.
+
         """
         # Self-overlap matrix
         Q = (self.W @ self.W.T / self.d).detach()
 
         result = {
             "Q_diag_mean": Q.diag().mean().item(),  # Average self-overlap
-            "Q_offdiag_mean": (Q.sum() - Q.diag().sum()).item() / (self.n_classes * (self.n_classes - 1)),
+            "Q_offdiag_mean": (Q.sum() - Q.diag().sum()).item()
+            / (self.n_classes * (self.n_classes - 1)),
         }
 
         # Teacher overlap if available
@@ -158,14 +161,16 @@ class SoftmaxRegression(BaseModel):
 
         return result
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get model configuration."""
         config = super().get_config()
-        config.update({
-            "n_classes": self.n_classes,
-            "init_scale": self.init_scale,
-            "init_method": self.init_method,
-        })
+        config.update(
+            {
+                "n_classes": self.n_classes,
+                "init_scale": self.init_scale,
+                "init_method": self.init_method,
+            }
+        )
         return config
 
 
@@ -188,11 +193,7 @@ class SoftmaxRegressionWithBias(SoftmaxRegression):
     ):
         """Initialize with bias."""
         super().__init__(
-            d=d,
-            n_classes=n_classes,
-            init_scale=init_scale,
-            init_method=init_method,
-            **kwargs
+            d=d, n_classes=n_classes, init_scale=init_scale, init_method=init_method, **kwargs
         )
 
         # Bias terms
@@ -212,10 +213,7 @@ class SoftmaxRegressionWithBias(SoftmaxRegression):
 
         logits = (x @ self.W.T) / np.sqrt(self.d) + self.bias
 
-        if return_logits:
-            output = logits
-        else:
-            output = F.softmax(logits, dim=-1)
+        output = logits if return_logits else F.softmax(logits, dim=-1)
 
         if squeeze_output:
             return output.squeeze(0)

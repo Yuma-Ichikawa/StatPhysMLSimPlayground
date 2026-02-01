@@ -14,26 +14,27 @@ Example:
 
     >>> from statphys.vis import plot_generalization_error_alpha
     >>> plot_generalization_error_alpha(alpha, eg_mean, eg_std)
+
 """
 
-from statphys.vis.plotter import Plotter, PlotStyle
-from statphys.vis.order_params import OrderParamPlotter
 from statphys.vis.comparison import ComparisonPlotter
-from statphys.vis.phase_diagram import PhaseDiagramPlotter
 from statphys.vis.default_plots import (
-    apply_paper_style,
-    plot_generalization_error_alpha,
-    plot_order_params_alpha,
-    plot_generalization_error_time,
-    plot_order_params_time,
-    plot_from_replica_results,
-    plot_from_online_results,
-    PAPER_STYLE,
+    COLORS,
     DEFAULT_FIGSIZE,
     LINE_STYLES,
     MARKERS,
-    COLORS,
+    PAPER_STYLE,
+    apply_paper_style,
+    plot_from_online_results,
+    plot_from_replica_results,
+    plot_generalization_error_alpha,
+    plot_generalization_error_time,
+    plot_order_params_alpha,
+    plot_order_params_time,
 )
+from statphys.vis.order_params import OrderParamPlotter
+from statphys.vis.phase_diagram import PhaseDiagramPlotter
+from statphys.vis.plotter import PlotStyle, Plotter
 
 __all__ = [
     # Base classes

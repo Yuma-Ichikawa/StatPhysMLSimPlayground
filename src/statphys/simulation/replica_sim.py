@@ -1,17 +1,15 @@
-"""
-Replica simulation for static analysis experiments.
-"""
+"""Replica simulation for static analysis experiments."""
 
-from typing import Any, Callable, Dict, List, Optional, Type
+from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 import torch
 import torch.nn as nn
 
 from statphys.simulation.base import BaseSimulation, SimulationResult
-from statphys.simulation.config import SimulationConfig, TheoryType
+from statphys.simulation.config import TheoryType
 from statphys.utils.seed import fix_seed
-from statphys.theory.base import TheoryResult
 
 
 class ReplicaSimulation(BaseSimulation):
@@ -29,15 +27,16 @@ class ReplicaSimulation(BaseSimulation):
         ... )
         >>> sim = ReplicaSimulation(config)
         >>> results = sim.run(dataset, LinearRegression, RidgeLoss(0.01))
+
     """
 
     def run(
         self,
         dataset: Any,
-        model_class: Type[nn.Module],
+        model_class: type[nn.Module],
         loss_fn: Callable,
-        calc_order_params: Optional[Callable] = None,
-        theory_solver: Optional[Any] = None,
+        calc_order_params: Callable | None = None,
+        theory_solver: Any | None = None,
         **kwargs: Any,
     ) -> SimulationResult:
         """
@@ -54,6 +53,7 @@ class ReplicaSimulation(BaseSimulation):
 
         Returns:
             SimulationResult with experiment and theory results.
+
         """
         alpha_values = self.config.get_alpha_values()
         seed_list = self.config.seed_list
@@ -138,19 +138,20 @@ class ReplicaSimulation(BaseSimulation):
     def _train_single_alpha(
         self,
         dataset: Any,
-        model_class: Type[nn.Module],
+        model_class: type[nn.Module],
         loss_fn: Callable,
         calc_order_params: Callable,
         n_samples: int,
         seed: int,
         alpha: float,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Train model for a single alpha value.
 
         Returns:
             Dictionary with 'order_params', 'train_loss', 'converged'.
+
         """
         fix_seed(seed)
 
@@ -187,9 +188,7 @@ class ReplicaSimulation(BaseSimulation):
 
             if no_improvement_count >= self.config.patience:
                 converged = True
-                self._print_progress(
-                    f"  α={alpha:.2f}: Converged at iteration {iteration + 1}"
-                )
+                self._print_progress(f"  α={alpha:.2f}: Converged at iteration {iteration + 1}")
                 break
 
             prev_loss = loss_value
@@ -221,7 +220,7 @@ class ReplicaSimulation(BaseSimulation):
         self,
         dataset: Any,
         model: nn.Module,
-    ) -> List[float]:
+    ) -> list[float]:
         """
         Default order parameter calculation for linear models.
 
@@ -230,7 +229,7 @@ class ReplicaSimulation(BaseSimulation):
         teacher_params = dataset.get_teacher_params()
         W0 = teacher_params.get("W0")
         rho = teacher_params.get("rho", 1.0)
-        eta = teacher_params.get("eta", 0.0)
+        teacher_params.get("eta", 0.0)
         d = dataset.d
 
         # Get model weights

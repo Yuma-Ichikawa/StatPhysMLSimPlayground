@@ -5,22 +5,22 @@ Provides solvers for saddle-point equations arising from
 the replica trick in statistical mechanics.
 """
 
-from statphys.theory.replica.solver import SaddlePointSolver
 from statphys.theory.replica.equations import (
-    ReplicaEquations,
-    RidgeRegressionEquations,
+    CommitteeMachineEquations,
     LassoEquations,
     LogisticRegressionEquations,
     PerceptronEquations,
     ProbitEquations,
-    CommitteeMachineEquations,
+    ReplicaEquations,
+    RidgeRegressionEquations,
 )
 from statphys.theory.replica.integration import (
-    gaussian_integral,
     double_gaussian_integral,
+    gaussian_integral,
     moreau_envelope,
     proximal_operator,
 )
+from statphys.theory.replica.solver import SaddlePointSolver
 
 __all__ = [
     "SaddlePointSolver",

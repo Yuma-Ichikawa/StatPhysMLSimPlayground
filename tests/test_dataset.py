@@ -1,14 +1,11 @@
-"""
-Tests for dataset module.
-"""
+"""Tests for dataset module."""
 
 import pytest
 import torch
-import numpy as np
 
 from statphys.dataset import (
-    GaussianDataset,
     GaussianClassificationDataset,
+    GaussianDataset,
     SparseDataset,
     get_dataset,
 )

@@ -5,16 +5,16 @@ Provides ODE solvers for learning dynamics in the
 high-dimensional limit.
 """
 
-from statphys.theory.online.solver import ODESolver
 from statphys.theory.online.equations import (
+    OnlineCommitteeEquations,
     OnlineEquations,
-    OnlineSGDEquations,
+    OnlineHingeEquations,
+    OnlineLogisticEquations,
     OnlinePerceptronEquations,
     OnlineRidgeEquations,
-    OnlineLogisticEquations,
-    OnlineHingeEquations,
-    OnlineCommitteeEquations,
+    OnlineSGDEquations,
 )
+from statphys.theory.online.solver import ODESolver
 
 __all__ = [
     "ODESolver",

@@ -1,10 +1,8 @@
-"""
-Configuration classes for simulations.
-"""
+"""Configuration classes for simulations."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import numpy as np
 
@@ -51,6 +49,7 @@ class SimulationConfig:
         # Verbosity
         verbose: Whether to print progress.
         verbose_interval: Print interval.
+
     """
 
     # Theory settings
@@ -59,16 +58,16 @@ class SimulationConfig:
 
     # Seed settings
     n_seeds: int = 5
-    seed_list: Optional[List[int]] = None
+    seed_list: list[int] | None = None
     base_seed: int = 100
 
     # Device
     device: str = "cpu"
 
     # Replica-specific settings
-    alpha_range: Tuple[float, float] = (0.1, 5.0)
+    alpha_range: tuple[float, float] = (0.1, 5.0)
     alpha_steps: int = 20
-    alpha_values: Optional[List[float]] = None
+    alpha_values: list[float] | None = None
 
     # Online-specific settings
     t_max: float = 10.0
@@ -110,7 +109,7 @@ class SimulationConfig:
         """Get time values for online learning."""
         return np.linspace(0, self.t_max, self.t_steps)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "theory_type": self.theory_type.value,
@@ -134,7 +133,7 @@ class SimulationConfig:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SimulationConfig":
+    def from_dict(cls, data: dict[str, Any]) -> "SimulationConfig":
         """Create from dictionary."""
         data = data.copy()
         if "theory_type" in data:
@@ -144,7 +143,7 @@ class SimulationConfig:
     @classmethod
     def for_replica(
         cls,
-        alpha_range: Tuple[float, float] = (0.1, 5.0),
+        alpha_range: tuple[float, float] = (0.1, 5.0),
         alpha_steps: int = 20,
         n_seeds: int = 5,
         **kwargs: Any,

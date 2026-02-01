@@ -1,12 +1,10 @@
-"""
-Linear models for regression and classification.
-"""
+"""Linear models for regression and classification."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
 
 from statphys.model.base import BaseModel
 
@@ -21,6 +19,7 @@ class LinearRegression(BaseModel):
     Attributes:
         d: Input dimension.
         W: Weight vector of shape (d, 1).
+
     """
 
     def __init__(
@@ -37,6 +36,7 @@ class LinearRegression(BaseModel):
             d: Input dimension.
             init_scale: Scale for weight initialization.
             init_method: Initialization method ('normal', 'zero', 'uniform').
+
         """
         super().__init__(d=d, **kwargs)
 
@@ -68,6 +68,7 @@ class LinearRegression(BaseModel):
 
         Returns:
             Predictions of shape (batch_size,) or scalar.
+
         """
         if x.dim() == 1:
             x = x.unsqueeze(0)
@@ -82,9 +83,9 @@ class LinearRegression(BaseModel):
 
     def compute_order_params(
         self,
-        teacher_params: Dict[str, Any],
+        teacher_params: dict[str, Any],
         include_generalization_error: bool = True,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Compute order parameters for linear regression.
 
@@ -94,10 +95,11 @@ class LinearRegression(BaseModel):
 
         Returns:
             Dictionary with 'm', 'q', and optionally 'eg'.
+
         """
         W0 = teacher_params.get("W0")
         rho = teacher_params.get("rho", 1.0)
-        eta = teacher_params.get("eta", 0.0)
+        teacher_params.get("eta", 0.0)
 
         w = self.W
 
@@ -117,13 +119,15 @@ class LinearRegression(BaseModel):
 
         return result
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get model configuration."""
         config = super().get_config()
-        config.update({
-            "init_scale": self.init_scale,
-            "init_method": self.init_method,
-        })
+        config.update(
+            {
+                "init_scale": self.init_scale,
+                "init_method": self.init_method,
+            }
+        )
         return config
 
 
@@ -150,11 +154,12 @@ class RidgeRegression(LinearRegression):
             reg_param: Ridge regularization parameter λ.
             init_scale: Scale for weight initialization.
             init_method: Initialization method.
+
         """
         super().__init__(d=d, init_scale=init_scale, init_method=init_method, **kwargs)
         self.reg_param = reg_param
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get model configuration."""
         config = super().get_config()
         config["reg_param"] = self.reg_param
@@ -170,6 +175,7 @@ class LinearClassifier(BaseModel):
     Attributes:
         d: Input dimension.
         W: Weight vector of shape (d, 1).
+
     """
 
     def __init__(
@@ -188,6 +194,7 @@ class LinearClassifier(BaseModel):
             init_scale: Scale for weight initialization.
             init_method: Initialization method.
             output_type: Output type ('sign', 'logit', 'prob').
+
         """
         super().__init__(d=d, **kwargs)
 
@@ -217,6 +224,7 @@ class LinearClassifier(BaseModel):
 
         Returns:
             Predictions based on output_type.
+
         """
         if x.dim() == 1:
             x = x.unsqueeze(0)
@@ -238,9 +246,9 @@ class LinearClassifier(BaseModel):
 
     def compute_order_params(
         self,
-        teacher_params: Dict[str, Any],
+        teacher_params: dict[str, Any],
         include_generalization_error: bool = True,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Compute order parameters for linear classifier.
 
@@ -269,12 +277,14 @@ class LinearClassifier(BaseModel):
 
         return result
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get model configuration."""
         config = super().get_config()
-        config.update({
-            "init_scale": self.init_scale,
-            "init_method": self.init_method,
-            "output_type": self.output_type,
-        })
+        config.update(
+            {
+                "init_scale": self.init_scale,
+                "init_method": self.init_method,
+                "output_type": self.output_type,
+            }
+        )
         return config

@@ -1,13 +1,11 @@
-"""
-Transformer models for statistical mechanics analysis.
-"""
+"""Transformer models for statistical mechanics analysis."""
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
 
 from statphys.model.base import BaseModel
 
@@ -37,6 +35,7 @@ class SingleLayerAttention(BaseModel):
             d_model: Model dimension.
             n_heads: Number of attention heads.
             init_scale: Scale for initialization.
+
         """
         super().__init__(d=d, **kwargs)
 
@@ -72,6 +71,7 @@ class SingleLayerAttention(BaseModel):
 
         Returns:
             Output scalar or (batch,) tensor.
+
         """
         # Handle different input shapes
         if x.dim() == 1:
@@ -111,9 +111,7 @@ class SingleLayerAttention(BaseModel):
         """Return concatenated QKV weights."""
         return torch.cat([self.W_q.flatten(), self.W_k.flatten(), self.W_v.flatten()])
 
-    def get_attention_weights(
-        self, x: torch.Tensor
-    ) -> torch.Tensor:
+    def get_attention_weights(self, x: torch.Tensor) -> torch.Tensor:
         """
         Get attention weights for visualization.
 
@@ -122,6 +120,7 @@ class SingleLayerAttention(BaseModel):
 
         Returns:
             Attention weights tensor.
+
         """
         if x.dim() == 1:
             x = x.unsqueeze(0).unsqueeze(0)
@@ -143,26 +142,28 @@ class SingleLayerAttention(BaseModel):
 
     def compute_order_params(
         self,
-        teacher_params: Dict[str, Any],
+        teacher_params: dict[str, Any],
         include_generalization_error: bool = True,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Compute order parameters for attention model."""
         result = {
-            "q_norm": (self.W_q ** 2).sum().item() / self.W_q.numel(),
-            "k_norm": (self.W_k ** 2).sum().item() / self.W_k.numel(),
-            "v_norm": (self.W_v ** 2).sum().item() / self.W_v.numel(),
-            "o_norm": (self.W_o ** 2).sum().item() / self.W_o.numel(),
+            "q_norm": (self.W_q**2).sum().item() / self.W_q.numel(),
+            "k_norm": (self.W_k**2).sum().item() / self.W_k.numel(),
+            "v_norm": (self.W_v**2).sum().item() / self.W_v.numel(),
+            "o_norm": (self.W_o**2).sum().item() / self.W_o.numel(),
         }
         return result
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get model configuration."""
         config = super().get_config()
-        config.update({
-            "d_model": self.d_model,
-            "n_heads": self.n_heads,
-            "init_scale": self.init_scale,
-        })
+        config.update(
+            {
+                "d_model": self.d_model,
+                "n_heads": self.n_heads,
+                "init_scale": self.init_scale,
+            }
+        )
         return config
 
 
@@ -199,6 +200,7 @@ class SingleLayerTransformer(BaseModel):
             activation: Activation in feed-forward ('gelu', 'relu').
             init_scale: Initialization scale.
             use_layer_norm: Whether to use layer normalization.
+
         """
         super().__init__(d=d, **kwargs)
 
@@ -256,7 +258,9 @@ class SingleLayerTransformer(BaseModel):
         nn.init.normal_(self.ff1.weight, mean=0.0, std=self.init_scale / np.sqrt(self.d_model))
         nn.init.normal_(self.ff2.weight, mean=0.0, std=self.init_scale / np.sqrt(self.d_ff))
         nn.init.normal_(self.input_proj.weight, mean=0.0, std=self.init_scale / np.sqrt(self.d))
-        nn.init.normal_(self.output_proj.weight, mean=0.0, std=self.init_scale / np.sqrt(self.d_model))
+        nn.init.normal_(
+            self.output_proj.weight, mean=0.0, std=self.init_scale / np.sqrt(self.d_model)
+        )
 
     def _attention(self, x: torch.Tensor) -> torch.Tensor:
         """Compute multi-head attention."""
@@ -286,6 +290,7 @@ class SingleLayerTransformer(BaseModel):
 
         Returns:
             Output scalar or (batch,) tensor.
+
         """
         if x.dim() == 1:
             x = x.unsqueeze(0).unsqueeze(0)
@@ -311,36 +316,40 @@ class SingleLayerTransformer(BaseModel):
 
     def get_weight_vector(self) -> torch.Tensor:
         """Return attention weights."""
-        return torch.cat([
-            self.W_q.weight.flatten(),
-            self.W_k.weight.flatten(),
-            self.W_v.weight.flatten(),
-        ])
+        return torch.cat(
+            [
+                self.W_q.weight.flatten(),
+                self.W_k.weight.flatten(),
+                self.W_v.weight.flatten(),
+            ]
+        )
 
     def compute_order_params(
         self,
-        teacher_params: Dict[str, Any],
+        teacher_params: dict[str, Any],
         include_generalization_error: bool = True,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Compute order parameters."""
         result = {
-            "attn_q_norm": (self.W_q.weight ** 2).mean().item(),
-            "attn_k_norm": (self.W_k.weight ** 2).mean().item(),
-            "attn_v_norm": (self.W_v.weight ** 2).mean().item(),
-            "ff1_norm": (self.ff1.weight ** 2).mean().item(),
-            "ff2_norm": (self.ff2.weight ** 2).mean().item(),
+            "attn_q_norm": (self.W_q.weight**2).mean().item(),
+            "attn_k_norm": (self.W_k.weight**2).mean().item(),
+            "attn_v_norm": (self.W_v.weight**2).mean().item(),
+            "ff1_norm": (self.ff1.weight**2).mean().item(),
+            "ff2_norm": (self.ff2.weight**2).mean().item(),
         }
         return result
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get model configuration."""
         config = super().get_config()
-        config.update({
-            "d_model": self.d_model,
-            "d_ff": self.d_ff,
-            "n_heads": self.n_heads,
-            "activation": self.activation_name,
-            "use_layer_norm": self.use_layer_norm,
-            "init_scale": self.init_scale,
-        })
+        config.update(
+            {
+                "d_model": self.d_model,
+                "d_ff": self.d_ff,
+                "n_heads": self.n_heads,
+                "activation": self.activation_name,
+                "use_layer_norm": self.use_layer_norm,
+                "init_scale": self.init_scale,
+            }
+        )
         return config

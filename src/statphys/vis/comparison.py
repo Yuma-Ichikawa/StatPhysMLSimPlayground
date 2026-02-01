@@ -1,16 +1,13 @@
-"""
-Theory vs experiment comparison plots.
-"""
+"""Theory vs experiment comparison plots."""
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 
-from statphys.vis.plotter import Plotter, PlotStyle
 from statphys.simulation.base import SimulationResult
+from statphys.vis.plotter import PlotStyle, Plotter
 
 
 class ComparisonPlotter(Plotter):
@@ -23,10 +20,10 @@ class ComparisonPlotter(Plotter):
 
     def __init__(
         self,
-        style: Optional[PlotStyle] = None,
+        style: PlotStyle | None = None,
         theory_linestyle: str = "-",
         experiment_marker: str = "o",
-        param_labels: Optional[Dict[str, str]] = None,
+        param_labels: dict[str, str] | None = None,
     ):
         """
         Initialize ComparisonPlotter.
@@ -36,6 +33,7 @@ class ComparisonPlotter(Plotter):
             theory_linestyle: Line style for theory curves.
             experiment_marker: Marker for experiment points.
             param_labels: Custom parameter labels.
+
         """
         super().__init__(style)
         self.theory_linestyle = theory_linestyle
@@ -51,12 +49,12 @@ class ComparisonPlotter(Plotter):
     def plot_theory_vs_experiment(
         self,
         result: SimulationResult,
-        params_to_plot: Optional[List[str]] = None,
-        param_indices: Optional[Dict[str, int]] = None,
+        params_to_plot: list[str] | None = None,
+        param_indices: dict[str, int] | None = None,
         separate_plots: bool = False,
-        figsize: Optional[Tuple[float, float]] = None,
+        figsize: tuple[float, float] | None = None,
         **kwargs: Any,
-    ) -> Tuple[Figure, Any]:
+    ) -> tuple[Figure, Any]:
         """
         Plot theory vs experiment comparison.
 
@@ -70,6 +68,7 @@ class ComparisonPlotter(Plotter):
 
         Returns:
             Tuple of (Figure, Axes).
+
         """
         # Determine parameters to plot
         if params_to_plot is None:
@@ -171,11 +170,11 @@ class ComparisonPlotter(Plotter):
         self,
         result: SimulationResult,
         eg_index: int = 2,
-        ax: Optional[Axes] = None,
+        ax: Axes | None = None,
         show_training_error: bool = False,
         et_index: int = 3,
         **kwargs: Any,
-    ) -> Tuple[Figure, Axes]:
+    ) -> tuple[Figure, Axes]:
         """
         Plot generalization error comparison.
 
@@ -189,6 +188,7 @@ class ComparisonPlotter(Plotter):
 
         Returns:
             Tuple of (Figure, Axes).
+
         """
         if ax is None:
             fig, ax = self.create_figure()
@@ -263,13 +263,13 @@ class ComparisonPlotter(Plotter):
 
     def plot_multiple_results(
         self,
-        results: Dict[str, SimulationResult],
+        results: dict[str, SimulationResult],
         param: str = "eg",
         param_index: int = 2,
-        ax: Optional[Axes] = None,
+        ax: Axes | None = None,
         show_theory: bool = True,
         **kwargs: Any,
-    ) -> Tuple[Figure, Axes]:
+    ) -> tuple[Figure, Axes]:
         """
         Plot comparison of multiple simulation results.
 
@@ -285,6 +285,7 @@ class ComparisonPlotter(Plotter):
 
         Returns:
             Tuple of (Figure, Axes).
+
         """
         if ax is None:
             fig, ax = self.create_figure()
@@ -305,7 +306,11 @@ class ComparisonPlotter(Plotter):
                 exp_std = np.array(result.experiment_results["trajectories_std"])
 
             # Theory
-            if show_theory and result.theory_results and param in result.theory_results.order_params:
+            if (
+                show_theory
+                and result.theory_results
+                and param in result.theory_results.order_params
+            ):
                 theory_values = np.array(result.theory_results.order_params[param])
                 theory_x = np.array(result.theory_results.param_values)
                 ax.plot(

@@ -1,11 +1,10 @@
-"""
-ODE solver for online learning dynamics.
-"""
+"""ODE solver for online learning dynamics."""
 
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from collections.abc import Callable
+from typing import Any
 
 import numpy as np
-from scipy.integrate import odeint, solve_ivp
+from scipy.integrate import solve_ivp
 
 from statphys.theory.base import BaseTheory, TheoryResult, TheoryType
 
@@ -26,12 +25,13 @@ class ODESolver(BaseTheory):
         >>>
         >>> solver = ODESolver(equations=ode_rhs, order_params=['m', 'q'])
         >>> result = solver.solve(t_span=(0, 10), t_eval=np.linspace(0, 10, 100))
+
     """
 
     def __init__(
         self,
-        equations: Callable[[float, np.ndarray, Dict], np.ndarray],
-        order_params: List[str],
+        equations: Callable[[float, np.ndarray, dict], np.ndarray],
+        order_params: list[str],
         method: str = "RK45",
         tol: float = 1e-8,
         max_step: float = 0.1,
@@ -50,6 +50,7 @@ class ODESolver(BaseTheory):
             tol: Relative tolerance.
             max_step: Maximum step size.
             verbose: Whether to print progress.
+
         """
         super().__init__(tol=tol, verbose=verbose, **kwargs)
 
@@ -61,9 +62,9 @@ class ODESolver(BaseTheory):
 
     def solve(
         self,
-        t_span: Tuple[float, float],
-        init_values: Optional[Tuple[float, ...]] = None,
-        t_eval: Optional[np.ndarray] = None,
+        t_span: tuple[float, float],
+        init_values: tuple[float, ...] | None = None,
+        t_eval: np.ndarray | None = None,
         n_points: int = 100,
         **params: Any,
     ) -> TheoryResult:
@@ -79,6 +80,7 @@ class ODESolver(BaseTheory):
 
         Returns:
             TheoryResult containing solution trajectories.
+
         """
         if init_values is None:
             # Default initialization
@@ -131,10 +133,10 @@ class ODESolver(BaseTheory):
 
     def solve_with_generalization_error(
         self,
-        t_span: Tuple[float, float],
+        t_span: tuple[float, float],
         eg_formula: Callable[..., float],
-        init_values: Optional[Tuple[float, ...]] = None,
-        t_eval: Optional[np.ndarray] = None,
+        init_values: tuple[float, ...] | None = None,
+        t_eval: np.ndarray | None = None,
         **params: Any,
     ) -> TheoryResult:
         """
@@ -149,6 +151,7 @@ class ODESolver(BaseTheory):
 
         Returns:
             TheoryResult with 'eg' trajectory added.
+
         """
         result = self.solve(t_span, init_values, t_eval, **params)
 
@@ -166,12 +169,12 @@ class ODESolver(BaseTheory):
 
     def solve_multiple_lr(
         self,
-        t_span: Tuple[float, float],
-        learning_rates: List[float],
-        init_values: Optional[Tuple[float, ...]] = None,
-        t_eval: Optional[np.ndarray] = None,
+        t_span: tuple[float, float],
+        learning_rates: list[float],
+        init_values: tuple[float, ...] | None = None,
+        t_eval: np.ndarray | None = None,
         **params: Any,
-    ) -> Dict[float, TheoryResult]:
+    ) -> dict[float, TheoryResult]:
         """
         Solve for multiple learning rates.
 
@@ -184,6 +187,7 @@ class ODESolver(BaseTheory):
 
         Returns:
             Dictionary mapping learning rate to TheoryResult.
+
         """
         results = {}
 
@@ -191,9 +195,7 @@ class ODESolver(BaseTheory):
             if self.verbose:
                 print(f"Solving for lr = {lr}")
 
-            result = self.solve(
-                t_span, init_values, t_eval, lr=lr, **params
-            )
+            result = self.solve(t_span, init_values, t_eval, lr=lr, **params)
             results[lr] = result
 
         return results
@@ -202,14 +204,16 @@ class ODESolver(BaseTheory):
         """Return theory type."""
         return TheoryType.ONLINE
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get solver configuration."""
         config = super().get_config()
-        config.update({
-            "order_params": self.order_params,
-            "method": self.method,
-            "max_step": self.max_step,
-        })
+        config.update(
+            {
+                "order_params": self.order_params,
+                "method": self.method,
+                "max_step": self.max_step,
+            }
+        )
         return config
 
 
@@ -222,9 +226,9 @@ class AdaptiveODESolver(ODESolver):
 
     def __init__(
         self,
-        equations: Callable[[float, np.ndarray, Dict], np.ndarray],
-        order_params: List[str],
-        events: Optional[List[Callable]] = None,
+        equations: Callable[[float, np.ndarray, dict], np.ndarray],
+        order_params: list[str],
+        events: list[Callable] | None = None,
         method: str = "RK45",
         tol: float = 1e-8,
         verbose: bool = False,
@@ -240,6 +244,7 @@ class AdaptiveODESolver(ODESolver):
             method: Integration method.
             tol: Tolerance.
             verbose: Verbosity.
+
         """
         super().__init__(
             equations=equations,
@@ -253,15 +258,13 @@ class AdaptiveODESolver(ODESolver):
 
     def solve(
         self,
-        t_span: Tuple[float, float],
-        init_values: Optional[Tuple[float, ...]] = None,
-        t_eval: Optional[np.ndarray] = None,
+        t_span: tuple[float, float],
+        init_values: tuple[float, ...] | None = None,
+        t_eval: np.ndarray | None = None,
         n_points: int = 100,
         **params: Any,
     ) -> TheoryResult:
-        """
-        Solve with event detection.
-        """
+        """Solve with event detection."""
         if init_values is None:
             init_values = tuple([0.0] * self.n_params)
 
@@ -276,8 +279,10 @@ class AdaptiveODESolver(ODESolver):
         if self.events:
             event_funcs = []
             for event in self.events:
+
                 def wrapped_event(t, y, event=event):
                     return event(t, y, params)
+
                 wrapped_event.terminal = True
                 event_funcs.append(wrapped_event)
 
@@ -309,7 +314,11 @@ class AdaptiveODESolver(ODESolver):
         return TheoryResult(
             theory_type=TheoryType.ONLINE,
             order_params=order_params_dict,
-            param_values=actual_t_eval.tolist() if isinstance(actual_t_eval, np.ndarray) else list(actual_t_eval),
+            param_values=(
+                actual_t_eval.tolist()
+                if isinstance(actual_t_eval, np.ndarray)
+                else list(actual_t_eval)
+            ),
             converged=converged,
             iterations=iterations,
             metadata={
