@@ -83,6 +83,7 @@ from statphys.theory import (
 from statphys.utils.io import ResultsManager, load_results, save_results
 
 # Core imports for convenient access
+from statphys.utils.order_params import OrderParameterCalculator, auto_calc_order_params
 from statphys.utils.seed import fix_seed, get_device
 
 # Visualization imports
@@ -110,6 +111,8 @@ __all__ = [
     "save_results",
     "load_results",
     "ResultsManager",
+    "OrderParameterCalculator",
+    "auto_calc_order_params",
     # Dataset
     "GaussianDataset",
     "GaussianClassificationDataset",

@@ -90,6 +90,7 @@ class RidgeRegressionEquations(ReplicaEquations):
         rho: float = 1.0,
         eta: float = 0.0,
         reg_param: float = 0.01,
+        eps: float = 1e-6,
         **params: Any,
     ):
         """
@@ -99,12 +100,14 @@ class RidgeRegressionEquations(ReplicaEquations):
             rho: Teacher norm (||W0||^2 / d).
             eta: Noise variance.
             reg_param: Ridge parameter λ.
+            eps: Small constant for numerical stability.
 
         """
-        super().__init__(rho=rho, eta=eta, reg_param=reg_param, **params)
+        super().__init__(rho=rho, eta=eta, reg_param=reg_param, eps=eps, **params)
         self.rho = rho
         self.eta = eta
         self.reg_param = reg_param
+        self.eps = eps
 
     def __call__(
         self,
@@ -121,6 +124,7 @@ class RidgeRegressionEquations(ReplicaEquations):
         rho = kwargs.get("rho", self.rho)
         eta = kwargs.get("eta", self.eta)
         lam = kwargs.get("reg_param", self.reg_param)
+        eps = kwargs.get("eps", self.eps)
 
         # Effective regularization (including noise contribution)
         # V = variance of effective noise in the problem
@@ -128,12 +132,12 @@ class RidgeRegressionEquations(ReplicaEquations):
 
         # Conjugate variables (from replica calculation)
         # For ridge: closed-form solutions
-        hat_m = alpha * m / (1 + alpha * q / (lam + 0.001))
-        hat_q = alpha * (V + m**2) / ((1 + alpha * q / (lam + 0.001)) ** 2)
+        hat_m = alpha * m / (1 + alpha * q / (lam + eps))
+        hat_q = alpha * (V + m**2) / ((1 + alpha * q / (lam + eps)) ** 2)
 
         # Update equations (proximal interpretation)
-        new_m = rho * hat_m / (lam + hat_q + 0.001)
-        new_q = (rho * hat_m**2 + hat_q * (rho + eta)) / ((lam + hat_q + 0.001) ** 2)
+        new_m = rho * hat_m / (lam + hat_q + eps)
+        new_q = (rho * hat_m**2 + hat_q * (rho + eta)) / ((lam + hat_q + eps) ** 2)
 
         return new_m, new_q
 

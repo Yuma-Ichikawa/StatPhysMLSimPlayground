@@ -150,7 +150,6 @@ class TwoLayerNetwork(BaseModel):
         Computes Q (student-student overlap) and M (student-teacher overlap).
         """
         W0 = teacher_params.get("W0")
-        teacher_params.get("a0")  # Teacher second layer
 
         # Student self-overlap
         Q = self.W @ self.W.T / self.d

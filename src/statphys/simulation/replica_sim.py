@@ -229,7 +229,6 @@ class ReplicaSimulation(BaseSimulation):
         teacher_params = dataset.get_teacher_params()
         W0 = teacher_params.get("W0")
         rho = teacher_params.get("rho", 1.0)
-        teacher_params.get("eta", 0.0)
         d = dataset.d
 
         # Get model weights

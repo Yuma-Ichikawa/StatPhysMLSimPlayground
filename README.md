@@ -20,8 +20,8 @@
 
 ## Features
 
-- **Dataset Generation**: Customizable data generation with Gaussian, sparse, structured, GLM teachers, and Gaussian mixtures
-- **Learning Models**: Linear regression, committee machines, two-layer networks, deep linear, random features, softmax regression, transformers
+- **Dataset Generation**: 22 customizable datasets including Gaussian, sparse, structured, GLM, ICL tasks, sequences/tokens, attention-indexed, fairness, and noisy labels
+- **Learning Models**: 19 models including linear, committee machines, two-layer networks, deep linear, random features, softmax, transformers, and sequence models (LSA, SSM, RNN, Hopfield)
 - **Loss Functions**: MSE, Ridge, LASSO, Huber, Hinge, Logistic, Probit, Softmax cross-entropy, and more
 - **Theory Solvers**:
   - **Replica Method**: Saddle-point equation solver with damping and continuation
@@ -117,7 +117,7 @@ results = sim.run(
 
 ## Supported Components
 
-### Datasets (12 types)
+### Datasets (22 types)
 
 | Category | Class | Description |
 |----------|-------|-------------|
@@ -133,13 +133,23 @@ results = sim.run(
 | | `ProbitTeacherDataset` | Probit teacher: P(y=1\|u) = Φ(u) |
 | **Gaussian Mixture** | `GaussianMixtureDataset` | Binary GMM (for DMFT analysis) |
 | | `MulticlassGaussianMixtureDataset` | Multi-class GMM |
+| **ICL Tasks** | `ICLLinearRegressionDataset` | ICL task with linear teacher (for LSA analysis) |
+| | `ICLNonlinearRegressionDataset` | ICL task with nonlinear (2-layer) teacher |
+| **Sequence/Token** | `MarkovChainDataset` | Markov chain sequences (for induction head) |
+| | `CopyTaskDataset` | Copy/trigger task (induction head emergence) |
+| | `GeneralizedPottsDataset` | Language-like Potts sequences (Phys. Rev. 2024) |
+| | `TiedLowRankAttentionDataset` | Position-semantics phase transition (NeurIPS 2024) |
+| | `MixedGaussianSequenceDataset` | Correlated token sequences with latent clusters |
+| **Attention** | `AttentionIndexedModelDataset` | AIM for Bayes-optimal attention (arXiv 2025) |
+| **Fairness** | `TeacherMixtureFairnessDataset` | Fairness/bias with group teachers (ICML 2024) |
+| **Noisy Labels** | `NoisyGMMSelfDistillationDataset` | Label noise for self-distillation (2025) |
 
 <p align="center">
   <img src="assets/dataset_diagram.png" alt="Dataset Generation Framework" width="800">
 </p>
 <p align="center"><em>Teacher-Student framework for data generation</em></p>
 
-### Models (15 types)
+### Models (19 types)
 
 | Category | Class | Description |
 |----------|-------|-------------|
@@ -158,6 +168,10 @@ results = sim.run(
 | | `SoftmaxRegressionWithBias` | Softmax with bias terms |
 | **Transformer** | `SingleLayerAttention` | Single attention layer |
 | | `SingleLayerTransformer` | Full single-layer transformer |
+| **Sequence Models** | `LinearSelfAttention` | Linear self-attention (LSA) for ICL theory |
+| | `StateSpaceModel` | State space model (SSM) for sequences |
+| | `LinearRNN` | Linear recurrent neural network |
+| **Energy-Based** | `ModernHopfieldNetwork` | Modern Hopfield network (attention ≈ energy min) |
 
 <p align="center">
   <img src="assets/model_diagram.png" alt="Model Architectures" width="800">
@@ -242,18 +256,24 @@ results = sim.run(
 
 ```
 src/statphys/
-├── dataset/          # Data generation (12 classes)
+├── dataset/          # Data generation (22 classes)
 │   ├── gaussian.py   # Gaussian, Classification, MultiOutput
 │   ├── sparse.py     # Sparse, BernoulliGaussian
 │   ├── structured.py # Structured, Correlated, Spiked
-│   └── glm.py        # Logistic, Probit, GaussianMixture teachers
-├── model/            # Learning models (15 classes)
+│   ├── glm.py        # Logistic, Probit, GaussianMixture teachers
+│   ├── icl.py        # ICL linear/nonlinear regression tasks
+│   ├── sequence.py   # Markov, Copy, Potts, TiedAttention, MixedSequence
+│   ├── attention.py  # AttentionIndexedModel (AIM)
+│   ├── fairness.py   # TeacherMixtureFairness
+│   └── noisy.py      # NoisyGMMSelfDistillation
+├── model/            # Learning models (19 classes)
 │   ├── linear.py     # LinearRegression, Classifier, Ridge
 │   ├── committee.py  # CommitteeMachine, SoftCommittee
 │   ├── mlp.py        # TwoLayerNetwork, DeepNetwork
 │   ├── random_features.py # RandomFeatures, KernelRidge, DeepLinear
 │   ├── softmax.py    # SoftmaxRegression
-│   └── transformer.py # Attention, Transformer
+│   ├── transformer.py # Attention, Transformer
+│   └── sequence.py   # LSA, SSM, RNN, Hopfield (NEW)
 ├── loss/             # Loss functions (16 classes)
 │   ├── regression.py # MSE, Ridge, LASSO, ElasticNet, Huber
 │   └── classification.py # Hinge, Logistic, Probit, Softmax, etc.
@@ -322,8 +342,8 @@ See the `examples/` directory:
 | File | Description |
 |------|-------------|
 | `basic_usage.ipynb` | Comprehensive tutorial covering all features |
-| `dataset_gallery.ipynb` | Visualization of all 12 supported datasets |
-| `model_gallery.ipynb` | Visualization of all 15 supported models |
+| `dataset_gallery.ipynb` | Visualization of all 16 supported datasets |
+| `model_gallery.ipynb` | Visualization of all 19 supported models |
 | `replica_ridge_regression.py` | Ridge regression with replica theory |
 | `online_sgd_learning.py` | Online SGD dynamics |
 | `committee_machine.py` | Committee machine analysis |

@@ -7,8 +7,10 @@ Example scripts and notebooks demonstrating `statphys-ml` usage.
 | File | Description |
 |------|-------------|
 | `basic_usage.ipynb` | Comprehensive tutorial covering all features |
-| `dataset_gallery.ipynb` | Visualization of all 12 supported datasets |
-| `model_gallery.ipynb` | **NEW**: Visualization of all 15 supported models |
+| `custom_components_tutorial.ipynb` | Create custom datasets, models, and losses |
+| `custom_components_tutorial_ja.ipynb` | カスタムコンポーネントチュートリアル（日本語版） |
+| `dataset_gallery.ipynb` | Visualization of all 22 supported datasets |
+| `model_gallery.ipynb` | Visualization of all 19 supported models |
 | `replica_ridge_regression.py` | Ridge regression with replica theory |
 | `online_sgd_learning.py` | Online SGD learning dynamics |
 | `committee_machine.py` | Soft committee machine analysis |
@@ -37,6 +39,21 @@ Comprehensive tutorial covering:
 - Running simulations (Replica, Online)
 - Visualization tools
 
+### `custom_components_tutorial.ipynb`
+Step-by-step guide to creating custom components:
+
+| Component | Base Class | Required Methods |
+|-----------|------------|------------------|
+| **Custom Dataset** | `BaseDataset` | `generate_sample()`, `get_teacher_params()` |
+| **Custom Model** | `BaseModel` | `forward()`, `get_weight_vector()` |
+| **Custom Loss** | `BaseLoss` | `_compute_loss()` |
+
+Examples include:
+- `PolynomialTeacherDataset`: Nonlinear teacher with quadratic terms
+- `QuadraticModel`: Model with linear + quadratic features
+- `CustomRobustLoss`: Huber-like robust loss function
+- Custom order parameter functions
+
 ### `dataset_gallery.ipynb`
 Visual gallery of all supported datasets:
 
@@ -47,11 +64,16 @@ Visual gallery of all supported datasets:
 | **Structured** | `StructuredDataset`, `CorrelatedGaussianDataset`, `SpikedCovarianceDataset` |
 | **GLM Teachers** | `LogisticTeacherDataset`, `ProbitTeacherDataset` |
 | **Gaussian Mixture** | `GaussianMixtureDataset`, `MulticlassGaussianMixtureDataset` |
+| **ICL Tasks** | `ICLLinearRegressionDataset`, `ICLNonlinearRegressionDataset` |
+| **Sequence/Token** | `MarkovChainDataset`, `CopyTaskDataset`, `GeneralizedPottsDataset`, `TiedLowRankAttentionDataset`, `MixedGaussianSequenceDataset` |
+| **Attention** | `AttentionIndexedModelDataset` |
+| **Fairness** | `TeacherMixtureFairnessDataset` |
+| **Noisy Labels** | `NoisyGMMSelfDistillationDataset` |
 
 ![Dataset Gallery](dataset_gallery_summary.png)
 
 ### `model_gallery.ipynb`
-Visual gallery of all 15 supported models with architecture diagrams and I/O relationships:
+Visual gallery of all 19 supported models with architecture diagrams and I/O relationships:
 
 | Category | Models |
 |----------|--------|
@@ -62,5 +84,7 @@ Visual gallery of all 15 supported models with architecture diagrams and I/O rel
 | **Random Features** | `RandomFeaturesModel`, `KernelRidgeModel` |
 | **Softmax** | `SoftmaxRegression`, `SoftmaxRegressionWithBias` |
 | **Transformer** | `SingleLayerAttention`, `SingleLayerTransformer` |
+| **Sequence** | `LinearSelfAttention`, `StateSpaceModel`, `LinearRNN` |
+| **Energy-Based** | `ModernHopfieldNetwork` |
 
 ![Model Gallery](model_gallery_summary.png)

@@ -19,6 +19,14 @@ from statphys.utils.integration import (
     teacher_student_integral,
 )
 from statphys.utils.io import ResultsManager, load_results, save_results
+from statphys.utils.order_params import (
+    ModelType,
+    OrderParameterCalculator,
+    TaskType,
+    auto_calc_order_params,
+    default_calculator,
+    detailed_calculator,
+)
 from statphys.utils.math import (
     H_function,
     compute_overlap,
@@ -111,4 +119,11 @@ __all__ = [
     "save_results",
     "load_results",
     "ResultsManager",
+    # Order parameter calculation
+    "OrderParameterCalculator",
+    "auto_calc_order_params",
+    "ModelType",
+    "TaskType",
+    "default_calculator",
+    "detailed_calculator",
 ]

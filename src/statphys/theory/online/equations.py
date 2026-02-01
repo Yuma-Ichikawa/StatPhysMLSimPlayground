@@ -501,20 +501,24 @@ class OnlineCommitteeEquations(OnlineEquations):
         """
         Compute dynamics for committee machine.
 
-        This is a simplified version; full implementation requires
-        careful handling of the overlap matrices.
+        WARNING: This is a placeholder implementation.
+        Full committee machine dynamics require careful handling of
+        the overlap matrices Q (student-student) and M (student-teacher).
+
+        For proper implementation, see:
+        - Saad & Solla (1995) "On-line learning in soft committee machines"
+        - Biehl & Schwarze (1995) "Learning by on-line gradient descent"
+
+        Raises:
+            NotImplementedError: This method is not yet fully implemented.
+
         """
-        # Unpack order parameters
-        # For simplicity, assume k_student = k_teacher = 2
-        # y = [Q11, Q12, Q22, M11, M12, M21, M22]
-
-        params.get("lr", self.lr)
-
-        # This is a placeholder - full implementation needs
-        # proper matrix dynamics
-        dy_dt = -0.01 * y  # Dummy dynamics
-
-        return dy_dt
+        raise NotImplementedError(
+            "OnlineCommitteeEquations is not fully implemented. "
+            "For committee machine online learning dynamics, please implement "
+            "the proper ODE system following Saad & Solla (1995) or provide "
+            "a custom equations function to ODESolver."
+        )
 
     def generalization_error(
         self,

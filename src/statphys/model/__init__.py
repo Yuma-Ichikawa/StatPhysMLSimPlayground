@@ -31,6 +31,12 @@ from statphys.model.random_features import (
 from statphys.model.registry import ModelRegistry, get_model, register_model
 from statphys.model.softmax import SoftmaxRegression, SoftmaxRegressionWithBias
 from statphys.model.transformer import SingleLayerAttention, SingleLayerTransformer
+from statphys.model.sequence import (
+    LinearSelfAttention,
+    StateSpaceModel,
+    LinearRNN,
+    ModernHopfieldNetwork,
+)
 
 __all__ = [
     # Base classes
@@ -58,6 +64,11 @@ __all__ = [
     # Transformer models
     "SingleLayerTransformer",
     "SingleLayerAttention",
+    # Sequence models (LSA, SSM, RNN, Hopfield)
+    "LinearSelfAttention",
+    "StateSpaceModel",
+    "LinearRNN",
+    "ModernHopfieldNetwork",
     # Registry
     "ModelRegistry",
     "register_model",
