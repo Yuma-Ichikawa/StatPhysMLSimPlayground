@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Physics-style order parameters for theory-free experiments
+  (`statphys.experiment.observables`): function-space magnetization
+  `m_hat`, replica-replica overlap `q_ab`, susceptibility `chi_m`,
+  Binder cumulant, participation ratio, and a permutation-resolved
+  hidden-unit `specialization_index`
+- `TeacherStudentExperiment.run_order_parameters`: replica-resolved
+  alpha sweeps (shared or independent training data) recording all
+  order parameters plus cross-replica aggregates
+- Numerical phase diagrams (`statphys.experiment.phase`):
+  `run_phase_diagram` sweeps (control parameter x alpha) grids with
+  heatmap/contour plotting via `PhaseDiagramResult`
+- `Teacher.clean()` (noiseless labels) and
+  `TeacherStudentDataset.sample_inputs()` (probe sets)
+- `scripts/run_phase_study.py`: committee specialization, sparse-recovery
+  finite-size scaling, 2D recovery diagram, and attention-teacher studies
+- Tests for all new observables and protocols (`tests/test_observables.py`)
+
 ### Documentation
 - README slimmed down to installation, quick start, and animated highlights;
   detailed material moved into `docs/` with a per-topic layout

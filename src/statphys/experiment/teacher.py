@@ -235,6 +235,14 @@ class Teacher:
             y = torch.where(flip, -y, y)
         return y
 
+    @torch.no_grad()
+    def clean(self, x: torch.Tensor) -> torch.Tensor:
+        """Noiseless teacher output (no label noise, no flips)."""
+        z = self.model(x.to(self.device))
+        if z.dim() > 1 and z.shape[-1] == 1:
+            z = z.squeeze(-1)
+        return self._readout(z)
+
     def named_weights(self) -> dict[str, torch.Tensor]:
         """Return teacher weight tensors (empty dict for plain callables)."""
         if isinstance(self.model, nn.Module):

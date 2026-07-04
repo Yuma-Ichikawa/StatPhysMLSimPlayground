@@ -34,6 +34,13 @@ import torch.nn as nn
 
 from statphys.experiment.dataset import TeacherStudentDataset
 from statphys.experiment.metrics import test_error, weight_overlap
+from statphys.experiment.observables import (
+    binder_cumulant,
+    function_order_params,
+    replica_overlaps,
+    specialization_index,
+    susceptibility,
+)
 from statphys.experiment.teacher import Teacher
 from statphys.utils.seed import fix_seed
 
@@ -230,6 +237,7 @@ class TeacherStudentExperiment:
         tol: float,
         patience: int,
         weight_decay: float,
+        l1_penalty: float = 0.0,
     ) -> None:
         opt = torch.optim.Adam(student.parameters(), lr=lr, weight_decay=weight_decay)
         n = X.shape[0]
@@ -243,6 +251,8 @@ class TeacherStudentExperiment:
                 idx = perm[start : start + batch_size]
                 opt.zero_grad()
                 loss = self.loss_fn(self._forward(student, X[idx]), y[idx])
+                if l1_penalty > 0:
+                    loss = loss + l1_penalty * sum(p.abs().sum() for p in student.parameters())
                 loss.backward()
                 opt.step()
                 epoch_loss += loss.item() * idx.numel()
@@ -309,7 +319,9 @@ class TeacherStudentExperiment:
                 for k, v in self._measure(student, n_test).items():
                     seed_vals.setdefault(k, []).append(v)
                 if verbose:
-                    print(f"[seed {seed}] alpha={a:.3g}: " f"E_test={seed_vals['test_error'][-1]:.4f}")
+                    print(
+                        f"[seed {seed}] alpha={a:.3g}: " f"E_test={seed_vals['test_error'][-1]:.4f}"
+                    )
 
             for k, v in seed_vals.items():
                 records.setdefault(k, []).append(v)
@@ -325,6 +337,148 @@ class TeacherStudentExperiment:
                 "max_epochs": max_epochs,
                 "batch_size": batch_size,
                 "weight_decay": weight_decay,
+                "dataset": self.dataset.get_config(),
+            },
+            metadata={"wall_time_sec": time.time() - t_start},
+        )
+
+    def run_order_parameters(
+        self,
+        alphas: list[float] | np.ndarray,
+        n_replicas: int = 4,
+        share_data: bool = True,
+        base_seed: int = 0,
+        lr: float = 1e-2,
+        max_epochs: int = 2000,
+        batch_size: int | None = None,
+        tol: float = 1e-7,
+        patience: int = 20,
+        weight_decay: float = 0.0,
+        l1_penalty: float = 0.0,
+        n_probe: int = 4096,
+        verbose: bool = True,
+    ) -> ExperimentResult:
+        """
+        Sweep alpha and measure statistical-physics order parameters.
+
+        At each alpha, `n_replicas` students are trained independently and
+        function-space observables are evaluated on a shared probe set:
+
+        per replica:
+            m_hat  -- normalized teacher-student overlap (magnetization)
+            q_f    -- student self-overlap E[f_s^2]
+            test_error, and specialization_index when layer shapes match
+        across replicas:
+            q_ab_mean/std -- replica-replica overlap (RS order parameter)
+            chi_m         -- susceptibility d * Var[m_hat]
+            binder_m      -- Binder cumulant of m_hat (finite-size scaling)
+
+        Args:
+            alphas: Sample ratios to sweep.
+            n_replicas: Independently trained students per alpha.
+            share_data: If True, replicas share the same training set
+                (same disorder, different initialization/dynamics);
+                if False, each replica draws fresh data.
+            base_seed: Base RNG seed.
+            lr, max_epochs, batch_size, tol, patience, weight_decay:
+                Training options (see run_sample_complexity).
+            l1_penalty: Optional L1 penalty on all student parameters
+                (LASSO-style; useful for sparse-recovery studies).
+            n_probe: Probe-set size for function-space observables.
+            verbose: Print progress.
+
+        Returns:
+            ExperimentResult; per-replica metrics have n_replicas rows,
+            cross-replica aggregates have a single row.
+
+        """
+        alphas = [float(a) for a in alphas]
+        per_replica: dict[str, list[list[float]]] = {}
+        aggregates: dict[str, list[float]] = {}
+        t_start = time.time()
+
+        fix_seed(base_seed)
+        X_probe = self.dataset.sample_inputs(n_probe)
+
+        for ia, a in enumerate(alphas):
+            n = max(1, int(a * self.d))
+
+            fix_seed(base_seed + 1000 * ia)
+            X_shared, y_shared = self.dataset.sample(n) if share_data else (None, None)
+
+            students: list[nn.Module] = []
+            rep_vals: dict[str, list[float]] = {}
+            for r in range(n_replicas):
+                fix_seed(base_seed + 1000 * ia + r + 1)
+                if share_data:
+                    X, y = X_shared, y_shared
+                else:
+                    X, y = self.dataset.sample(n)
+                student = self.student_factory().to(self.device)
+                self._train_offline(
+                    student,
+                    X,
+                    y,
+                    lr,
+                    max_epochs,
+                    batch_size,
+                    tol,
+                    patience,
+                    weight_decay,
+                    l1_penalty=l1_penalty,
+                )
+                students.append(student)
+
+                fop = function_order_params(student, self.teacher, X_probe)
+                rep_vals.setdefault("m_hat", []).append(fop["m_hat"])
+                rep_vals.setdefault("q_f", []).append(fop["q_f"])
+                rep_vals.setdefault("test_error", []).append(
+                    test_error(student, self.dataset, n_test=n_probe)
+                )
+                spec = specialization_index(student, self.teacher)
+                if not np.isnan(spec):
+                    rep_vals.setdefault("specialization", []).append(spec)
+                for name, fn in self.custom_metrics.items():
+                    rep_vals.setdefault(name, []).append(float(fn(student, self.dataset)))
+
+            for k, vals in rep_vals.items():
+                per_replica.setdefault(k, [[] for _ in range(n_replicas)])
+                for r, v in enumerate(vals):
+                    per_replica[k][r].append(v)
+
+            q_ab = replica_overlaps(students, X_probe)
+            aggregates.setdefault("q_ab_mean", []).append(float(q_ab["q_ab_mean"]))
+            aggregates.setdefault("q_ab_std", []).append(float(q_ab["q_ab_std"]))
+            aggregates.setdefault("chi_m", []).append(
+                susceptibility(rep_vals["m_hat"], scale=self.d)
+            )
+            aggregates.setdefault("binder_m", []).append(binder_cumulant(rep_vals["m_hat"]))
+
+            if verbose:
+                m_bar = float(np.mean(rep_vals["m_hat"]))
+                print(
+                    f"alpha={a:.3g}: m_hat={m_bar:.3f} "
+                    f"q_ab={q_ab['q_ab_mean']:.3f} chi={aggregates['chi_m'][-1]:.3g}"
+                )
+
+        records: dict[str, list[list[float]]] = dict(per_replica)
+        for k, v in aggregates.items():
+            records[k] = [v]
+
+        return ExperimentResult(
+            x_name="alpha",
+            x_values=alphas,
+            records=records,
+            config={
+                "d": self.d,
+                "n_replicas": n_replicas,
+                "share_data": share_data,
+                "lr": lr,
+                "max_epochs": max_epochs,
+                "batch_size": batch_size,
+                "weight_decay": weight_decay,
+                "l1_penalty": l1_penalty,
+                "n_probe": n_probe,
                 "dataset": self.dataset.get_config(),
             },
             metadata={"wall_time_sec": time.time() - t_start},

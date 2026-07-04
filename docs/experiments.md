@@ -62,6 +62,56 @@ Readouts: `readout="identity"` (regression, optional `noise_std`), `readout="sig
 | `"sphere"` | Uniform on the sphere of radius $\sqrt{d}$ |
 | callable | Any function `n -> (n, d)` tensor |
 
+## Physics order parameters
+
+`statphys.experiment.observables` defines statistical-physics observables in
+*function space* (on a shared probe set), so they apply to any architecture,
+not only to models with a single weight vector:
+
+| Observable | Definition | Physics reading |
+|---|---|---|
+| `function_order_params` | \(m_f = \mathbb{E}[f_s f_t]\), \(q_f = \mathbb{E}[f_s^2]\), and \(\hat m = m_f/\sqrt{q_f \rho_f}\) | magnetization (teacher recovery); noise-independent |
+| `replica_overlaps` | \(q_{ab} = \mathbb{E}[f_a f_b]\) between independently trained students | replica-symmetric overlap; \(q_{ab} \to 1\) = condensed phase, small = many distinct minima |
+| `susceptibility` | \(\chi_m = d \, \mathrm{Var}[\hat m]\) over replicas | peaks at the transition, sharpens with \(d\) |
+| `binder_cumulant` | \(U_4 = 1 - \langle m^4\rangle / 3\langle m^2\rangle^2\) | curves for different \(d\) cross at \(\alpha_c\) (finite-size scaling) |
+| `participation_ratio` | \((\sum\lambda_i)^2/\sum\lambda_i^2\) of activation covariance | effective dimension of representations |
+| `specialization_index` | permutation-matched hidden-unit overlap (matched minus unmatched) | committee-machine specialization for any matched pair |
+
+### Replica-resolved sweeps
+
+`run_order_parameters` trains `n_replicas` independent students per alpha
+(sharing the training set by default, i.e. same disorder / different
+dynamics) and records all of the above automatically:
+
+```python
+res = exp.run_order_parameters(alphas=[0.5, 1, 2, 4, 8], n_replicas=4)
+res.mean("m_hat"), res.mean("q_ab_mean"), res.mean("chi_m"), res.mean("binder_m")
+```
+
+### 2D phase diagrams
+
+`run_phase_diagram` sweeps (control parameter x alpha) and returns grids of
+every order parameter, with heatmap plotting and contour-based boundary
+estimation:
+
+```python
+from statphys.experiment import run_phase_diagram
+
+def factory(sparsity):
+    teacher = Teacher(nn.Linear(d, 1, bias=False), init="sparse",
+                      init_kwargs={"sparsity": sparsity}, noise_std=0.05)
+    return TeacherStudentExperiment(teacher, lambda: nn.Linear(d, 1, bias=False), d=d)
+
+res = run_phase_diagram(factory, param_name="sparsity",
+                        param_values=[0.5, 0.8, 0.9, 0.95],
+                        alphas=[0.25, 0.5, 1, 2, 4], n_replicas=3)
+res.plot("m_hat", contour_level=0.5)   # numerically estimated phase boundary
+```
+
+`scripts/run_phase_study.py` bundles ready-made studies (committee
+specialization, finite-size scaling of sparse recovery, 2D recovery diagram,
+attention teacher) producing JSON + dashboard PNGs.
+
 ## Metrics
 
 Built-in observables (recorded automatically):

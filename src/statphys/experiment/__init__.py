@@ -14,8 +14,14 @@ Components:
       configurable input distributions and label noise.
     - Metrics: model-agnostic observables (test error, weight overlap
       when shapes match, representation similarity / CKA).
-    - TeacherStudentExperiment: sample-complexity sweeps (alpha = n/d)
-      and online-SGD dynamics for arbitrary teacher-student pairs.
+    - Observables: statistical-physics order parameters in function space
+      (magnetization m_hat, replica overlap q_ab, susceptibility chi,
+      Binder cumulant, participation ratio, specialization index).
+    - TeacherStudentExperiment: sample-complexity sweeps (alpha = n/d),
+      replica-resolved order-parameter sweeps, and online-SGD dynamics
+      for arbitrary teacher-student pairs.
+    - run_phase_diagram: 2D numerical phase diagrams
+      (control parameter x alpha).
     - presets: ready-made interesting setups.
 
 Example:
@@ -41,6 +47,15 @@ from statphys.experiment.metrics import (
     test_error,
     weight_overlap,
 )
+from statphys.experiment.observables import (
+    binder_cumulant,
+    function_order_params,
+    participation_ratio,
+    replica_overlaps,
+    specialization_index,
+    susceptibility,
+)
+from statphys.experiment.phase import PhaseDiagramResult, run_phase_diagram
 from statphys.experiment.presets import PRESETS, get_preset
 from statphys.experiment.protocol import ExperimentResult, TeacherStudentExperiment
 from statphys.experiment.teacher import Teacher, init_weights_
@@ -56,6 +71,14 @@ __all__ = [
     "weight_overlap",
     "linear_cka",
     "representation_similarity",
+    "function_order_params",
+    "replica_overlaps",
+    "susceptibility",
+    "binder_cumulant",
+    "participation_ratio",
+    "specialization_index",
+    "PhaseDiagramResult",
+    "run_phase_diagram",
     "PRESETS",
     "get_preset",
     "ARCHITECTURES",

@@ -53,9 +53,7 @@ def random_mlp(
     **kwargs: Any,
 ) -> TeacherStudentExperiment:
     """Random-weight MLP teacher with an identical student architecture."""
-    teacher = Teacher(
-        _mlp(d, hidden, depth), init="normal", noise_std=noise_std, device=device
-    )
+    teacher = Teacher(_mlp(d, hidden, depth), init="normal", noise_std=noise_std, device=device)
     return TeacherStudentExperiment(
         teacher=teacher,
         student_factory=lambda: _mlp(d, hidden, depth),

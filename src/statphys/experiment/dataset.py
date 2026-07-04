@@ -110,6 +110,10 @@ class TeacherStudentDataset:
         y = self.teacher(X)
         return X, y
 
+    def sample_inputs(self, n: int) -> torch.Tensor:
+        """Generate n unlabelled inputs (probe set for observables)."""
+        return self._sampler(n)
+
     def get_config(self) -> dict[str, Any]:
         """Return a summary config for logging."""
         return {

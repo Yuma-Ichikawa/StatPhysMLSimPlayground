@@ -152,3 +152,6 @@ results/
 # Temporary files
 *.tmp
 *.temp
+phase_results/
+*_run.log
+fss_rerun.log

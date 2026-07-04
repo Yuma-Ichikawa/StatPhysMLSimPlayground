@@ -125,9 +125,7 @@ class _LSTMNet(nn.Module):
     def __init__(self, d: int, seq_len: int, hidden: int, num_layers: int):
         super().__init__()
         self.fold = _FoldTokens(d, seq_len)
-        self.lstm = nn.LSTM(
-            self.fold.token_dim, hidden, num_layers=num_layers, batch_first=True
-        )
+        self.lstm = nn.LSTM(self.fold.token_dim, hidden, num_layers=num_layers, batch_first=True)
         self.head = nn.Linear(hidden, 1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
