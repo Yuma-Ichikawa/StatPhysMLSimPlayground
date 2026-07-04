@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+- README slimmed down to installation, quick start, and animated highlights;
+  detailed material moved into `docs/` with a per-topic layout
+  (`getting_started`, `components`, `experiments`, `visualization`,
+  `slurm`, `concepts`, `package_structure`) indexed by `docs/README.md`
+- Animated GIFs (learning curve vs theory, phase-plane dynamics,
+  committee-machine specialization) embedded in the README, regenerable
+  via `scripts/generate_readme_assets.py`
+
 ### Added
 - Architecture zoo (`statphys.experiment.zoo`): matched teacher-student
   pairs for linear / MLP / deep MLP / 1D-CNN / LSTM / single-head attention /

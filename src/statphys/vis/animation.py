@@ -82,6 +82,7 @@ def animate_learning_curve(
     ax.set_ylabel(ylabel)
     ax.grid(True, linestyle="--", alpha=0.3)
     ax.legend(loc="best")
+    fig.tight_layout()
 
     def update(frame: int):
         artists = []
@@ -162,6 +163,7 @@ def animate_phase_plane(
     ax.set_xlabel(r"$m$")
     ax.set_ylabel(r"$q$")
     ax.grid(True, linestyle="--", alpha=0.3)
+    fig.tight_layout()
 
     def update(frame: int):
         if trail:
@@ -211,6 +213,7 @@ def animate_overlap_matrix(
     ax.set_ylabel("student unit")
     ax.set_xticks(range(mats[0].shape[1]))
     ax.set_yticks(range(mats[0].shape[0]))
+    fig.tight_layout()
 
     def update(frame: int):
         im.set_data(mats[frame])

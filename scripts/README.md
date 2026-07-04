@@ -7,9 +7,10 @@ Utility scripts for development, verification, and maintenance.
 ```
 scripts/
 ├── README.md
-├── run_verification.py       # Core package verification (replica/online vs theory)
-├── verify_architectures.py   # Teacher-student check across the architecture zoo
-└── output/                   # Output directory for verification results
+├── run_verification.py         # Core package verification (replica/online vs theory)
+├── verify_architectures.py     # Teacher-student check across the architecture zoo
+├── generate_readme_assets.py   # Regenerate the animated GIFs embedded in README
+└── output/                     # Output directory for verification results
 ```
 
 ## Architecture Verification
@@ -62,6 +63,18 @@ Results are saved to `scripts/output/`:
 - `replica_ridge_regression.png`: Order parameters vs alpha
 - `online_sgd_learning.png`: Learning trajectories over time
 - `model_comparison.png`: Parameter count comparison
+
+## README Assets
+
+### `generate_readme_assets.py`
+
+Regenerates the animated GIFs embedded at the top of the repository README
+(learning-curve animation, phase-plane animation, committee-machine
+specialization). Everything is computed from scratch with fixed seeds.
+
+```bash
+python scripts/generate_readme_assets.py --out-dir assets --fps 20
+```
 
 ## Usage Notes
 
