@@ -100,6 +100,53 @@ statphys.quick_order_parameters("tiny_gpt", alphas=[1, 2, 4, 8, 16])
 statphys.quick_phase_diagram("sparse_teacher", "sparsity", [0.5, 0.8, 0.95])
 ```
 
+### Training dynamics (temporal transitions)
+
+`run_training_dynamics` records train/test error, `m_hat`, and `q_ab` at
+log-spaced *epochs* at fixed alpha — the protocol for grokking, plateaus,
+and stagewise learning. `init_scale` multiplies the student's initial
+weights (large values + weight decay induce delayed generalization):
+
+```python
+res = exp.run_training_dynamics(alpha=1.5, epochs=40000,
+                                weight_decay=1e-2, init_scale=8.0)
+res.plot(metrics=["train_error", "test_error"], logx=True, logy=True)
+```
+
+Results can be persisted and reloaded:
+
+```python
+res.save("out/run.json")
+res = ExperimentResult.load("out/run.json")
+```
+
+### Ready-made studies
+
+`statphys.experiment.studies` (also `statphys study <name>` on the
+command line) bundles complete experiments that save JSON + figure:
+
+| Study | Phenomenon |
+|---|---|
+| `committee` | Specialization transition (tanh committee) |
+| `fss` | Finite-size scaling of L1 sparse recovery |
+| `diagram` | 2D recovery phase diagram (sparsity x alpha) |
+| `attention` | Attention-pair transition (no analytic theory) |
+| `manifold` | Hidden-manifold data structure vs isotropic inputs |
+| `gpt` | Tiny causal transformer order parameters |
+| `grokking` | Delayed generalization in epoch time |
+| `universality` | Gaussian universality of learning curves + breakdown |
+| `double_descent` | Model-wise double descent vs student width |
+| `scaling` | Data-scaling exponents eps_g ~ alpha^-b across architectures |
+
+### Command-line interface
+
+```bash
+statphys list
+statphys order-params tiny_gpt --alphas 1 2 4 8 --replicas 4
+statphys phase-diagram sparse_teacher sparsity 0.5 0.8 0.95
+statphys study universality --output-dir results
+```
+
 ### 2D phase diagrams
 
 `run_phase_diagram` sweeps (control parameter x alpha) and returns grids of

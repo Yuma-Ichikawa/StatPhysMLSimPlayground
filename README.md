@@ -41,8 +41,10 @@
 - **Numerical phase diagrams**: 2D (parameter × α) sweeps with contour-based boundary estimation, plus finite-size-scaling protocols
 - **Architecture zoo**: matched teacher-student pairs for linear / MLP / deep MLP / CNN / LSTM / attention / tiny-GPT
 - **Visualization**: publication-quality plots, phase portraits, overlap-matrix heatmaps, order-parameter dashboards, and GIF/MP4 animations
+- **Modern phenomenology, ready-made**: grokking (delayed generalization), Gaussian universality, model-wise double descent, and data-scaling exponents as one-command studies
 - **Slurm integration**: programmatic sbatch generation and job arrays, no hardcoded cluster paths
 - **One-liner API**: `quick_online()`, `quick_replica()`, `quick_experiment()`, `quick_order_parameters()`, `quick_phase_diagram()`
+- **CLI**: `statphys list / order-params / phase-diagram / study` — no Python required
 
 ## Installation
 
@@ -101,12 +103,25 @@ from statphys.vis import plot_order_parameter_dashboard
 plot_order_parameter_dashboard(result, title="tiny GPT")
 ```
 
-Ready-made studies (committee specialization, sparse-recovery finite-size
-scaling, 2D phase diagrams, hidden-manifold data, tiny GPT):
+### Command-line interface
+
+Everything is also available without writing Python — the `statphys`
+command is installed with the package:
 
 ```bash
-python scripts/run_phase_study.py --study all --output-dir phase_results
+statphys list                                        # presets / architectures / studies
+statphys order-params tiny_gpt --alphas 1 2 4 8      # physics dashboard -> PNG + JSON
+statphys phase-diagram sparse_teacher sparsity 0.5 0.8 0.95
+statphys study grokking                              # ready-made studies
+statphys study all --output-dir phase_results
 ```
+
+Ready-made studies cover the classic and the modern phenomenology:
+committee specialization, sparse-recovery finite-size scaling, 2D phase
+diagrams, hidden-manifold data, tiny GPT, **grokking** (delayed
+generalization), **Gaussian universality** of learning curves,
+**model-wise double descent**, and **data-scaling exponents** across
+architectures.
 
 Verify the whole architecture zoo locally or as a Slurm job array:
 

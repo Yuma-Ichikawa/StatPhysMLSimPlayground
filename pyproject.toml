@@ -41,6 +41,9 @@ dependencies = [
     "pandas>=2.0",
 ]
 
+[project.scripts]
+statphys = "statphys.cli:main"
+
 [project.optional-dependencies]
 # Jupyter notebook support
 notebook = [

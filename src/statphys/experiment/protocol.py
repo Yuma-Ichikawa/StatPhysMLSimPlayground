@@ -94,6 +94,23 @@ class ExperimentResult:
         """Restore from a dictionary."""
         return cls(**data)
 
+    def save(self, path: str) -> None:
+        """Save the result as a JSON file."""
+        import json
+        from pathlib import Path
+
+        p = Path(path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps(self.to_dict(), indent=2))
+
+    @classmethod
+    def load(cls, path: str) -> "ExperimentResult":
+        """Load a result saved with save()."""
+        import json
+        from pathlib import Path
+
+        return cls.from_dict(json.loads(Path(path).read_text()))
+
     def plot(
         self,
         metrics: list[str] | None = None,
@@ -478,6 +495,144 @@ class TeacherStudentExperiment:
                 "batch_size": batch_size,
                 "weight_decay": weight_decay,
                 "l1_penalty": l1_penalty,
+                "n_probe": n_probe,
+                "dataset": self.dataset.get_config(),
+            },
+            metadata={"wall_time_sec": time.time() - t_start},
+        )
+
+    def run_training_dynamics(
+        self,
+        alpha: float = 1.0,
+        n_replicas: int = 3,
+        epochs: int = 10000,
+        n_evals: int = 50,
+        base_seed: int = 0,
+        lr: float = 1e-3,
+        batch_size: int | None = None,
+        weight_decay: float = 0.0,
+        init_scale: float = 1.0,
+        share_data: bool = True,
+        n_probe: int = 4096,
+        verbose: bool = True,
+    ) -> ExperimentResult:
+        """
+        Epoch-resolved training dynamics at fixed alpha (grokking-style).
+
+        Trains `n_replicas` students in lockstep on the same (or fresh)
+        training set and records train error, test error, and the
+        teacher overlap m_hat at log-spaced epochs, plus the cross-replica
+        overlap q_ab. This is the protocol for *temporal* phase
+        transitions: delayed generalization (grokking), plateaus, and
+        stagewise learning appear as structure in these trajectories.
+
+        Args:
+            alpha: Sample ratio n/d of the (fixed) training set.
+            n_replicas: Students trained in parallel.
+            epochs: Total training epochs.
+            n_evals: Number of measurement points (log-spaced in epoch).
+            base_seed: Base RNG seed.
+            lr: Adam learning rate.
+            batch_size: Minibatch size (None = full batch).
+            weight_decay: L2 regularization (essential for grokking).
+            init_scale: Multiply all initial student weights by this
+                factor; large values (4-10) induce delayed
+                generalization (Liu et al. 2022, "Omnigrok").
+            share_data: Replicas share the training set if True.
+            n_probe: Probe-set size for function-space observables.
+            verbose: Print progress.
+
+        Returns:
+            ExperimentResult with x_name="epoch". Per-replica records:
+            train_error, test_error, m_hat; aggregates: q_ab_mean/std.
+
+        """
+        n = max(1, int(alpha * self.d))
+        eval_epochs = np.unique(
+            np.round(np.logspace(0, np.log10(max(epochs, 1)), n_evals)).astype(int)
+        )
+        eval_epochs = eval_epochs[eval_epochs <= epochs]
+        eval_set = set(eval_epochs.tolist())
+
+        fix_seed(base_seed)
+        X_probe = self.dataset.sample_inputs(n_probe)
+        X_shared, y_shared = self.dataset.sample(n) if share_data else (None, None)
+
+        students: list[nn.Module] = []
+        optimizers: list[torch.optim.Optimizer] = []
+        data: list[tuple[torch.Tensor, torch.Tensor]] = []
+        for r in range(n_replicas):
+            fix_seed(base_seed + r + 1)
+            student = self.student_factory().to(self.device)
+            if init_scale != 1.0:
+                with torch.no_grad():
+                    for p in student.parameters():
+                        p.mul_(init_scale)
+            students.append(student)
+            optimizers.append(
+                torch.optim.Adam(student.parameters(), lr=lr, weight_decay=weight_decay)
+            )
+            data.append((X_shared, y_shared) if share_data else self.dataset.sample(n))
+
+        per_replica: dict[str, list[list[float]]] = {
+            k: [[] for _ in range(n_replicas)] for k in ("train_error", "test_error", "m_hat")
+        }
+        aggregates: dict[str, list[float]] = {"q_ab_mean": [], "q_ab_std": []}
+        t_start = time.time()
+        bs = batch_size or n
+
+        def measure() -> None:
+            for r, student in enumerate(students):
+                X_tr, y_tr = data[r]
+                with torch.no_grad():
+                    pred = self._forward(student, X_tr)
+                    per_replica["train_error"][r].append(0.5 * ((pred - y_tr) ** 2).mean().item())
+                per_replica["test_error"][r].append(
+                    test_error(student, self.dataset, n_test=n_probe)
+                )
+                fop = function_order_params(student, self.teacher, X_probe)
+                per_replica["m_hat"][r].append(fop["m_hat"])
+            q_ab = replica_overlaps(students, X_probe)
+            aggregates["q_ab_mean"].append(float(q_ab["q_ab_mean"]))
+            aggregates["q_ab_std"].append(float(q_ab["q_ab_std"]))
+
+        for epoch in range(1, int(epochs) + 1):
+            for r, student in enumerate(students):
+                X_tr, y_tr = data[r]
+                perm = torch.randperm(n, device=X_tr.device)
+                for start in range(0, n, bs):
+                    idx = perm[start : start + bs]
+                    optimizers[r].zero_grad()
+                    loss = self.loss_fn(self._forward(student, X_tr[idx]), y_tr[idx])
+                    loss.backward()
+                    optimizers[r].step()
+
+            if epoch in eval_set:
+                measure()
+                if verbose and (epoch == eval_epochs[-1] or epoch == eval_epochs[0]):
+                    print(
+                        f"epoch={epoch}: train={per_replica['train_error'][0][-1]:.3g} "
+                        f"test={per_replica['test_error'][0][-1]:.3g}"
+                    )
+
+        records: dict[str, list[list[float]]] = dict(per_replica)
+        for k, v in aggregates.items():
+            records[k] = [v]
+
+        return ExperimentResult(
+            x_name="epoch",
+            x_values=[float(e) for e in eval_epochs],
+            records=records,
+            config={
+                "d": self.d,
+                "alpha": alpha,
+                "n_replicas": n_replicas,
+                "epochs": epochs,
+                "lr": lr,
+                "batch_size": batch_size,
+                "weight_decay": weight_decay,
+                "init_scale": init_scale,
+                "share_data": share_data,
                 "n_probe": n_probe,
                 "dataset": self.dataset.get_config(),
             },

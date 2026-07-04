@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `statphys` console command (CLI): `list`, `order-params`,
+  `phase-diagram`, and `study` subcommands — full physics experiments
+  without writing Python
+- `TeacherStudentExperiment.run_training_dynamics`: epoch-resolved
+  protocol (train/test error, m_hat, q_ab at log-spaced epochs) with an
+  `init_scale` knob for grokking-style delayed generalization
+- `ExperimentResult.save()` / `ExperimentResult.load()` (JSON round trip)
+- Studies moved into the library (`statphys.experiment.studies`,
+  exported as `STUDIES` / `run_study`); `scripts/run_phase_study.py` is
+  now a thin wrapper
+- Four new studies: `grokking` (delayed generalization in epoch time),
+  `universality` (Gaussian universality of learning curves and its
+  breakdown), `double_descent` (model-wise double descent vs student
+  width), `scaling` (eps_g ~ alpha^-b exponents across architectures)
 - Hidden-manifold input distribution (`input_dist="hidden_manifold"`,
   Goldt et al. 2020) for realistic low-dimensional data structure
 - Presets `hidden_manifold` (MLP on manifold inputs) and `tiny_gpt`
