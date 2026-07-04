@@ -12,7 +12,7 @@ Example:
     ...     param_name="lr", param_values=[0.1, 0.3, 0.5],
     ... )
     >>> from statphys.vis.sweep import SweepPlotter
-    >>> SweepPlotter().plot_sweep(sweep, param_label=r"$\\eta$")
+    >>> SweepPlotter().plot_sweep(sweep, param_label="$eta$")
 
 """
 

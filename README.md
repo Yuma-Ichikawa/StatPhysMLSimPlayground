@@ -36,11 +36,13 @@
 
 - **Theory solvers**: replica saddle-point equations (6 scenarios) and online-learning ODEs (6 scenarios), with automatic theory-vs-experiment comparison
 - **22 datasets / 19 models / 16 losses**: from Gaussian linear teachers to ICL tasks, sequence models, and attention-indexed models
-- **General teacher-student experiments**: theory-free numerical experiments for *any* PyTorch model, with structured teacher weights (sparse, low-rank, spiked, power-law, ...) and configurable input distributions
+- **General teacher-student experiments**: theory-free numerical experiments for *any* PyTorch model, with structured teacher weights (sparse, low-rank, spiked, power-law, ...) and configurable input distributions — including **hidden-manifold** inputs for realistic data structure
+- **Physics order parameters for any architecture**: function-space magnetization, replica overlap, susceptibility, Binder cumulant, specialization index — locate phase transitions numerically even where no theory exists
+- **Numerical phase diagrams**: 2D (parameter × α) sweeps with contour-based boundary estimation, plus finite-size-scaling protocols
 - **Architecture zoo**: matched teacher-student pairs for linear / MLP / deep MLP / CNN / LSTM / attention / tiny-GPT
-- **Visualization**: publication-quality plots, phase portraits, overlap-matrix heatmaps, and GIF/MP4 animations
+- **Visualization**: publication-quality plots, phase portraits, overlap-matrix heatmaps, order-parameter dashboards, and GIF/MP4 animations
 - **Slurm integration**: programmatic sbatch generation and job arrays, no hardcoded cluster paths
-- **One-liner API**: `quick_online()`, `quick_replica()`, `quick_experiment()`
+- **One-liner API**: `quick_online()`, `quick_replica()`, `quick_experiment()`, `quick_order_parameters()`, `quick_phase_diagram()`
 
 ## Installation
 
@@ -65,16 +67,45 @@ result = statphys.quick_replica(d=200, reg_param=0.1)
 
 # Theory-free teacher-student experiment (works for any architecture)
 result = statphys.quick_experiment("random_mlp", alphas=[1, 2, 4, 8])
+
+# Physics dashboard for an LLM-style transformer: magnetization, replica
+# overlap, susceptibility, Binder cumulant + generalization error vs alpha
+result = statphys.quick_order_parameters("tiny_gpt", alphas=[1, 2, 4, 8, 16])
+
+# 2D numerical phase diagram with an estimated phase boundary
+result = statphys.quick_phase_diagram("sparse_teacher", "sparsity",
+                                      [0.5, 0.8, 0.9, 0.95])
 ```
 
-For arbitrary architectures — including LLM-style transformers where no analytic theory exists:
+### Phase transitions for any architecture
+
+Every observable is defined in *function space* on a shared probe set, so the
+same order parameters apply to linear models, MLPs, CNNs, LSTMs, attention,
+and tiny GPTs — no analytic theory required:
+
+| Observable | Meaning |
+|---|---|
+| $\hat m$ | teacher-student overlap (magnetization); noise-independent recovery measure |
+| $q_{ab}$ | overlap between independently trained students (replica order parameter) |
+| $\epsilon_g$ | generalization error on fresh samples |
+| $\chi_m = d\,\mathrm{Var}[\hat m]$ | susceptibility; peaks at the transition |
+| Binder $U_4$ | finite-size-scaling estimate of the critical point |
 
 ```python
 from statphys.experiment import architecture_experiment
 
 exp = architecture_experiment("tiny_gpt", d=256, teacher_init="normal")
-result = exp.run_sample_complexity(alphas=[2, 4, 8, 16], n_seeds=3)
-result.plot(logy=True)
+result = exp.run_order_parameters(alphas=[2, 4, 8, 16], n_replicas=4)
+
+from statphys.vis import plot_order_parameter_dashboard
+plot_order_parameter_dashboard(result, title="tiny GPT")
+```
+
+Ready-made studies (committee specialization, sparse-recovery finite-size
+scaling, 2D phase diagrams, hidden-manifold data, tiny GPT):
+
+```bash
+python scripts/run_phase_study.py --study all --output-dir phase_results
 ```
 
 Verify the whole architecture zoo locally or as a Slurm job array:

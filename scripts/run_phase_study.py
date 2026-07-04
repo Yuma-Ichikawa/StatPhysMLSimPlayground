@@ -11,6 +11,11 @@ susceptibility chi, Binder cumulant, specialization index):
 - diagram   : 2D recovery phase diagram (teacher sparsity x alpha)
 - attention : order parameters across the transition for an attention
               teacher-student pair (no analytic theory available)
+- manifold  : hidden-manifold inputs (Goldt et al. 2020) — how realistic
+              low-dimensional data structure shifts the transition and
+              the generalization error compared to isotropic inputs
+- gpt       : tiny causal transformer (LLM-style) teacher-student pair;
+              order parameters measured purely numerically
 
 Usage:
     python scripts/run_phase_study.py --study all --output-dir phase_results
@@ -40,6 +45,7 @@ from statphys.experiment import (
     TeacherStudentExperiment,
     run_phase_diagram,
 )
+from statphys.vis import plot_order_parameter_dashboard
 
 
 def _mlp(d: int, hidden: int) -> nn.Module:
@@ -55,46 +61,7 @@ def _save(result_dict: dict, fig, out_dir: Path, name: str) -> None:
 
 
 def _dashboard(res, title: str, extra_metrics: tuple[str, ...] = ()):
-    """4-panel order-parameter dashboard for a run_order_parameters result."""
-    fig, axes = plt.subplots(2, 2, figsize=(11, 8))
-    x = np.array(res.x_values)
-
-    ax = axes[0, 0]
-    for m in ("m_hat", "q_ab_mean") + extra_metrics:
-        if m in res.records:
-            mean, std = res.mean(m), res.std(m)
-            (line,) = ax.plot(x, mean, "o-", markersize=4, label=m)
-            ax.fill_between(x, mean - std, mean + std, alpha=0.2, color=line.get_color())
-    ax.set_xscale("log")
-    ax.set_xlabel(r"$\alpha$")
-    ax.set_ylabel("order parameters")
-    ax.legend()
-    ax.grid(True, linestyle="--", alpha=0.3)
-
-    ax = axes[0, 1]
-    ax.plot(x, res.mean("test_error"), "s-", color="crimson", markersize=4)
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.set_xlabel(r"$\alpha$")
-    ax.set_ylabel(r"$E_{\mathrm{test}}$")
-    ax.grid(True, linestyle="--", alpha=0.3)
-
-    ax = axes[1, 0]
-    ax.plot(x, res.mean("chi_m"), "^-", color="darkorange", markersize=5)
-    ax.set_xscale("log")
-    ax.set_xlabel(r"$\alpha$")
-    ax.set_ylabel(r"$\chi_m = d\,\mathrm{Var}[\hat m]$")
-    ax.grid(True, linestyle="--", alpha=0.3)
-
-    ax = axes[1, 1]
-    ax.plot(x, res.mean("binder_m"), "d-", color="seagreen", markersize=5)
-    ax.set_xscale("log")
-    ax.set_xlabel(r"$\alpha$")
-    ax.set_ylabel(r"Binder $U_4$")
-    ax.grid(True, linestyle="--", alpha=0.3)
-
-    fig.suptitle(title)
-    fig.tight_layout()
+    fig, _ = plot_order_parameter_dashboard(res, title=title, extra_metrics=extra_metrics)
     return fig
 
 
@@ -227,11 +194,93 @@ def study_attention(out_dir: Path, quick: bool) -> None:
     _save(res.to_dict(), fig, out_dir, "attention")
 
 
+def study_manifold(out_dir: Path, quick: bool) -> None:
+    """Hidden-manifold inputs: realistic data structure vs isotropic."""
+    from statphys.experiment.presets import hidden_manifold
+
+    d = 96 if quick else 192
+    hidden = 8
+    latent_dims = [8, 48] if quick else [8, 24, 96, 192]
+    alphas = [0.5, 1, 2, 4] if quick else [0.25, 0.5, 1, 2, 4, 8, 16]
+
+    results = {}
+    for dl in latent_dims:
+        exp = hidden_manifold(d=d, latent_dim=dl, hidden=hidden, noise_std=0.01)
+        res = exp.run_order_parameters(
+            alphas=alphas,
+            n_replicas=2 if quick else 4,
+            lr=5e-3,
+            max_epochs=300 if quick else 3000,
+            weight_decay=1e-4,
+        )
+        results[dl] = res
+
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.5))
+    for dl, res in results.items():
+        x = np.array(res.x_values)
+        label = f"$D_{{lat}}={dl}$"
+        axes[0].errorbar(
+            x,
+            res.mean("m_hat"),
+            yerr=res.std("m_hat"),
+            fmt="o-",
+            markersize=4,
+            capsize=2,
+            label=label,
+        )
+        axes[1].plot(x, res.mean("test_error"), "s-", markersize=4, label=label)
+        axes[2].plot(x, res.mean("q_ab_mean"), "d-", markersize=4, label=label)
+    for i, (ax, ylab) in enumerate(
+        zip(axes, (r"$\hat m$", r"$\epsilon_g$", r"$q_{ab}$"), strict=True)
+    ):
+        ax.set_xscale("log")
+        if i == 1:
+            ax.set_yscale("log")
+        ax.set_xlabel(r"$\alpha = n/d$")
+        ax.set_ylabel(ylab)
+        ax.grid(True, linestyle="--", alpha=0.3)
+        ax.legend()
+    fig.suptitle(
+        f"hidden manifold inputs (d={d}, tanh, MLP K={hidden}): "
+        "data structure shifts the transition"
+    )
+    fig.tight_layout()
+    _save({str(k): r.to_dict() for k, r in results.items()}, fig, out_dir, "manifold")
+
+
+def study_gpt(out_dir: Path, quick: bool) -> None:
+    """Tiny causal transformer (LLM-style) teacher-student order parameters."""
+    from statphys.experiment.presets import tiny_gpt
+
+    d = 64 if quick else 128
+    exp = tiny_gpt(
+        d=d,
+        seq_len=8,
+        d_model=8 if quick else 16,
+        n_heads=2,
+        n_blocks=1,
+        noise_std=0.01,
+    )
+    alphas = [1, 4, 16] if quick else [0.5, 1, 2, 4, 8, 16, 32]
+    res = exp.run_order_parameters(
+        alphas=alphas,
+        n_replicas=2 if quick else 3,
+        lr=2e-3,
+        max_epochs=300 if quick else 800,
+        batch_size=512,
+        weight_decay=1e-4,
+    )
+    fig = _dashboard(res, f"tiny GPT teacher-student (d={d}): numerical order parameters")
+    _save(res.to_dict(), fig, out_dir, "gpt")
+
+
 STUDIES = {
     "committee": study_committee,
     "fss": study_fss,
     "diagram": study_diagram,
     "attention": study_attention,
+    "manifold": study_manifold,
+    "gpt": study_gpt,
 }
 
 

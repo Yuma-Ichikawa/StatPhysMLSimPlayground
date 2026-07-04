@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Hidden-manifold input distribution (`input_dist="hidden_manifold"`,
+  Goldt et al. 2020) for realistic low-dimensional data structure
+- Presets `hidden_manifold` (MLP on manifold inputs) and `tiny_gpt`
+  (minimal causal transformer teacher-student pair)
+- One-liner APIs `statphys.quick_order_parameters()` and
+  `statphys.quick_phase_diagram()` with automatic plotting
+- Shared 4-panel dashboard `statphys.vis.plot_order_parameter_dashboard`
+  (order parameters, generalization error, susceptibility, Binder)
+- New studies in `scripts/run_phase_study.py`: `manifold` (data-structure
+  dependence of the transition) and `gpt` (LLM-style pair)
 - Physics-style order parameters for theory-free experiments
   (`statphys.experiment.observables`): function-space magnetization
   `m_hat`, replica-replica overlap `q_ab`, susceptibility `chi_m`,

@@ -60,6 +60,7 @@ Readouts: `readout="identity"` (regression, optional `noise_std`), `readout="sig
 | `"correlated"` | $x \sim \mathcal{N}(0, C)$ with `cov` matrix or AR(1) `ar_coeff` |
 | `"rademacher"` | $x_i \in \{-1, +1\}$ |
 | `"sphere"` | Uniform on the sphere of radius $\sqrt{d}$ |
+| `"hidden_manifold"` | $x = \phi(zF/\sqrt{D})$ with latent $z \sim \mathcal{N}(0, I_D)$ — the hidden manifold model (Goldt et al. 2020) for realistic low-dimensional data structure. Options: `latent_dim`, `nonlinearity` (`tanh`/`relu`/`sign`/`identity`), optional `feature_map` |
 | callable | Any function `n -> (n, d)` tensor |
 
 ## Physics order parameters
@@ -86,6 +87,17 @@ dynamics) and records all of the above automatically:
 ```python
 res = exp.run_order_parameters(alphas=[0.5, 1, 2, 4, 8], n_replicas=4)
 res.mean("m_hat"), res.mean("q_ab_mean"), res.mean("chi_m"), res.mean("binder_m")
+
+from statphys.vis import plot_order_parameter_dashboard
+plot_order_parameter_dashboard(res)   # 4-panel physics dashboard incl. eps_g
+```
+
+One-liners for the whole pipeline (any preset, plot included):
+
+```python
+import statphys
+statphys.quick_order_parameters("tiny_gpt", alphas=[1, 2, 4, 8, 16])
+statphys.quick_phase_diagram("sparse_teacher", "sparsity", [0.5, 0.8, 0.95])
 ```
 
 ### 2D phase diagrams
@@ -144,6 +156,8 @@ exp = TeacherStudentExperiment(
 | `spiked_teacher` | Rank-1 spiked teacher (BBP-style detectability) |
 | `mismatched_width` | Overparameterized student, narrow teacher |
 | `low_rank_attention` | Low-rank attention teacher (toy LLM-like setting) |
+| `hidden_manifold` | MLP pair on hidden-manifold inputs (realistic data structure) |
+| `tiny_gpt` | Minimal causal transformer teacher-student pair (LLM-style) |
 
 ```python
 from statphys.experiment import get_preset

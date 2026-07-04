@@ -3,11 +3,14 @@ Dataset for general teacher-student experiments.
 
 Combines a Teacher with a configurable input distribution:
 
-- "gaussian":    x ~ N(0, I)
-- "correlated":  x ~ N(0, C) with a given covariance (or AR(1) correlation)
-- "rademacher":  x_i in {-1, +1}
-- "sphere":      x uniform on the sphere of radius sqrt(d)
-- callable:      any function n -> (n, d) tensor
+- "gaussian":        x ~ N(0, I)
+- "correlated":      x ~ N(0, C) with a given covariance (or AR(1) correlation)
+- "rademacher":      x_i in {-1, +1}
+- "sphere":          x uniform on the sphere of radius sqrt(d)
+- "hidden_manifold": x = phi(z F / sqrt(D)) with latent z ~ N(0, I_D)
+                     (hidden manifold model; realistic low-dimensional
+                     data structure, Goldt et al. 2020)
+- callable:          any function n -> (n, d) tensor
 
 Example:
     >>> ds = TeacherStudentDataset(teacher, d=200, input_dist="correlated",
@@ -38,9 +41,12 @@ class TeacherStudentDataset:
         teacher: Teacher instance producing labels.
         d: Input dimension.
         input_dist: "gaussian", "correlated", "rademacher", "sphere",
-            or a callable n -> (n, d) tensor.
+            "hidden_manifold", or a callable n -> (n, d) tensor.
         input_kwargs: Options for the input distribution:
             - correlated: cov (tensor) or ar_coeff (float)
+            - hidden_manifold: latent_dim (int, default d//8),
+              nonlinearity ("tanh"|"relu"|"sign"|"identity"),
+              feature_map (optional (latent_dim, d) tensor)
         device: Device for generated tensors.
 
     """
@@ -82,6 +88,31 @@ class TeacherStudentDataset:
         elif input_dist == "sphere":
             self._sampler = self._sample_sphere
             self.input_dist = input_dist
+        elif input_dist == "hidden_manifold":
+            latent_dim = int(self.input_kwargs.get("latent_dim", max(d // 8, 1)))
+            nonlin = self.input_kwargs.get("nonlinearity", "tanh")
+            nonlin_fns = {
+                "tanh": torch.tanh,
+                "relu": torch.relu,
+                "sign": torch.sign,
+                "identity": lambda t: t,
+            }
+            if nonlin not in nonlin_fns:
+                raise ValueError(f"Unknown nonlinearity: {nonlin!r} (use {sorted(nonlin_fns)})")
+            F = self.input_kwargs.get("feature_map")
+            if F is None:
+                F = torch.randn(latent_dim, d, device=self.device)
+            else:
+                F = torch.as_tensor(F, dtype=torch.float32, device=self.device)
+                if F.shape != (latent_dim, d):
+                    raise ValueError(
+                        f"feature_map must have shape ({latent_dim}, {d}), got {tuple(F.shape)}"
+                    )
+            self._manifold_F = F
+            self._manifold_latent = latent_dim
+            self._manifold_fn = nonlin_fns[nonlin]
+            self._sampler = self._sample_hidden_manifold
+            self.input_dist = input_dist
         else:
             raise ValueError(f"Unknown input_dist: {input_dist!r}")
 
@@ -104,6 +135,13 @@ class TeacherStudentDataset:
         z = z / z.norm(dim=1, keepdim=True).clamp_min(1e-12)
         return z * self.d**0.5
 
+    def _sample_hidden_manifold(self, n: int) -> torch.Tensor:
+        # Hidden manifold model (Goldt et al. 2020): x = phi(z F / sqrt(D_latent))
+        # with latent z in R^{D_latent}; inputs live near a low-dimensional
+        # nonlinear manifold, mimicking realistic structured data.
+        z = torch.randn(n, self._manifold_latent, device=self.device)
+        return self._manifold_fn(z @ self._manifold_F / self._manifold_latent**0.5)
+
     def sample(self, n: int) -> tuple[torch.Tensor, torch.Tensor]:
         """Generate n labelled samples (X, y)."""
         X = self._sampler(n)
@@ -119,7 +157,9 @@ class TeacherStudentDataset:
         return {
             "d": self.d,
             "input_dist": self.input_dist,
-            "input_kwargs": {k: v for k, v in self.input_kwargs.items() if k != "cov"},
+            "input_kwargs": {
+                k: v for k, v in self.input_kwargs.items() if k not in ("cov", "feature_map")
+            },
             "teacher": self.teacher.get_config(),
         }
 

@@ -13,6 +13,8 @@ Quick start (one-liners):
     >>> statphys.quick_online(d=400, lr=0.5, t_max=10)      # SGD vs ODE theory
     >>> statphys.quick_replica(d=200, reg_param=0.1)        # ERM vs replica theory
     >>> statphys.quick_experiment("random_mlp")             # theory-free preset
+    >>> statphys.quick_order_parameters("tiny_gpt")         # physics dashboard
+    >>> statphys.quick_phase_diagram("sparse_teacher", "sparsity", [0.5, 0.9])
 
 Full API example:
     >>> import statphys
@@ -97,7 +99,13 @@ from statphys.simulation import (
 )
 
 # One-liner high-level API
-from statphys.quick import quick_experiment, quick_online, quick_replica
+from statphys.quick import (
+    quick_experiment,
+    quick_online,
+    quick_order_parameters,
+    quick_phase_diagram,
+    quick_replica,
+)
 
 # Theory imports
 from statphys.theory import ODESolver, SaddlePointSolver, TheoryResult
@@ -167,6 +175,8 @@ __all__ = [
     "quick_online",
     "quick_replica",
     "quick_experiment",
+    "quick_order_parameters",
+    "quick_phase_diagram",
     # Theory
     "SaddlePointSolver",
     "ODESolver",

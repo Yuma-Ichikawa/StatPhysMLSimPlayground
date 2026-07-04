@@ -179,12 +179,72 @@ def low_rank_attention(
     )
 
 
+def hidden_manifold(
+    d: int = 256,
+    latent_dim: int = 16,
+    hidden: int = 16,
+    nonlinearity: str = "tanh",
+    noise_std: float = 0.05,
+    device: str = "cpu",
+    **kwargs: Any,
+) -> TeacherStudentExperiment:
+    """
+    MLP teacher-student on hidden-manifold inputs (Goldt et al. 2020).
+
+    Inputs live near a latent_dim-dimensional nonlinear manifold instead
+    of being isotropic Gaussian — the standard bridge from solvable
+    models toward realistic structured data.
+    """
+    teacher = Teacher(_mlp(d, hidden), init="normal", noise_std=noise_std, device=device)
+    return TeacherStudentExperiment(
+        teacher=teacher,
+        student_factory=lambda: _mlp(d, hidden),
+        d=d,
+        input_dist="hidden_manifold",
+        input_kwargs={"latent_dim": latent_dim, "nonlinearity": nonlinearity},
+        device=device,
+        **kwargs,
+    )
+
+
+def tiny_gpt(
+    d: int = 128,
+    seq_len: int = 8,
+    d_model: int = 32,
+    n_heads: int = 2,
+    n_blocks: int = 2,
+    noise_std: float = 0.0,
+    device: str = "cpu",
+    **kwargs: Any,
+) -> TeacherStudentExperiment:
+    """
+    Minimal LLM-style causal transformer teacher-student pair.
+
+    The most "realistic" preset: embedding + positional encoding +
+    causal transformer blocks. No analytic theory exists; order
+    parameters are measured purely numerically.
+    """
+    from statphys.experiment.zoo import build_tiny_gpt
+
+    def make():
+        return build_tiny_gpt(
+            d, seq_len=seq_len, d_model=d_model, n_heads=n_heads, n_blocks=n_blocks
+        )
+
+    teacher = Teacher(make(), init="normal", noise_std=noise_std, device=device)
+    return TeacherStudentExperiment(
+        teacher=teacher, student_factory=make, d=d, device=device, **kwargs
+    )
+
+
 PRESETS = {
     "random_mlp": random_mlp,
     "sparse_teacher": sparse_teacher,
     "spiked_teacher": spiked_teacher,
     "mismatched_width": mismatched_width,
     "low_rank_attention": low_rank_attention,
+    "hidden_manifold": hidden_manifold,
+    "tiny_gpt": tiny_gpt,
 }
 
 

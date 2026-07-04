@@ -8,6 +8,9 @@ visualization so that standard experiments are a single call:
     >>> result = statphys.quick_online(d=400, lr=0.5, t_max=10)   # runs + plots
     >>> result = statphys.quick_replica(d=200, reg_param=0.1)     # runs + plots
     >>> res = statphys.quick_experiment("random_mlp", alphas=[1, 2, 4, 8])
+    >>> res = statphys.quick_order_parameters("tiny_gpt")         # physics dashboard
+    >>> res = statphys.quick_phase_diagram("sparse_teacher", "sparsity",
+    ...                                    [0.5, 0.8, 0.95])
 
 Every helper returns the underlying result object, so the quick API is
 also a gentle entry point into the full framework.
@@ -72,7 +75,9 @@ def quick_online(
     solver = ODESolver(equations=eqs, order_params=["m", "q"])
 
     sim = OnlineSimulation(config)
-    result = sim.run(dataset, LinearRegression, RidgeLoss(reg_param=reg_param), theory_solver=solver)
+    result = sim.run(
+        dataset, LinearRegression, RidgeLoss(reg_param=reg_param), theory_solver=solver
+    )
 
     if plot:
         from statphys.vis import plot_from_online_results
@@ -131,7 +136,9 @@ def quick_replica(
     solver = SaddlePointSolver(equations=eqs, order_params=["m", "q"], damping=0.5)
 
     sim = ReplicaSimulation(config)
-    result = sim.run(dataset, LinearRegression, RidgeLoss(reg_param=reg_param), theory_solver=solver)
+    result = sim.run(
+        dataset, LinearRegression, RidgeLoss(reg_param=reg_param), theory_solver=solver
+    )
 
     if plot:
         from statphys.vis import plot_from_replica_results
@@ -190,4 +197,122 @@ def quick_experiment(
 
     if plot:
         result.plot(show=show)
+    return result
+
+
+def quick_order_parameters(
+    preset: str = "random_mlp",
+    alphas: list[float] | np.ndarray | None = None,
+    n_replicas: int = 4,
+    plot: bool = True,
+    show: bool = False,
+    verbose: bool = False,
+    preset_kwargs: dict[str, Any] | None = None,
+    **run_kwargs: Any,
+):
+    """
+    Physics order parameters (m_hat, q_ab, chi, Binder) for any preset.
+
+    One line gives the full statistical-physics dashboard — teacher
+    recovery, replica overlap, susceptibility, Binder cumulant, and the
+    generalization error — for arbitrary architectures:
+
+        >>> statphys.quick_order_parameters("tiny_gpt", alphas=[1, 2, 4, 8])
+
+    Args:
+        preset: Name from statphys.experiment.PRESETS
+            ("random_mlp", "sparse_teacher", "spiked_teacher",
+             "mismatched_width", "low_rank_attention", "hidden_manifold",
+             "tiny_gpt").
+        alphas: Sample ratios (default: log-spaced 0.25 ... 16).
+        n_replicas: Independently trained students per alpha.
+        plot: Draw the 4-panel dashboard.
+        show: Call plt.show().
+        verbose: Print progress.
+        preset_kwargs: Options forwarded to the preset factory (e.g. d=..).
+        **run_kwargs: Options forwarded to run_order_parameters
+            (lr, max_epochs, weight_decay, l1_penalty, ...).
+
+    Returns:
+        ExperimentResult with per-replica and cross-replica records.
+
+    """
+    from statphys.experiment import get_preset
+
+    exp = get_preset(preset, **(preset_kwargs or {}))
+    if alphas is None:
+        alphas = np.round(np.logspace(np.log10(0.25), np.log10(16), 7), 3).tolist()
+    result = exp.run_order_parameters(
+        alphas=alphas, n_replicas=n_replicas, verbose=verbose, **run_kwargs
+    )
+
+    if plot:
+        from statphys.vis import plot_order_parameter_dashboard
+
+        extra = ("specialization",) if "specialization" in result.records else ()
+        plot_order_parameter_dashboard(result, title=preset, extra_metrics=extra, show=show)
+    return result
+
+
+def quick_phase_diagram(
+    preset: str,
+    param_name: str,
+    param_values: list[float],
+    alphas: list[float] | np.ndarray | None = None,
+    metric: str = "m_hat",
+    n_replicas: int = 3,
+    plot: bool = True,
+    show: bool = False,
+    verbose: bool = False,
+    preset_kwargs: dict[str, Any] | None = None,
+    **run_kwargs: Any,
+):
+    """
+    2D numerical phase diagram (preset parameter x alpha) in one line.
+
+    The named preset option is swept as the control parameter:
+
+        >>> statphys.quick_phase_diagram("sparse_teacher", "sparsity",
+        ...                              [0.5, 0.8, 0.9, 0.95])
+
+    Args:
+        preset: Name from statphys.experiment.PRESETS.
+        param_name: Preset keyword to sweep (e.g. "sparsity", "snr",
+            "latent_dim", "noise_std").
+        param_values: Values of the control parameter (rows).
+        alphas: Sample ratios (columns; default log-spaced 0.25 ... 8).
+        metric: Grid to plot ("m_hat", "chi_m", "test_error", ...).
+        n_replicas: Replicas per grid point.
+        plot: Draw the heatmap with the 0.5 contour when metric is m_hat.
+        show: Call plt.show().
+        verbose: Print progress.
+        preset_kwargs: Fixed options forwarded to the preset factory.
+        **run_kwargs: Options forwarded to run_order_parameters.
+
+    Returns:
+        PhaseDiagramResult.
+
+    """
+    from statphys.experiment import get_preset, run_phase_diagram
+
+    if alphas is None:
+        alphas = np.round(np.logspace(np.log10(0.25), np.log10(8), 6), 3).tolist()
+    fixed = dict(preset_kwargs or {})
+
+    def factory(value: float):
+        return get_preset(preset, **{**fixed, param_name: value})
+
+    result = run_phase_diagram(
+        factory,
+        param_name=param_name,
+        param_values=param_values,
+        alphas=list(alphas),
+        n_replicas=n_replicas,
+        verbose=verbose,
+        **run_kwargs,
+    )
+
+    if plot:
+        contour = 0.5 if metric == "m_hat" else None
+        result.plot(metric, logx=True, contour_level=contour, show=show)
     return result

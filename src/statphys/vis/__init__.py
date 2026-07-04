@@ -39,6 +39,7 @@ from statphys.vis.animation import (
     save_animation,
 )
 from statphys.vis.comparison import ComparisonPlotter
+from statphys.vis.dashboard import plot_order_parameter_dashboard
 from statphys.vis.dynamics import DynamicsPlotter
 from statphys.vis.overlap_matrix import OverlapMatrixPlotter
 from statphys.vis.sweep import SweepPlotter
@@ -76,6 +77,8 @@ __all__ = [
     "animate_phase_plane",
     "animate_overlap_matrix",
     "save_animation",
+    # Dashboards
+    "plot_order_parameter_dashboard",
     # Default plotting functions
     "apply_paper_style",
     "plot_generalization_error_alpha",
