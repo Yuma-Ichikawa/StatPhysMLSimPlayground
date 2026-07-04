@@ -8,6 +8,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Realistic settings, round 2**: `multi_index_model` preset (K-direction
+  multi-index teacher; supports `k_student != k_teacher`),
+  `mixture_classification` preset + `GaussianMixtureDataset` (generative
+  Gaussian-mixture classification with an exact, numerically verified
+  Bayes error `Phi(-mu * cos_angle)`), and `lora_finetune` preset
+  (frozen "pretrained" backbone + trainable low-rank adapter, LoRA-style
+  fine-tuning)
+- New order parameters in `statphys.experiment.observables`:
+  `subspace_overlap` (principal-angle overlap between K-dim relevant
+  subspaces, permutation/basis-invariant, works with mismatched width),
+  `vector_overlap` (cosine similarity, used for cluster-axis and LoRA
+  adapter recovery), and `generalization_error_decomposition` (checks
+  the exact identity `eps_g = 1/2(rho_f + q_f - 2 m_f)` numerically)
+- `TeacherStudentExperiment(..., dataset=...)`: plug in a fully custom
+  *generative* dataset (label determines input, not the other way
+  around) while keeping every existing protocol and order parameter
+- `run_order_parameters(..., init_scale=...)` now always records
+  `weight_movement` (`||theta_final - theta_init|| / ||theta_init||`),
+  the parametrization-agnostic diagnostic for the lazy (NTK/kernel) vs.
+  rich (feature-learning) regime (Chizat & Bach 2019)
+- Four new studies: `multi_index` (subspace recovery, matched/mismatched
+  width), `mixture` (Gaussian-mixture classification vs. the analytic
+  Bayes error), `lazy_rich` (lazy vs. rich regime via init scale),
+  `lora` (LoRA adapter recovery vs. fine-tuning data and rank)
+- `docs/order_parameters.md`: full mathematical reference (with
+  derivations and literature pointers) for every order parameter and
+  generalization-error formula in `statphys.experiment`
 - `statphys` console command (CLI): `list`, `order-params`,
   `phase-diagram`, and `study` subcommands — full physics experiments
   without writing Python

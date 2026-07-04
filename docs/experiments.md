@@ -63,20 +63,33 @@ Readouts: `readout="identity"` (regression, optional `noise_std`), `readout="sig
 | `"hidden_manifold"` | $x = \phi(zF/\sqrt{D})$ with latent $z \sim \mathcal{N}(0, I_D)$ — the hidden manifold model (Goldt et al. 2020) for realistic low-dimensional data structure. Options: `latent_dim`, `nonlinearity` (`tanh`/`relu`/`sign`/`identity`), optional `feature_map` |
 | callable | Any function `n -> (n, d)` tensor |
 
+For **generative** settings where the label determines $x$ rather than
+the other way around (e.g. Gaussian-mixture classification, §5 of
+[order_parameters.md](order_parameters.md)), pass a fully custom
+`dataset=...` object to `TeacherStudentExperiment` instead of
+`input_dist` — see "Custom generative datasets" below.
+
 ## Physics order parameters
 
 `statphys.experiment.observables` defines statistical-physics observables in
 *function space* (on a shared probe set), so they apply to any architecture,
-not only to models with a single weight vector:
+not only to models with a single weight vector. **Full derivations and the
+exact generalization-error identities are in
+[order_parameters.md](order_parameters.md)** — this table is a quick
+reference:
 
 | Observable | Definition | Physics reading |
 |---|---|---|
 | `function_order_params` | \(m_f = \mathbb{E}[f_s f_t]\), \(q_f = \mathbb{E}[f_s^2]\), and \(\hat m = m_f/\sqrt{q_f \rho_f}\) | magnetization (teacher recovery); noise-independent |
+| `generalization_error_decomposition` | \(\epsilon_g = \tfrac12(\rho_f+q_f-2m_f)\), checked against the direct MSE | exact identity; validates the eps_g bookkeeping |
 | `replica_overlaps` | \(q_{ab} = \mathbb{E}[f_a f_b]\) between independently trained students | replica-symmetric overlap; \(q_{ab} \to 1\) = condensed phase, small = many distinct minima |
 | `susceptibility` | \(\chi_m = d \, \mathrm{Var}[\hat m]\) over replicas | peaks at the transition, sharpens with \(d\) |
 | `binder_cumulant` | \(U_4 = 1 - \langle m^4\rangle / 3\langle m^2\rangle^2\) | curves for different \(d\) cross at \(\alpha_c\) (finite-size scaling) |
 | `participation_ratio` | \((\sum\lambda_i)^2/\sum\lambda_i^2\) of activation covariance | effective dimension of representations |
 | `specialization_index` | permutation-matched hidden-unit overlap (matched minus unmatched) | committee-machine specialization for any matched pair |
+| `subspace_overlap` | cos(principal angles) between K-dim relevant subspaces (works if \(K_s \ne K_t\)) | multi-index model recovery (Ben Arous/Gerace/Krzakala/Zdeborová-style) |
+| `vector_overlap` | plain cosine similarity of two vectors/matrices (flattened) | cluster-axis recovery (mixture classification), LoRA adapter recovery |
+| `weight_movement` | \(\lVert\theta_f-\theta_0\rVert/\lVert\theta_0\rVert\), always recorded by `run_order_parameters` | lazy (NTK/kernel) vs. rich (feature-learning) regime diagnostic |
 
 ### Replica-resolved sweeps
 
@@ -90,6 +103,17 @@ res.mean("m_hat"), res.mean("q_ab_mean"), res.mean("chi_m"), res.mean("binder_m"
 
 from statphys.vis import plot_order_parameter_dashboard
 plot_order_parameter_dashboard(res)   # 4-panel physics dashboard incl. eps_g
+```
+
+`weight_movement` (relative distance the weights travel from
+initialization, §4 of [order_parameters.md](order_parameters.md)) is
+always recorded; `init_scale` multiplies the initial weights to probe
+the lazy (large `init_scale`) vs. rich (feature-learning, `init_scale`
+$\approx 1$) regime:
+
+```python
+res = exp.run_order_parameters(alphas=[4.0], n_replicas=5, init_scale=30.0)
+res.mean("weight_movement")   # small -> lazy/NTK regime
 ```
 
 One-liners for the whole pipeline (any preset, plot included):
@@ -137,6 +161,10 @@ command line) bundles complete experiments that save JSON + figure:
 | `universality` | Gaussian universality of learning curves + breakdown |
 | `double_descent` | Model-wise double descent vs student width |
 | `scaling` | Data-scaling exponents eps_g ~ alpha^-b across architectures |
+| `multi_index` | Subspace recovery in a K-direction multi-index model, matched/mismatched width |
+| `mixture` | Gaussian-mixture classification; measured eps_g checked against the exact Bayes error |
+| `lazy_rich` | Lazy (NTK/kernel) vs. rich (feature-learning) regime via init scale (Chizat & Bach 2019) |
+| `lora` | LoRA-style low-rank fine-tuning adapter recovery |
 
 ### Command-line interface
 
@@ -205,11 +233,43 @@ exp = TeacherStudentExperiment(
 | `low_rank_attention` | Low-rank attention teacher (toy LLM-like setting) |
 | `hidden_manifold` | MLP pair on hidden-manifold inputs (realistic data structure) |
 | `tiny_gpt` | Minimal causal transformer teacher-student pair (LLM-style) |
+| `multi_index_model` | K-direction multi-index teacher; `k_student` may differ from `k_teacher` (subspace recovery, §3 of order_parameters.md) |
+| `mixture_classification` | Generative Gaussian-mixture classification with an exact Bayes error (§5) |
+| `lora_finetune` | Frozen "pretrained" backbone + trainable low-rank adapter, LoRA-style fine-tuning (§6) |
 
 ```python
 from statphys.experiment import get_preset
 exp = get_preset("sparse_teacher", d=400, sparsity=0.95)
+exp = get_preset("multi_index_model", d=200, k_teacher=3, k_student=5)
+exp = get_preset("mixture_classification", d=200, mu=2.0)
+exp = get_preset("lora_finetune", d=128, hidden=16, rank_true=2, rank_student=2)
 ```
+
+### Custom generative datasets
+
+For settings where the *label determines the input* rather than the
+input determining the label (e.g. classification of a Gaussian
+mixture), pass a fully custom dataset object instead of `input_dist`:
+
+```python
+from statphys.experiment import GaussianMixtureDataset, TeacherStudentExperiment
+
+d = 200
+dataset = GaussianMixtureDataset(d=d, mu=2.0)
+teacher = dataset.oracle_teacher()   # clean(x) = sign(v . x), Bayes-consistent
+
+exp = TeacherStudentExperiment(
+    teacher=teacher,
+    student_factory=lambda: nn.Linear(d, 1, bias=False),
+    d=d,
+    dataset=dataset,   # overrides the default TeacherStudentDataset
+)
+res = exp.run_order_parameters(alphas=[1, 2, 4, 8], n_replicas=4)
+```
+
+Any object exposing `.sample(n) -> (X, y)`, `.sample_inputs(n) -> X`,
+and `.get_config() -> dict` works here; see §7 of
+[order_parameters.md](order_parameters.md).
 
 ## Architecture zoo
 

@@ -183,6 +183,13 @@ class TeacherStudentExperiment:
         metrics: Extra observables {name: fn(student, dataset) -> float}.
             Built-in: "test_error" always; "overlap_avg" when student and
             teacher share parameter shapes.
+        dataset: Optional pre-built dataset object exposing `.sample(n)`,
+            `.sample_inputs(n)`, and `.get_config()`, used instead of the
+            default TeacherStudentDataset. Enables generative data models
+            that are not "sample x, then apply teacher" (e.g. Gaussian
+            mixture classification, where the label determines x).
+            `teacher` is still required and must expose a `.clean(x)`
+            oracle consistent with the dataset for function_order_params.
         device: Torch device.
 
     """
@@ -196,6 +203,7 @@ class TeacherStudentExperiment:
         input_kwargs: dict[str, Any] | None = None,
         loss_fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor] | None = None,
         metrics: dict[str, MetricFn] | None = None,
+        dataset: Any | None = None,
         device: str = "cpu",
     ):
         if not isinstance(teacher, Teacher):
@@ -208,7 +216,7 @@ class TeacherStudentExperiment:
             d = self._infer_dim(teacher)
         self.d = d
 
-        self.dataset = TeacherStudentDataset(
+        self.dataset = dataset or TeacherStudentDataset(
             teacher, d=d, input_dist=input_dist, input_kwargs=input_kwargs, device=device
         )
         self.loss_fn = loss_fn or (lambda pred, y: 0.5 * ((pred - y) ** 2).mean())
@@ -372,6 +380,7 @@ class TeacherStudentExperiment:
         patience: int = 20,
         weight_decay: float = 0.0,
         l1_penalty: float = 0.0,
+        init_scale: float = 1.0,
         n_probe: int = 4096,
         verbose: bool = True,
     ) -> ExperimentResult:
@@ -401,12 +410,20 @@ class TeacherStudentExperiment:
                 Training options (see run_sample_complexity).
             l1_penalty: Optional L1 penalty on all student parameters
                 (LASSO-style; useful for sparse-recovery studies).
+            init_scale: Multiply all initial student weights by this
+                factor before training. Large values (>>1) shrink the
+                *relative* weight movement during training and push the
+                dynamics toward the lazy/NTK (kernel) regime (Chizat &
+                Bach 2019); small values (~1) allow feature learning
+                ("rich" regime). Tracked via the "weight_movement" metric.
             n_probe: Probe-set size for function-space observables.
             verbose: Print progress.
 
         Returns:
             ExperimentResult; per-replica metrics have n_replicas rows,
-            cross-replica aggregates have a single row.
+            cross-replica aggregates have a single row. Always includes
+            "weight_movement" = ||theta_final - theta_init|| / ||theta_init||,
+            a parametrization-agnostic feature-learning diagnostic.
 
         """
         alphas = [float(a) for a in alphas]
@@ -432,6 +449,13 @@ class TeacherStudentExperiment:
                 else:
                     X, y = self.dataset.sample(n)
                 student = self.student_factory().to(self.device)
+                if init_scale != 1.0:
+                    with torch.no_grad():
+                        for p in student.parameters():
+                            p.mul_(init_scale)
+                theta0 = torch.cat([p.detach().flatten() for p in student.parameters()])
+                theta0_norm = theta0.norm().clamp_min(1e-12)
+
                 self._train_offline(
                     student,
                     X,
@@ -445,6 +469,11 @@ class TeacherStudentExperiment:
                     l1_penalty=l1_penalty,
                 )
                 students.append(student)
+
+                theta1 = torch.cat([p.detach().flatten() for p in student.parameters()])
+                rep_vals.setdefault("weight_movement", []).append(
+                    ((theta1 - theta0).norm() / theta0_norm).item()
+                )
 
                 fop = function_order_params(student, self.teacher, X_probe)
                 rep_vals.setdefault("m_hat", []).append(fop["m_hat"])
@@ -495,6 +524,7 @@ class TeacherStudentExperiment:
                 "batch_size": batch_size,
                 "weight_decay": weight_decay,
                 "l1_penalty": l1_penalty,
+                "init_scale": init_scale,
                 "n_probe": n_probe,
                 "dataset": self.dataset.get_config(),
             },

@@ -16,13 +16,22 @@ Components:
       when shapes match, representation similarity / CKA).
     - Observables: statistical-physics order parameters in function space
       (magnetization m_hat, replica overlap q_ab, susceptibility chi,
-      Binder cumulant, participation ratio, specialization index).
+      Binder cumulant, participation ratio, specialization index,
+      subspace overlap for multi-index models, weight movement for the
+      lazy/rich feature-learning diagnostic).
+    - GaussianMixtureDataset / bayes_error: a generative (not
+      discriminative) classification setting with an exact closed-form
+      generalization error, used to validate the eps_g bookkeeping.
     - TeacherStudentExperiment: sample-complexity sweeps (alpha = n/d),
-      replica-resolved order-parameter sweeps, and online-SGD dynamics
-      for arbitrary teacher-student pairs.
+      replica-resolved order-parameter sweeps, epoch-resolved training
+      dynamics, and online-SGD dynamics for arbitrary teacher-student
+      pairs (optionally with a custom generative `dataset`).
     - run_phase_diagram: 2D numerical phase diagrams
       (control parameter x alpha).
-    - presets: ready-made interesting setups.
+    - presets: ready-made interesting setups, including realistic/modern
+      settings (hidden-manifold inputs, a tiny causal transformer,
+      multi-index models, Gaussian-mixture classification, LoRA-style
+      low-rank fine-tuning).
 
 Example:
     >>> import torch.nn as nn
@@ -47,13 +56,17 @@ from statphys.experiment.metrics import (
     test_error,
     weight_overlap,
 )
+from statphys.experiment.mixture import GaussianMixtureDataset, bayes_error
 from statphys.experiment.observables import (
     binder_cumulant,
     function_order_params,
+    generalization_error_decomposition,
     participation_ratio,
     replica_overlaps,
     specialization_index,
+    subspace_overlap,
     susceptibility,
+    vector_overlap,
 )
 from statphys.experiment.phase import PhaseDiagramResult, run_phase_diagram
 from statphys.experiment.presets import PRESETS, get_preset
@@ -78,6 +91,11 @@ __all__ = [
     "binder_cumulant",
     "participation_ratio",
     "specialization_index",
+    "subspace_overlap",
+    "vector_overlap",
+    "generalization_error_decomposition",
+    "GaussianMixtureDataset",
+    "bayes_error",
     "PhaseDiagramResult",
     "run_phase_diagram",
     "PRESETS",

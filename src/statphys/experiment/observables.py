@@ -18,12 +18,21 @@ only to models with a single weight vector:
 - specialization_index: permutation-resolved diagonal dominance of the
   student-teacher hidden-unit overlap matrix (committee-machine
   specialization for any matched pair of architectures)
+- subspace_overlap: principal-angle overlap between the K-dimensional
+  "relevant subspaces" of a teacher and student in a multi-index model
+  (Ben Arous, Gerace, Krzakala, Zdeborova and related literature on
+  multi-index models); generalizes single-direction overlap to K>1
+- vector_overlap: plain cosine similarity between two vectors (building
+  block for structured-data settings such as Gaussian-mixture
+  classification, where the "teacher" is a cluster-separating direction
+  rather than a full network)
 
 Together with test_error these give a statistical-physics dashboard for
 locating and characterizing phase transitions purely numerically.
 """
 
 from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 import torch
@@ -34,10 +43,13 @@ from statphys.experiment.teacher import Teacher
 __all__ = [
     "binder_cumulant",
     "function_order_params",
+    "generalization_error_decomposition",
     "participation_ratio",
     "replica_overlaps",
     "specialization_index",
+    "subspace_overlap",
     "susceptibility",
+    "vector_overlap",
 ]
 
 
@@ -78,6 +90,49 @@ def function_order_params(
     rho_f = (f_t**2).mean().item()
     denom = max(np.sqrt(max(q_f, 0.0) * max(rho_f, 0.0)), 1e-12)
     return {"m_f": m_f, "q_f": q_f, "rho_f": rho_f, "m_hat": m_f / denom}
+
+
+@torch.no_grad()
+def generalization_error_decomposition(
+    student: nn.Module,
+    teacher: Teacher,
+    X: torch.Tensor,
+) -> dict[str, float]:
+    """
+    Decompose the (noiseless) generalization error into order parameters.
+
+    For MSE regression, the clean generalization error (excluding label
+    noise) obeys the exact identity
+
+        eps_g^clean = (1/2) E[(f_s(x) - f_t(x))^2]
+                    = (1/2) (rho_f + q_f - 2 m_f)
+
+    with rho_f = E[f_t^2], q_f = E[f_s^2], m_f = E[f_s f_t] as returned
+    by `function_order_params`. This function computes both sides
+    directly (as a numerical cross-check that the order parameters
+    correctly account for the generalization error) and returns their
+    difference, which should vanish up to floating-point error.
+
+    Args:
+        student: Trained student model.
+        teacher: Teacher (noiseless labels via teacher.clean).
+        X: Probe inputs of shape (n, d).
+
+    Returns:
+        Dict with "eps_g_direct" (directly computed), "eps_g_from_params"
+        (from m_f, q_f, rho_f), and "residual" (their difference).
+
+    """
+    fop = function_order_params(student, teacher, X)
+    f_s = _flat_output(student, X)
+    f_t = teacher.clean(X).flatten().to(f_s.device)
+    eps_direct = 0.5 * ((f_s - f_t) ** 2).mean().item()
+    eps_from_params = 0.5 * (fop["rho_f"] + fop["q_f"] - 2 * fop["m_f"])
+    return {
+        "eps_g_direct": eps_direct,
+        "eps_g_from_params": eps_from_params,
+        "residual": eps_direct - eps_from_params,
+    }
 
 
 @torch.no_grad()
@@ -255,3 +310,65 @@ def specialization_index(
     n_unmatched = M.numel() - k
     unmatched = (total - matched * k) / n_unmatched if n_unmatched > 0 else 0.0
     return matched - unmatched
+
+
+def vector_overlap(w: torch.Tensor, v: torch.Tensor) -> float:
+    """
+    Cosine similarity between two vectors.
+
+    The basic order parameter for structured-data settings where the
+    "signal" is a single direction rather than a full function (e.g. the
+    cluster axis of a Gaussian-mixture classification model): m = w.v /
+    (||w|| ||v||) in [-1, 1], with |m| = 1 meaning perfect (up to sign)
+    recovery of the planted direction.
+
+    Args:
+        w: Arbitrary-shape tensor (flattened internally).
+        v: Tensor with the same number of elements as w.
+
+    Returns:
+        Cosine similarity in [-1, 1].
+
+    """
+    wf, vf = w.detach().flatten().float(), v.detach().flatten().float().to(w.device)
+    denom = (wf.norm() * vf.norm()).clamp_min(1e-12)
+    return (wf @ vf / denom).item()
+
+
+@torch.no_grad()
+def subspace_overlap(W_student: torch.Tensor, W_teacher: torch.Tensor) -> dict[str, Any]:
+    """
+    Principal-angle overlap between two "relevant subspaces".
+
+    In a multi-index model y = g(W^T x) with W in R^{d x K} (K relevant
+    directions), the natural order parameter is not a single cosine but
+    the set of principal angles between span(W_student) and
+    span(W_teacher) -- the multivariate generalization of m_hat used in
+    single-index (K=1) settings (see e.g. Ben Arous, Gerace, Krzakala,
+    Zdeborova and collaborators' work on multi-index models).
+
+    Each row space is first orthonormalized via QR (so K linearly
+    dependent or non-orthogonal "directions" still define a well-defined
+    subspace); cos(principal angles) are then the singular values of the
+    cross product of the two orthonormal bases (Golub & Van Loan).
+
+    Args:
+        W_student: (K_s, d) student relevant-direction matrix.
+        W_teacher: (K_t, d) teacher relevant-direction matrix.
+
+    Returns:
+        Dict with "cosines" (sorted descending, length min(K_s, K_t)),
+        "mean_cosine" (overall subspace alignment in [0, 1]), and
+        "top_cosine" (best-aligned single pair of directions).
+
+    """
+    Qs, _ = torch.linalg.qr(W_student.float().T)  # (d, K_s) orthonormal columns
+    Qt, _ = torch.linalg.qr(W_teacher.float().T.to(Qs.device))  # (d, K_t)
+    cross = Qs.T @ Qt
+    cosines = torch.linalg.svdvals(cross).clamp(max=1.0)
+    cosines_list = cosines.tolist()
+    return {
+        "cosines": cosines_list,
+        "mean_cosine": float(cosines.mean().item()) if cosines_list else float("nan"),
+        "top_cosine": float(cosines_list[0]) if cosines_list else float("nan"),
+    }

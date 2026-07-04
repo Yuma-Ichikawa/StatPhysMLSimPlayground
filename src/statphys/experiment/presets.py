@@ -15,6 +15,12 @@ specialization) are known or expected:
     (BBP-style detectability transition as snr/alpha vary)
 - mismatched_width: teacher narrower than student
     (overparameterization effects, benign overfitting regime)
+- multi_index_model: K-direction multi-index teacher, subspace-overlap
+    order parameter (works even if K_student != K_teacher)
+- mixture_classification: Gaussian-mixture classification (generative,
+    clustered data), with an exactly verifiable Bayes error
+- lora_finetune: frozen "pretrained" backbone + trainable low-rank
+    adapter (LoRA-style fine-tuning teacher-student)
 
 All presets accept overrides so they double as documentation of the API.
 
@@ -28,8 +34,10 @@ Example:
 
 from typing import Any
 
+import torch
 import torch.nn as nn
 
+from statphys.experiment.observables import subspace_overlap, vector_overlap
 from statphys.experiment.protocol import TeacherStudentExperiment
 from statphys.experiment.teacher import Teacher
 
@@ -42,6 +50,14 @@ def _mlp(d: int, hidden: int, depth: int = 1, activation: type[nn.Module] = nn.T
         in_dim = hidden
     layers.append(nn.Linear(in_dim, 1))
     return nn.Sequential(*layers)
+
+
+def _first_linear_weight(net: nn.Module) -> torch.Tensor:
+    """Return the weight matrix of the first nn.Linear layer found."""
+    for m in net.modules():
+        if isinstance(m, nn.Linear):
+            return m.weight.detach()
+    raise ValueError("No nn.Linear layer found in module")
 
 
 def random_mlp(
@@ -237,6 +253,155 @@ def tiny_gpt(
     )
 
 
+def multi_index_model(
+    d: int = 200,
+    k_teacher: int = 3,
+    k_student: int = 3,
+    noise_std: float = 0.05,
+    device: str = "cpu",
+    **kwargs: Any,
+) -> TeacherStudentExperiment:
+    """
+    Multi-index model: y = readout(g(W^T x)), teacher W in R^{k_teacher x d}.
+
+    Generalizes the single-index (perceptron) teacher-student setting to
+    K > 1 relevant directions (Ben Arous, Gerace, Krzakala, Zdeborova and
+    collaborators). Because the natural order parameter -- the
+    "subspace_overlap" metric registered here -- is permutation- and
+    basis-invariant, k_student may differ from k_teacher, allowing
+    over-/under-parameterized recovery of the relevant subspace to be
+    studied directly.
+    """
+    teacher_net = _mlp(d, k_teacher)
+    teacher = Teacher(teacher_net, init="orthogonal", noise_std=noise_std, device=device)
+    w_teacher = _first_linear_weight(teacher.model)
+
+    def metric_subspace(student: nn.Module, _dataset: Any) -> float:
+        return subspace_overlap(_first_linear_weight(student), w_teacher)["mean_cosine"]
+
+    return TeacherStudentExperiment(
+        teacher=teacher,
+        student_factory=lambda: _mlp(d, k_student),
+        d=d,
+        device=device,
+        metrics={"subspace_overlap": metric_subspace},
+        **kwargs,
+    )
+
+
+def mixture_classification(
+    d: int = 200,
+    mu: float = 1.5,
+    device: str = "cpu",
+    **kwargs: Any,
+) -> TeacherStudentExperiment:
+    """
+    Gaussian-mixture classification: x = y*mu*v + z (generative model).
+
+    Unlike the rest of the presets, the label determines the input
+    rather than the other way around (Mignacco, Krzakala, Mezard,
+    Urbani, Zdeborova 2020 and related classification-of-mixtures
+    literature). The exact Bayes error Phi(-mu * cos(w, v)) gives a
+    ground-truth check on the numerically measured generalization error
+    (see tests/test_mixture.py and docs/order_parameters.md).
+    """
+    from statphys.experiment.mixture import GaussianMixtureDataset
+
+    dataset = GaussianMixtureDataset(d=d, mu=mu, device=device)
+    teacher = dataset.oracle_teacher()
+
+    def metric_cluster_overlap(student: nn.Module, _dataset: Any) -> float:
+        return vector_overlap(_first_linear_weight(student), dataset.v)
+
+    return TeacherStudentExperiment(
+        teacher=teacher,
+        student_factory=lambda: nn.Linear(d, 1, bias=False),
+        d=d,
+        dataset=dataset,
+        device=device,
+        metrics={"cluster_overlap": metric_cluster_overlap},
+        **kwargs,
+    )
+
+
+class _LoRAModel(nn.Module):
+    """Frozen 'pretrained' base + trainable low-rank adapter + head."""
+
+    def __init__(
+        self,
+        d: int,
+        hidden: int,
+        rank: int,
+        base_weight: torch.Tensor,
+        zero_init: bool = True,
+        activation: type[nn.Module] = nn.Tanh,
+    ):
+        super().__init__()
+        self.base = nn.Linear(d, hidden, bias=False)
+        with torch.no_grad():
+            self.base.weight.copy_(base_weight)
+        self.base.weight.requires_grad_(False)
+        self.rank = rank
+        if rank > 0:
+            b0 = torch.zeros(hidden, rank) if zero_init else torch.randn(hidden, rank) / hidden**0.5
+            self.B = nn.Parameter(b0)
+            self.A = nn.Parameter(torch.randn(rank, d) / d**0.5)
+        self.act = activation()
+        self.readout = nn.Linear(hidden, 1)
+
+    def delta(self) -> torch.Tensor:
+        """Learned/true low-rank weight update B @ A."""
+        if self.rank == 0:
+            return torch.zeros_like(self.base.weight)
+        return self.B @ self.A
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        h = x @ (self.base.weight + self.delta()).T
+        return self.readout(self.act(h))
+
+
+def lora_finetune(
+    d: int = 128,
+    hidden: int = 16,
+    rank_true: int = 2,
+    rank_student: int = 2,
+    noise_std: float = 0.02,
+    device: str = "cpu",
+    **kwargs: Any,
+) -> TeacherStudentExperiment:
+    """
+    LoRA-style fine-tuning: frozen shared backbone, trainable low-rank adapter.
+
+    A frozen random "pretrained" weight matrix W0 (d -> hidden) is
+    shared by teacher and student, mimicking a frozen foundation model.
+    The teacher has a fixed low-rank task update
+    Delta_true = B_true A_true (rank `rank_true`, representing "the
+    correctly fine-tuned model"); the student starts at Delta = 0 (as
+    in real LoRA initialization, Hu et al. 2021) and learns its own
+    adapter of rank `rank_student` from alpha = n_finetune / d samples.
+    Order parameter: cosine overlap between the learned and true
+    low-rank updates ("adapter_overlap"), the natural analogue of
+    m_hat for low-rank matrix (rather than vector) recovery.
+    """
+    base_weight = torch.randn(hidden, d) / d**0.5
+
+    teacher_net = _LoRAModel(d, hidden, rank_true, base_weight, zero_init=False)
+    delta_true = teacher_net.delta().detach()
+    teacher = Teacher(teacher_net, init=None, noise_std=noise_std, device=device)
+
+    def metric_adapter_overlap(student: nn.Module, _dataset: Any) -> float:
+        return vector_overlap(student.delta(), delta_true)
+
+    return TeacherStudentExperiment(
+        teacher=teacher,
+        student_factory=lambda: _LoRAModel(d, hidden, rank_student, base_weight, zero_init=True),
+        d=d,
+        device=device,
+        metrics={"adapter_overlap": metric_adapter_overlap},
+        **kwargs,
+    )
+
+
 PRESETS = {
     "random_mlp": random_mlp,
     "sparse_teacher": sparse_teacher,
@@ -245,6 +410,9 @@ PRESETS = {
     "low_rank_attention": low_rank_attention,
     "hidden_manifold": hidden_manifold,
     "tiny_gpt": tiny_gpt,
+    "multi_index_model": multi_index_model,
+    "mixture_classification": mixture_classification,
+    "lora_finetune": lora_finetune,
 }
 
 

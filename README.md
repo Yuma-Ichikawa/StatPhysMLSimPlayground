@@ -37,11 +37,12 @@
 - **Theory solvers**: replica saddle-point equations (6 scenarios) and online-learning ODEs (6 scenarios), with automatic theory-vs-experiment comparison
 - **22 datasets / 19 models / 16 losses**: from Gaussian linear teachers to ICL tasks, sequence models, and attention-indexed models
 - **General teacher-student experiments**: theory-free numerical experiments for *any* PyTorch model, with structured teacher weights (sparse, low-rank, spiked, power-law, ...) and configurable input distributions — including **hidden-manifold** inputs for realistic data structure
-- **Physics order parameters for any architecture**: function-space magnetization, replica overlap, susceptibility, Binder cumulant, specialization index — locate phase transitions numerically even where no theory exists
+- **Physics order parameters for any architecture**: function-space magnetization, replica overlap, susceptibility, Binder cumulant, specialization index, subspace overlap, weight movement — locate phase transitions numerically even where no theory exists, with generalization error checked against exact formulas where available
+- **Realistic modern settings**: multi-index models (feature learning, subspace recovery), Gaussian-mixture classification (exactly verifiable Bayes error), lazy-vs-rich training regimes (Chizat & Bach), and LoRA-style low-rank fine-tuning — see [order_parameters.md](docs/order_parameters.md) for full derivations
 - **Numerical phase diagrams**: 2D (parameter × α) sweeps with contour-based boundary estimation, plus finite-size-scaling protocols
 - **Architecture zoo**: matched teacher-student pairs for linear / MLP / deep MLP / CNN / LSTM / attention / tiny-GPT
 - **Visualization**: publication-quality plots, phase portraits, overlap-matrix heatmaps, order-parameter dashboards, and GIF/MP4 animations
-- **Modern phenomenology, ready-made**: grokking (delayed generalization), Gaussian universality, model-wise double descent, and data-scaling exponents as one-command studies
+- **Modern phenomenology, ready-made**: grokking (delayed generalization), Gaussian universality, model-wise double descent, data-scaling exponents, multi-index recovery, mixture classification, lazy/rich regimes, and LoRA fine-tuning — all as one-command studies
 - **Slurm integration**: programmatic sbatch generation and job arrays, no hardcoded cluster paths
 - **One-liner API**: `quick_online()`, `quick_replica()`, `quick_experiment()`, `quick_order_parameters()`, `quick_phase_diagram()`
 - **CLI**: `statphys list / order-params / phase-diagram / study` — no Python required
@@ -120,8 +121,33 @@ Ready-made studies cover the classic and the modern phenomenology:
 committee specialization, sparse-recovery finite-size scaling, 2D phase
 diagrams, hidden-manifold data, tiny GPT, **grokking** (delayed
 generalization), **Gaussian universality** of learning curves,
-**model-wise double descent**, and **data-scaling exponents** across
-architectures.
+**model-wise double descent**, **data-scaling exponents** across
+architectures, **multi-index model** subspace recovery, **Gaussian-
+mixture classification** (with an exactly verifiable generalization
+error), **lazy-vs-rich** feature-learning regimes, and **LoRA-style**
+fine-tuning adapter recovery.
+
+### Phenomenology gallery
+
+<p align="center">
+  <img src="assets/gallery_mixture.png" alt="Gaussian-mixture classification: measured error matches the Bayes formula" width="90%">
+</p>
+<p align="center"><em>
+  Gaussian-mixture classification (<code>statphys study mixture</code>): the numerically
+  measured generalization error matches the exact analytic Bayes formula
+  &Phi;(&minus;&mu; cos&theta;) at every &alpha; — a direct, literature-grounded check
+  that the package's generalization-error bookkeeping is correct.
+</em></p>
+
+<p align="center">
+  <img src="assets/gallery_lazy_rich.png" alt="Lazy vs rich training regimes" width="90%">
+</p>
+<p align="center"><em>
+  Lazy vs. rich regimes (<code>statphys study lazy_rich</code>, Chizat &amp; Bach 2019): scaling up
+  the initial weights suppresses relative weight movement (left) and prevents the
+  student from specializing to the teacher's hidden directions, driving up the
+  generalization error (right).
+</em></p>
 
 Verify the whole architecture zoo locally or as a Slurm job array:
 
@@ -144,6 +170,7 @@ Detailed documentation lives in [`docs/`](docs/README.md):
 | [Visualization](docs/visualization.md) | Plotters, phase portraits, and GIF/MP4 animations |
 | [Slurm Guide](docs/slurm.md) | Cluster execution: single jobs, arrays, verification CLI |
 | [Key Concepts](docs/concepts.md) | Order parameters, $E_g$ formulas, scaling conventions |
+| [Order Parameters (full reference)](docs/order_parameters.md) | Every order parameter/generalization-error formula, with derivations: multi-index subspace overlap, Gaussian-mixture Bayes error, lazy/rich weight movement, LoRA adapter recovery |
 | [Theory & Literature](docs/THEORY.md) | Feature ↔ paper map; exact vs heuristic status |
 | [Package Structure](docs/package_structure.md) | Source-tree layout and design conventions |
 

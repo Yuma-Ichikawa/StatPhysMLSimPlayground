@@ -18,6 +18,13 @@ records as JSON, and renders a publication-style figure:
                    (Belkin et al. 2019; Nakkiran et al. 2021)
 - scaling        : generalization-error scaling exponents eps_g ~ alpha^-b
                    across architectures (neural-scaling-law style)
+- multi_index    : subspace recovery in a K-direction multi-index model,
+                   including mismatched student/teacher width
+- mixture        : Gaussian-mixture classification; measured eps_g checked
+                   against the exact Bayes error Phi(-mu * cos)
+- lazy_rich      : lazy (NTK/kernel) vs rich (feature-learning) regime
+                   via init-scale (Chizat & Bach 2019)
+- lora           : LoRA-style low-rank fine-tuning adapter recovery
 
 Use `run_study(name, out_dir, quick=...)` or the `statphys study` CLI.
 """
@@ -549,6 +556,250 @@ def study_scaling(out_dir: Path, quick: bool) -> None:
     )
 
 
+def study_multi_index(out_dir: Path, quick: bool) -> None:
+    """
+    Subspace recovery in a K-direction multi-index model.
+
+    Generalizes single-direction (perceptron) recovery to K > 1 relevant
+    directions. Sweeps alpha for matched (K_s = K_t) and mismatched
+    (under-/over-parameterized) student widths, tracking the
+    permutation-invariant subspace_overlap order parameter.
+    """
+    import matplotlib.pyplot as plt
+
+    from statphys.experiment.presets import multi_index_model
+
+    d = 96 if quick else 192
+    k_teacher = 3
+    alphas = [1, 2, 4, 8] if quick else [0.5, 1, 2, 4, 8, 16, 32]
+    student_widths = [2, 3, 6] if quick else [1, 2, 3, 4, 6, 10]
+
+    results = {}
+    for k_s in student_widths:
+        exp = multi_index_model(d=d, k_teacher=k_teacher, k_student=k_s, noise_std=0.02)
+        res = exp.run_order_parameters(
+            alphas=alphas,
+            n_replicas=2 if quick else 4,
+            share_data=False,
+            lr=1e-2,
+            max_epochs=300 if quick else 3000,
+            weight_decay=1e-4,
+        )
+        results[k_s] = res
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
+    for k_s, res in results.items():
+        x = np.array(res.x_values)
+        label = f"$K_s={k_s}$" + (" (matched)" if k_s == k_teacher else "")
+        axes[0].errorbar(
+            x,
+            res.mean("subspace_overlap"),
+            yerr=res.std("subspace_overlap"),
+            fmt="o-",
+            markersize=4,
+            capsize=2,
+            label=label,
+        )
+        axes[1].plot(x, res.mean("test_error"), "s-", markersize=4, label=label)
+    axes[0].set_ylabel("subspace overlap (mean cosine)")
+    axes[1].set_ylabel(r"$\epsilon_g$")
+    axes[1].set_yscale("log")
+    for ax in axes:
+        ax.set_xscale("log")
+        ax.set_xlabel(r"$\alpha = n/d$")
+        ax.grid(True, linestyle="--", alpha=0.3)
+        ax.legend(fontsize=8)
+    fig.suptitle(f"multi-index model (d={d}, teacher K={k_teacher}): subspace recovery")
+    fig.tight_layout()
+    _save({str(k): r.to_dict() for k, r in results.items()}, fig, out_dir, "multi_index")
+
+
+def study_mixture(out_dir: Path, quick: bool) -> None:
+    """
+    Gaussian-mixture classification: eps_g checked against the Bayes error.
+
+    For a linear classifier, the exact test error is
+    Phi(-mu * cos(w, v)); this study overlays the numerically measured
+    (alpha-dependent) error against that analytic curve evaluated at the
+    measured overlap, directly validating the generalization-error
+    bookkeeping used throughout the package.
+    """
+    import matplotlib.pyplot as plt
+
+    from statphys.experiment.mixture import bayes_error
+    from statphys.experiment.presets import mixture_classification
+
+    d = 128 if quick else 256
+    mus = [1.0, 2.0] if quick else [0.5, 1.0, 2.0, 3.0]
+    alphas = [1, 2, 4, 8] if quick else [0.5, 1, 2, 4, 8, 16, 32]
+
+    results = {}
+    for mu in mus:
+        exp = mixture_classification(d=d, mu=mu)
+        res = exp.run_order_parameters(
+            alphas=alphas,
+            n_replicas=2 if quick else 4,
+            share_data=False,
+            lr=5e-2,
+            max_epochs=300 if quick else 2000,
+            weight_decay=1e-4,
+        )
+        results[mu] = res
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
+    for mu, res in results.items():
+        x = np.array(res.x_values)
+        cos = res.mean("cluster_overlap")
+        measured = res.mean("test_error")
+        predicted = np.array([bayes_error(mu, c) for c in cos])
+        label = f"$\\mu={mu}$"
+        axes[0].plot(x, measured, "o", markersize=5, label=f"{label} measured")
+        axes[0].plot(
+            x,
+            predicted,
+            "--",
+            color=axes[0].lines[-1].get_color(),
+            label=f"{label} $\\Phi(-\\mu \\cos)$",
+        )
+        axes[1].plot(x, cos, "d-", markersize=4, label=label)
+    axes[0].set_ylabel(r"test error $\epsilon_g$")
+    axes[1].set_ylabel("cluster overlap $\\cos(w, v)$")
+    for ax in axes:
+        ax.set_xscale("log")
+        ax.set_xlabel(r"$\alpha = n/d$")
+        ax.grid(True, linestyle="--", alpha=0.3)
+        ax.legend(fontsize=7)
+    fig.suptitle(
+        f"Gaussian-mixture classification (d={d}): measured error matches "
+        "the analytic Bayes formula"
+    )
+    fig.tight_layout()
+    _save({str(mu): r.to_dict() for mu, r in results.items()}, fig, out_dir, "mixture")
+
+
+def study_lazy_rich(out_dir: Path, quick: bool) -> None:
+    """
+    Lazy (NTK/kernel) vs rich (feature-learning) regime via init scale.
+
+    Large initial weight scale suppresses relative weight movement
+    during training (Chizat & Bach 2019, "lazy training"): the student
+    stays close to its random initial features (kernel/NTK regime)
+    instead of learning task-adapted features. weight_movement is the
+    parametrization-agnostic diagnostic; specialization/eps_g show the
+    resulting generalization cost of being lazy on a structured teacher.
+    """
+    import matplotlib.pyplot as plt
+
+    d, k = (64, 4) if quick else (96, 6)
+    alpha = 4.0
+    init_scales = [0.3, 1, 3, 10, 30] if quick else [0.1, 0.3, 1, 3, 10, 30, 100]
+    teacher = Teacher(_mlp(d, k), init="normal", noise_std=0.02)
+
+    curves: dict[str, list[float]] = {m: [] for m in ("weight_movement", "test_error", "m_hat")}
+    raw = {}
+    for s in init_scales:
+        exp = TeacherStudentExperiment(teacher=teacher, student_factory=lambda: _mlp(d, k), d=d)
+        res = exp.run_order_parameters(
+            alphas=[alpha],
+            n_replicas=2 if quick else 5,
+            share_data=True,
+            lr=5e-3,
+            max_epochs=400 if quick else 4000,
+            weight_decay=0.0,
+            init_scale=s,
+            verbose=False,
+        )
+        for name in curves:
+            curves[name].append(float(res.mean(name)[0]))
+        raw[s] = res.to_dict()
+        print(f"init_scale={s}: weight_movement={curves['weight_movement'][-1]:.4g}")
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
+    s_arr = np.array(init_scales, dtype=float)
+    axes[0].plot(s_arr, curves["weight_movement"], "o-", markersize=5, color="steelblue")
+    axes[0].set_ylabel(r"weight movement $\|\theta_f - \theta_0\| / \|\theta_0\|$")
+    axes[1].plot(
+        s_arr, curves["test_error"], "s-", markersize=5, color="crimson", label=r"$\epsilon_g$"
+    )
+    axes[1].plot(
+        s_arr,
+        [1 - m for m in curves["m_hat"]],
+        "d-",
+        markersize=5,
+        color="darkorange",
+        label=r"$1-\hat m$",
+    )
+    axes[1].set_yscale("log")
+    axes[1].legend()
+    for ax in axes:
+        ax.set_xscale("log")
+        ax.set_xlabel("init scale (weight multiplier)")
+        ax.grid(True, linestyle="--", alpha=0.3)
+    fig.suptitle(
+        f"lazy vs rich regime (d={d}, teacher K={k}, alpha={alpha}): "
+        "large init suppresses feature learning"
+    )
+    fig.tight_layout()
+    _save({"init_scales": init_scales, "curves": curves, "raw": raw}, fig, out_dir, "lazy_rich")
+
+
+def study_lora(out_dir: Path, quick: bool) -> None:
+    """
+    LoRA-style fine-tuning: adapter recovery vs fine-tuning data and rank.
+
+    A frozen shared "pretrained" backbone plus a fixed true low-rank
+    task update; the student adapter (rank r_student) is trained from
+    scratch (zero-initialized, as in real LoRA). Tracks adapter_overlap
+    -- the low-rank-matrix analogue of m_hat -- vs alpha, for matched
+    and mismatched adapter rank.
+    """
+    import matplotlib.pyplot as plt
+
+    from statphys.experiment.presets import lora_finetune
+
+    d, hidden, rank_true = (64, 12, 2) if quick else (128, 24, 3)
+    alphas = [1, 2, 4, 8] if quick else [0.5, 1, 2, 4, 8, 16, 32]
+    student_ranks = (
+        [1, rank_true, rank_true + 3] if quick else [1, rank_true, rank_true + 1, rank_true + 5]
+    )
+
+    results = {}
+    for r_s in student_ranks:
+        exp = lora_finetune(
+            d=d, hidden=hidden, rank_true=rank_true, rank_student=r_s, noise_std=0.01
+        )
+        res = exp.run_order_parameters(
+            alphas=alphas,
+            n_replicas=2 if quick else 4,
+            share_data=False,
+            lr=1e-2,
+            max_epochs=300 if quick else 3000,
+            weight_decay=1e-4,
+        )
+        results[r_s] = res
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
+    for r_s, res in results.items():
+        x = np.array(res.x_values)
+        label = f"$r_s={r_s}$" + (" (matched)" if r_s == rank_true else "")
+        axes[0].plot(x, res.mean("adapter_overlap"), "o-", markersize=4, label=label)
+        axes[1].plot(x, res.mean("test_error"), "s-", markersize=4, label=label)
+    axes[0].set_ylabel("adapter overlap")
+    axes[1].set_ylabel(r"$\epsilon_g$")
+    axes[1].set_yscale("log")
+    for ax in axes:
+        ax.set_xscale("log")
+        ax.set_xlabel(r"$\alpha = n_{\rm finetune}/d$")
+        ax.grid(True, linestyle="--", alpha=0.3)
+        ax.legend(fontsize=8)
+    fig.suptitle(
+        f"LoRA-style fine-tuning (d={d}, hidden={hidden}, true rank={rank_true}): "
+        "adapter recovery vs fine-tuning data"
+    )
+    fig.tight_layout()
+    _save({str(k): r.to_dict() for k, r in results.items()}, fig, out_dir, "lora")
+
+
 STUDIES = {
     "committee": study_committee,
     "fss": study_fss,
@@ -560,6 +811,10 @@ STUDIES = {
     "universality": study_universality,
     "double_descent": study_double_descent,
     "scaling": study_scaling,
+    "multi_index": study_multi_index,
+    "mixture": study_mixture,
+    "lazy_rich": study_lazy_rich,
+    "lora": study_lora,
 }
 
 
