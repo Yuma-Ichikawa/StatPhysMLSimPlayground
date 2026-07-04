@@ -803,6 +803,7 @@ Theory notes are available in the `docs/` directory:
 |------|-------------|
 | [`docs/replica_note.md`](docs/replica_note.md) | Replica method for static analysis (saddle-point equations, order parameters) |
 | [`docs/online_sgd_learning_note.md`](docs/online_sgd_learning_note.md) | Online SGD dynamics (ODE derivation, concentration theorems) |
+| [`docs/THEORY.md`](docs/THEORY.md) | Feature ↔ literature map: which module implements which result, what is exact vs heuristic, and pointers to recent work (solvable attention models, attention-indexed models, spiked models, ...) |
 
 ## License
 

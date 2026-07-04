@@ -7,11 +7,38 @@ Utility scripts for development, verification, and maintenance.
 ```
 scripts/
 ├── README.md
-├── run_verification.py  # Package verification script
-└── output/              # Output directory for verification results
+├── run_verification.py       # Core package verification (replica/online vs theory)
+├── verify_architectures.py   # Teacher-student check across the architecture zoo
+└── output/                   # Output directory for verification results
 ```
 
-## Verification Script
+## Architecture Verification
+
+### `verify_architectures.py`
+
+Runs a matched teacher-student experiment for every architecture in
+`statphys.experiment.zoo` (linear, mlp, deep_mlp, cnn, lstm, attention,
+tiny_gpt) and checks that the student learns (test error decreases with
+the sample ratio α). Results are written as JSON + PNG per architecture.
+
+```bash
+# One architecture
+python scripts/verify_architectures.py --arch tiny_gpt
+
+# All architectures, with online SGD dynamics too
+python scripts/verify_architectures.py --arch all --online
+
+# Dispatch as a Slurm job array (one task per architecture)
+python scripts/verify_architectures.py --submit-slurm \
+    --partition debug --gpus 1 --time-limit 01:00:00 \
+    --setup "source .venv/bin/activate"
+```
+
+Outputs land in `verification_results/` (configurable with `--output-dir`);
+Slurm scripts/logs go to `slurm_scripts/` and `slurm_logs/`. All paths are
+relative to the working directory — nothing is machine-specific.
+
+## Core Verification Script
 
 ### `run_verification.py`
 
