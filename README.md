@@ -29,6 +29,8 @@
   - **DMFT**: Coming soon
 - **Simulation Framework**: Unified interface for experiments with automatic theory comparison
 - **General Teacher-Student Experiments**: Theory-free numerical experiments for *any* PyTorch model (MLPs, attention/LLM-style blocks, ...) with customizable teacher weight structure (random, sparse, low-rank, spiked, power-law, binary)
+- **Architecture Zoo**: Ready-made teacher-student pairs across linear / MLP / deep MLP / CNN / LSTM / attention / tiny-GPT architectures, all consuming the same `(n, d)` inputs
+- **Slurm Integration**: Generate and submit sbatch jobs (including job arrays) programmatically, with no hardcoded cluster paths
 - **Visualization**: Publication-quality plots, phase portraits/flow fields, overlap-matrix heatmaps, parameter sweeps, and GIF/MP4 animations
 - **One-liner API**: `quick_online()`, `quick_replica()`, `quick_experiment()` for instant experiments
 - **Utility Functions**: Special functions, Gaussian integrals (Gauss-Hermite/numerical quadrature), proximal operators
@@ -169,6 +171,57 @@ result = exp.run_online(t_max=50, lr=0.1)
 
 Ready-made presets: `random_mlp`, `sparse_teacher`, `spiked_teacher`,
 `mismatched_width`, `low_rank_attention` (see `statphys.experiment.presets`).
+
+### Example: Architecture Zoo (linear → tiny GPT)
+
+The zoo provides matched teacher-student pairs for representative
+architectures; all consume flat `(n, d)` inputs (sequence models fold them
+into tokens internally):
+
+```python
+from statphys.experiment import ARCHITECTURES, architecture_experiment
+
+print(sorted(ARCHITECTURES))
+# ['attention', 'cnn', 'deep_mlp', 'linear', 'lstm', 'mlp', 'tiny_gpt']
+
+exp = architecture_experiment(
+    "tiny_gpt", d=256,
+    arch_kwargs={"seq_len": 8, "d_model": 32, "n_heads": 2, "n_blocks": 2},
+    teacher_init="normal",
+)
+result = exp.run_sample_complexity(alphas=[2, 4, 8, 16], n_seeds=3)
+result.plot(logy=True)
+```
+
+A CLI runner verifies all architectures end-to-end and can dispatch each
+one as a Slurm array task:
+
+```bash
+python scripts/verify_architectures.py --arch all              # locally
+python scripts/verify_architectures.py --submit-slurm \
+    --partition debug --gpus 1 --setup "source .venv/bin/activate"
+```
+
+### Example: Slurm Jobs
+
+```python
+from statphys.utils.slurm import SlurmConfig, SlurmLauncher, submit_array
+
+cfg = SlurmConfig(job_name="sweep", partition="debug", gpus=1,
+                  time_limit="01:00:00",
+                  setup_lines=["source .venv/bin/activate"])
+launcher = SlurmLauncher(log_dir="slurm_logs")
+
+# Single job
+job_id = launcher.submit("python my_experiment.py --alpha 2.0", cfg)
+
+# Job array (one task per command)
+job_id = submit_array(
+    [f"python my_experiment.py --alpha {a}" for a in (0.5, 1, 2, 4)],
+    cfg, launcher=launcher, max_parallel=2,
+)
+launcher.wait([job_id])
+```
 
 ### Example: Phase Portraits and Animations
 

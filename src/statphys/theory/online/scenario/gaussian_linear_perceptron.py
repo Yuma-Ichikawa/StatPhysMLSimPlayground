@@ -18,9 +18,10 @@ References:
 from typing import Any
 
 import numpy as np
-from scipy.special import erf
 
 from statphys.theory.online.scenario.base import OnlineEquations
+from statphys.utils.constants import EPS_DIV
+from statphys.utils.special_functions import classification_error_linear
 
 
 class GaussianLinearPerceptronEquations(OnlineEquations):
@@ -67,24 +68,6 @@ class GaussianLinearPerceptronEquations(OnlineEquations):
         self.rho = rho
         self.lr = lr
 
-    def _H(self, x: float) -> float:
-        """
-        Complementary Gaussian CDF.
-
-        H(x) = P(Z > x) = (1/2)(1 - erf(x/√2))
-
-        where Z ~ N(0,1).
-        """
-        return 0.5 * (1 - erf(x / np.sqrt(2)))
-
-    def _phi(self, x: float) -> float:
-        """
-        Gaussian PDF.
-
-        φ(x) = (1/√(2π)) exp(-x²/2)
-        """
-        return np.exp(-(x**2) / 2) / np.sqrt(2 * np.pi)
-
     def __call__(
         self,
         t: float,
@@ -120,7 +103,7 @@ class GaussianLinearPerceptronEquations(OnlineEquations):
         lr = params.get("lr", self.lr)
 
         # Stability parameter (correlation between teacher/student fields)
-        kappa = m / np.sqrt(q * rho + 1e-10)
+        kappa = m / np.sqrt(q * rho + EPS_DIV)
         kappa = np.clip(kappa, -1.0, 1.0)
 
         # Misclassification probability
@@ -157,14 +140,9 @@ class GaussianLinearPerceptronEquations(OnlineEquations):
         """
         m, q = y
         rho = kwargs.get("rho", self.rho)
+        return classification_error_linear(m, q, rho)
 
-        if q > 0 and rho > 0:
-            cos_angle = m / np.sqrt(q * rho)
-            cos_angle = np.clip(cos_angle, -1, 1)
-            return np.arccos(cos_angle) / np.pi
-        return 0.5  # Random guess if degenerate
-
-    def stability_parameter(self, y: np.ndarray, rho: float = None) -> float:
+    def stability_parameter(self, y: np.ndarray, rho: float | None = None) -> float:
         """
         Compute stability parameter κ = m / √(qρ).
 

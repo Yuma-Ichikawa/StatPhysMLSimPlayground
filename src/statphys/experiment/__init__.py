@@ -44,6 +44,7 @@ from statphys.experiment.metrics import (
 from statphys.experiment.presets import PRESETS, get_preset
 from statphys.experiment.protocol import ExperimentResult, TeacherStudentExperiment
 from statphys.experiment.teacher import Teacher, init_weights_
+from statphys.experiment.zoo import ARCHITECTURES, architecture_experiment, build_architecture
 
 __all__ = [
     "Teacher",
@@ -57,4 +58,7 @@ __all__ = [
     "representation_similarity",
     "PRESETS",
     "get_preset",
+    "ARCHITECTURES",
+    "build_architecture",
+    "architecture_experiment",
 ]

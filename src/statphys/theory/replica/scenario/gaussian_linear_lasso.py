@@ -27,6 +27,7 @@ from scipy.optimize import brentq
 from scipy.special import erf
 
 from statphys.theory.replica.scenario.base import ReplicaEquations
+from statphys.utils.special_functions import soft_threshold
 
 
 class GaussianLinearLassoEquations(ReplicaEquations):
@@ -76,12 +77,8 @@ class GaussianLinearLassoEquations(ReplicaEquations):
         self.reg_param = reg_param
 
     def _soft_threshold(self, x: float | np.ndarray, threshold: float) -> float | np.ndarray:
-        """
-        Soft thresholding operator (proximal of L1 norm).
-
-        S_λ(x) = sign(x) · max(|x| - λ, 0)
-        """
-        return np.sign(x) * np.maximum(np.abs(x) - threshold, 0)
+        """Soft thresholding operator S_λ(x) (proximal of L1 norm)."""
+        return soft_threshold(x, threshold)
 
     def _compute_effective_noise(
         self,

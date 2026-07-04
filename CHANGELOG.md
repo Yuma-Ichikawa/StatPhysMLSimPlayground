@@ -8,6 +8,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Architecture zoo (`statphys.experiment.zoo`): matched teacher-student
+  pairs for linear / MLP / deep MLP / 1D-CNN / LSTM / single-head attention /
+  tiny-GPT (causal transformer) architectures, plus
+  `architecture_experiment()` and the `scripts/verify_architectures.py`
+  CLI (local or Slurm-array execution)
+- Slurm utilities (`statphys.utils.slurm`): `SlurmConfig`, `render_sbatch`,
+  `SlurmLauncher` (submit/state/wait) and `submit_array`, with no
+  hardcoded cluster paths
+- Centralized numerical constants (`statphys.utils.constants`): epsilons,
+  correlation clips, Gaussian integration bounds, solver defaults
+- `docs/THEORY.md`: feature ↔ literature map (Engel & Van den Broeck,
+  Zdeborová & Krzakala 2016, Saad & Solla 1995, Cui et al. 2025
+  dot-product-attention and attention-indexed models, ...)
+
+### Changed
+- Heuristic replica scenarios (logistic/probit/hinge) now share a
+  `GradientFlowEquations` base class (joint-field integrals + damped
+  relaxation in one place); committee replica damping is configurable
+- Inline Gaussian CDF/PDF/tail helpers and `arccos` classification-error
+  formulas replaced by the canonical `statphys.utils.special_functions`
+  implementations across theory scenarios, `model/linear.py`, and
+  `utils/order_params.py`
+- Online hinge scenario: quadrature size exposed as `n_quad`
+- Removed duplicated `tests/run_verification.py` (kept `scripts/` copy)
+
+### Added (previous batch)
 - `statphys.experiment`: general (theory-free) teacher-student experiments
   for arbitrary PyTorch models — `Teacher` wrapper with structured weight
   initializations (random / sparse / low-rank / orthogonal / power-law /
@@ -29,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   initial condition; regression tests for the audit fixes (`tests/test_fixes.py`,
   `tests/test_experiment.py`)
 
-### Changed
+### Changed (previous batch)
 - Exact Saad-Solla closed forms (I3/I4) for the online committee-machine ODE
 - Online perceptron/hinge ODEs re-derived (quadrature-based where needed)
 - `for_online()` loss scaling now uses per-loss `online_scale` (0.5 only for

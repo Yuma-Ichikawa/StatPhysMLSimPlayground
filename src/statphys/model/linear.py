@@ -268,14 +268,9 @@ class LinearClassifier(BaseModel):
 
         if include_generalization_error and W0 is not None:
             # Classification error: P(sign(w^T x) != sign(W0^T x))
-            # = (1/pi) * arccos(m / sqrt(q * rho))
-            if q > 0 and rho > 0:
-                cos_angle = m / np.sqrt(q * rho)
-                cos_angle = np.clip(cos_angle, -1, 1)
-                eg = np.arccos(cos_angle) / np.pi
-            else:
-                eg = 0.5  # Random guessing
-            result["eg"] = eg
+            from statphys.utils.special_functions import classification_error_linear
+
+            result["eg"] = classification_error_linear(m, q, rho)
 
         return result
 

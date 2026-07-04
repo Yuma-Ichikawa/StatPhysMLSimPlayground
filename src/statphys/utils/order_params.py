@@ -661,18 +661,15 @@ class OrderParameterCalculator:
                 0.0,
             )
 
+        from statphys.utils.special_functions import (
+            classification_error_linear,
+            regression_error_linear,
+        )
+
         if task_type == TaskType.REGRESSION:
-            # E_g = 0.5 * (rho - 2m + q) + noise
-            eg = 0.5 * (rho - 2 * m + q)
-            if eta > 0:
-                eg += 0.5 * eta
-            return eg
+            return regression_error_linear(m, q, rho, eta)
         else:
-            # Classification error: P(error) = (1/pi) * arccos(m / sqrt(q * rho))
-            if q > 0 and rho > 0:
-                cos_angle = np.clip(m / np.sqrt(q * rho), -1, 1)
-                return np.arccos(cos_angle) / np.pi
-            return 0.5
+            return classification_error_linear(m, q, rho)
 
     @staticmethod
     def get_param_names(model_type: ModelType | str) -> list[str]:

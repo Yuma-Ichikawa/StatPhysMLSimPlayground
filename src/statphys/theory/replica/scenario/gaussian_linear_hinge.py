@@ -25,12 +25,17 @@ from typing import Any
 
 import numpy as np
 from scipy.integrate import quad
-from scipy.special import erf
 
-from statphys.theory.replica.scenario.base import ReplicaEquations
+from statphys.theory.replica.scenario.gradient_flow import GradientFlowEquations
+from statphys.utils.constants import (
+    CORR_CLIP,
+    EPS_DIV,
+    GAUSS_INT_BOUND_WIDE,
+)
+from statphys.utils.special_functions import classification_error_linear, gaussian_pdf
 
 
-class GaussianLinearHingeEquations(ReplicaEquations):
+class GaussianLinearHingeEquations(GradientFlowEquations):
     """
     Saddle-point equations for perceptron/SVM learning.
 
@@ -55,40 +60,28 @@ class GaussianLinearHingeEquations(ReplicaEquations):
 
     Classification error:
         P(error) = (1/π) arccos(m/√(qρ))
+
+    Args:
+        rho: Teacher norm (||W₀||²/d). Default 1.0.
+        margin: Margin parameter κ. Default 0.0 (perceptron);
+            κ > 0 for SVM with margin.
+        reg_param: L2 regularization λ. Default 0.0.
+        damping: Step size of the internal gradient-flow relaxation.
+
     """
+
+    #: Gardner bound for the spherical perceptron at zero margin
+    GARDNER_CAPACITY = 2.0
 
     def __init__(
         self,
         rho: float = 1.0,
         margin: float = 0.0,
         reg_param: float = 0.0,
-        damping: float = 0.1,
         **params: Any,
     ):
-        """
-        Initialize GaussianLinearHingeEquations.
-
-        Args:
-            rho: Teacher norm (||W₀||²/d). Default 1.0.
-            margin: Margin parameter κ. Default 0.0 (perceptron).
-                   κ > 0 for SVM with margin.
-            reg_param: L2 regularization λ. Default 0.0.
-            damping: Step size of the internal gradient-flow relaxation.
-
-        """
-        super().__init__(rho=rho, margin=margin, reg_param=reg_param, **params)
-        self.rho = rho
+        super().__init__(rho=rho, reg_param=reg_param, margin=margin, **params)
         self.margin = margin
-        self.reg_param = reg_param
-        self.damping = damping
-
-    def _H(self, x: float) -> float:
-        """Gaussian tail function: H(x) = P(Z > x) for Z ~ N(0,1)."""
-        return 0.5 * (1 - erf(x / np.sqrt(2)))
-
-    def _G(self, x: float) -> float:
-        """Gaussian PDF: G(x) = (1/√(2π)) exp(-x²/2)."""
-        return np.exp(-(x**2) / 2) / np.sqrt(2 * np.pi)
 
     def __call__(
         self,
@@ -99,6 +92,9 @@ class GaussianLinearHingeEquations(ReplicaEquations):
     ) -> tuple[float, float]:
         """
         Compute updated m and q for perceptron/SVM.
+
+        Uses a 1D conditional-Gaussian integral over margin-violating
+        samples followed by the shared damped relaxation step.
 
         Args:
             m: Current teacher-student overlap
@@ -114,73 +110,43 @@ class GaussianLinearHingeEquations(ReplicaEquations):
         kappa = kwargs.get("margin", self.margin)
         lam = kwargs.get("reg_param", self.reg_param)
 
-        # Ensure numerical stability
-        q = max(q, 1e-10)
+        q = max(q, EPS_DIV)
 
         # Correlation between teacher and student fields
         rho_corr = m / np.sqrt(rho * q) if rho > 0 else 0.0
-        rho_corr = np.clip(rho_corr, -0.999, 0.999)
+        rho_corr = np.clip(rho_corr, -CORR_CLIP, CORR_CLIP)
 
         # Conditional std of student field given teacher label
-        Delta = np.sqrt(q * (1 - rho_corr**2) + 1e-10)
+        Delta = np.sqrt(q * (1 - rho_corr**2) + EPS_DIV)
+        h_mean = m / np.sqrt(q + EPS_DIV)
+        b = GAUSS_INT_BOUND_WIDE
 
-        # Integrands for update equations
-        def integrand_m(z):
-            """Integrand for m update."""
-            h = m / np.sqrt(q + 1e-10) + Delta * z
-            # Contribution from margin-violating samples
-            if kappa > 0:
-                indicator = 1.0 if h < kappa else 0.0
-            else:
-                indicator = 1.0 if h < 0 else 0.0
-            return indicator * (kappa - h) * np.exp(-(z**2) / 2) / np.sqrt(2 * np.pi)
+        def hinge_active(h: float) -> bool:
+            return h < kappa if kappa > 0 else h < 0
 
-        def integrand_q(z):
-            """Integrand for q update."""
-            h = m / np.sqrt(q + 1e-10) + Delta * z
-            indicator = (1.0 if h < kappa else 0.0) if kappa > 0 else (1.0 if h < 0 else 0.0)
-            return indicator * (kappa - h) ** 2 * np.exp(-(z**2) / 2) / np.sqrt(2 * np.pi)
+        def integrand_m(z: float) -> float:
+            h = h_mean + Delta * z
+            if not hinge_active(h):
+                return 0.0
+            return (kappa - h) * gaussian_pdf(z)
 
-        # Numerical integration
-        dm_contrib, _ = quad(integrand_m, -10, 10)
-        dq_contrib, _ = quad(integrand_q, -10, 10)
+        def integrand_q(z: float) -> float:
+            h = h_mean + Delta * z
+            if not hinge_active(h):
+                return 0.0
+            return (kappa - h) ** 2 * gaussian_pdf(z)
 
-        # Damped gradient-flow relaxation (heuristic, see module docstring)
-        lr = self.damping
-        new_m = m + lr * (alpha * np.sqrt(rho) * dm_contrib - lam * m)
-        new_q = q + lr * (alpha * dq_contrib - lam * q)
+        dm_contrib, _ = quad(integrand_m, -b, b)
+        dq_contrib, _ = quad(integrand_q, -b, b)
 
-        # Physical constraints
-        new_m = max(new_m, 1e-10)
-        new_q = max(new_q, 1e-10)
+        dm = alpha * np.sqrt(rho) * dm_contrib - lam * m
+        dq = alpha * dq_contrib - lam * q
+        return self._relax(m, q, dm, dq)
 
-        return new_m, new_q
-
-    def generalization_error(
-        self,
-        m: float,
-        q: float,
-        **kwargs: Any,
-    ) -> float:
-        """
-        Compute classification error.
-
-        P(error) = (1/π) arccos(m/√(qρ))
-
-        Args:
-            m: Teacher-student overlap
-            q: Self-overlap
-            **kwargs: Can override rho
-
-        Returns:
-            Classification error probability
-
-        """
+    def generalization_error(self, m: float, q: float, **kwargs: Any) -> float:
+        """Classification error P(error) = (1/π) arccos(m/√(qρ))."""
         rho = kwargs.get("rho", self.rho)
-        if q > 0 and rho > 0:
-            cos_angle = np.clip(m / np.sqrt(q * rho), -1, 1)
-            return np.arccos(cos_angle) / np.pi
-        return 0.5
+        return classification_error_linear(m, q, rho)
 
     def critical_capacity(self, margin: float | None = None) -> float:
         """
@@ -201,8 +167,8 @@ class GaussianLinearHingeEquations(ReplicaEquations):
         kappa = margin if margin is not None else self.margin
 
         if kappa <= 0:
-            return 2.0  # Gardner bound
+            return self.GARDNER_CAPACITY
 
         # Approximate formula for α_c(κ) > 0
         # This is a rough estimate; exact value requires solving integral equations
-        return 2.0 / (1 + kappa**2)
+        return self.GARDNER_CAPACITY / (1 + kappa**2)

@@ -16,9 +16,16 @@ References:
 from typing import Any
 
 import numpy as np
-from scipy.special import erf
+from scipy.special import roots_hermite
 
 from statphys.theory.online.scenario.base import OnlineEquations
+from statphys.utils.constants import (
+    DEFAULT_GH_POINTS,
+    DEFAULT_ONLINE_LR,
+    EPS_DIV,
+    EPS_NORM,
+)
+from statphys.utils.special_functions import classification_error_linear, gaussian_cdf
 
 
 class GaussianLinearHingeEquations(OnlineEquations):
@@ -49,9 +56,10 @@ class GaussianLinearHingeEquations(OnlineEquations):
     def __init__(
         self,
         rho: float = 1.0,
-        lr: float = 0.1,
+        lr: float = DEFAULT_ONLINE_LR,
         margin: float = 1.0,
         reg_param: float = 0.0,
+        n_quad: int = DEFAULT_GH_POINTS,
         **params: Any,
     ):
         """
@@ -62,6 +70,7 @@ class GaussianLinearHingeEquations(OnlineEquations):
             lr: Learning rate η. Default 0.1.
             margin: Hinge loss margin κ. Default 1.0 (standard SVM).
             reg_param: L2 regularization λ. Default 0.0.
+            n_quad: Number of Gauss-Hermite quadrature points.
 
         """
         super().__init__(rho=rho, lr=lr, margin=margin, reg_param=reg_param, **params)
@@ -69,14 +78,7 @@ class GaussianLinearHingeEquations(OnlineEquations):
         self.lr = lr
         self.margin = margin
         self.reg_param = reg_param
-
-    def _H(self, x: float) -> float:
-        """Complementary Gaussian CDF: H(x) = P(Z > x)."""
-        return 0.5 * (1 - erf(x / np.sqrt(2)))
-
-    def _Phi(self, x: np.ndarray) -> np.ndarray:
-        """Standard Gaussian CDF."""
-        return 0.5 * (1 + erf(x / np.sqrt(2)))
+        self.n_quad = n_quad
 
     def _compute_expectations(
         self,
@@ -84,7 +86,6 @@ class GaussianLinearHingeEquations(OnlineEquations):
         q: float,
         rho: float,
         kappa: float,
-        n_points: int = 80,
     ) -> tuple[float, float, float]:
         """
         Compute (E[g u], E[g z], E[g²]) for g = y Θ(κ - y z), y = sign(u).
@@ -94,16 +95,14 @@ class GaussianLinearHingeEquations(OnlineEquations):
         the (linear-in-ζ) integrands analytically over the margin-violation
         region leaves 1D Gauss-Hermite quadrature over s.
         """
-        q = max(q, 1e-10)
-        rho = max(rho, 1e-10)
+        q = max(q, EPS_DIV)
+        rho = max(rho, EPS_DIV)
         max_m = np.sqrt(q * rho) * 0.9999
         m = float(np.clip(m, -max_m, max_m))
         c = m / np.sqrt(q * rho)
-        s_perp = np.sqrt(max(1 - c**2, 1e-12))
+        s_perp = np.sqrt(max(1 - c**2, EPS_NORM))
 
-        from scipy.special import roots_hermite
-
-        x_nodes, w_nodes = roots_hermite(n_points)
+        x_nodes, w_nodes = roots_hermite(self.n_quad)
         s = np.sqrt(2.0) * x_nodes  # s ~ N(0,1) nodes
         w = w_nodes / np.sqrt(np.pi)
 
@@ -115,7 +114,7 @@ class GaussianLinearHingeEquations(OnlineEquations):
         a = (kappa / np.sqrt(q) - y_sign * c * s) / s_perp
 
         # P(violation | s): Φ(a) for y=+1; for y=-1 the event is ζ > -a, also Φ(a)
-        prob = self._Phi(a)
+        prob = gaussian_cdf(a)
         phi_a = np.exp(-0.5 * a**2) / np.sqrt(2 * np.pi)
 
         # E[ζ 1{ζ < a}] = -φ(a); for y=-1, E[ζ 1{ζ > -a}] = φ(-a) = φ(a)
@@ -189,8 +188,4 @@ class GaussianLinearHingeEquations(OnlineEquations):
         """
         m, q = y
         rho = kwargs.get("rho", self.rho)
-
-        if q > 0 and rho > 0:
-            cos_angle = np.clip(m / np.sqrt(q * rho), -1, 1)
-            return np.arccos(cos_angle) / np.pi
-        return 0.5
+        return classification_error_linear(m, q, rho)

@@ -7,6 +7,8 @@ This module provides:
 - Special functions (Gaussian CDF/PDF, activations, correlations)
 - Numerical integration (Gaussian integrals, Gauss-Hermite quadrature)
 - I/O utilities for saving/loading results
+- Centralized numerical constants (statphys.utils.constants)
+- Slurm job generation/submission (statphys.utils.slurm)
 """
 
 from statphys.utils.integration import (
@@ -39,6 +41,7 @@ from statphys.utils.order_params import (
     detailed_calculator,
 )
 from statphys.utils.seed import fix_seed, get_device, get_seed_list
+from statphys.utils.slurm import SlurmConfig, SlurmLauncher, render_sbatch, submit_array
 from statphys.utils.special_functions import (  # Gaussian distribution functions; Activation functions; Committee machine functions; Proximal operators; Generalization error functions
     I2,
     I3,
@@ -127,4 +130,9 @@ __all__ = [
     "TaskType",
     "default_calculator",
     "detailed_calculator",
+    # Slurm utilities
+    "SlurmConfig",
+    "SlurmLauncher",
+    "render_sbatch",
+    "submit_array",
 ]

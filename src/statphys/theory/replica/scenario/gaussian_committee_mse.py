@@ -26,6 +26,7 @@ import numpy as np
 from scipy.special import erf
 
 from statphys.theory.replica.scenario.base import ReplicaEquations
+from statphys.utils.constants import DEFAULT_GRADFLOW_DAMPING, EPS_DIV
 
 
 class GaussianCommitteeMseEquations(ReplicaEquations):
@@ -60,6 +61,7 @@ class GaussianCommitteeMseEquations(ReplicaEquations):
         eta: float = 0.0,
         activation: str = "erf",
         reg_param: float = 0.01,
+        damping: float = DEFAULT_GRADFLOW_DAMPING,
         **params: Any,
     ):
         """
@@ -72,6 +74,7 @@ class GaussianCommitteeMseEquations(ReplicaEquations):
             eta: Noise variance. Default 0.0.
             activation: Activation function ('erf', 'tanh', 'sign'). Default 'erf'.
             reg_param: L2 regularization parameter. Default 0.01.
+            damping: Step size of the internal gradient-flow relaxation.
 
         """
         super().__init__(
@@ -89,6 +92,7 @@ class GaussianCommitteeMseEquations(ReplicaEquations):
         self.eta = eta
         self.activation = activation
         self.reg_param = reg_param
+        self.damping = damping
 
     def _activation_fn(self, x: np.ndarray) -> np.ndarray:
         """Activation function."""
@@ -111,7 +115,7 @@ class GaussianCommitteeMseEquations(ReplicaEquations):
         """
         if (1 + a) <= 0 or (1 + b) <= 0:
             return 0.0
-        arg = a * b / np.sqrt((1 + a) * (1 + b) + 1e-10)
+        arg = a * b / np.sqrt((1 + a) * (1 + b) + EPS_DIV)
         arg = np.clip(arg, -1, 1)
         return (2 / np.pi) * np.arcsin(arg)
 
@@ -151,13 +155,13 @@ class GaussianCommitteeMseEquations(ReplicaEquations):
         eg = rho - 2 * m + q + (K - 1) * c
 
         # Damped gradient-flow relaxation (heuristic, see module docstring)
-        lr = 0.1
+        lr = self.damping
 
         # Approximate updates using symmetric ansatz
         new_m = m + lr * (alpha * np.sqrt(rho / K) * (rho - m) / (1 + eg + lam) - lam * m)
         new_q = q + lr * (alpha * (eg + m**2) / ((1 + eg + lam) ** 2) - lam * q)
 
-        return max(new_m, 1e-10), max(new_q, 1e-10)
+        return max(new_m, EPS_DIV), max(new_q, EPS_DIV)
 
     def generalization_error(
         self,
