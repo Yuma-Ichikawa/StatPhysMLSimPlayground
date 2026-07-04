@@ -26,11 +26,18 @@
   <img src="assets/anim_specialization.gif" alt="Committee machine specialization" width="40%">
 </p>
 <p align="center"><em>
-  Left: online SGD order parameters (solid) converging onto the exact ODE theory (dashed).
+  Left: online SGD order parameters <strong>and generalization error</strong> &epsilon;<sub>g</sub> (solid)
+  converging onto the exact ODE theory (dashed).
   Right: the same dynamics moving through the (m, q) phase plane over the theoretical flow field.
   Bottom: a soft committee machine <strong>specializing</strong> — the student-teacher overlap matrix developing a diagonal during training.
   Reproduce with <code>python scripts/generate_readme_assets.py</code>.
 </em></p>
+
+> **New to statistical mechanics of learning?** Every "physics" term
+> used below (order parameter, replica, magnetization, susceptibility,
+> ...) is explained in plain ML language in the
+> [**Glossary**](docs/glossary.md), which also gives a recommended
+> reading order through the rest of the documentation.
 
 ## Features
 
@@ -130,13 +137,25 @@ fine-tuning adapter recovery.
 ### Phenomenology gallery
 
 <p align="center">
+  <img src="assets/anim_mixture_boundary.gif" alt="Gaussian-mixture classification: decision boundary rotating into place" width="44%">
+  <img src="assets/anim_grokking.gif" alt="Grokking: delayed generalization" width="44%">
+</p>
+<p align="center"><em>
+  Left: a 2D linear classifier's decision line rotating into place on Gaussian-mixture
+  data — the measured generalization error (&epsilon;<sub>g</sub> &asymp; 0.037) matches the exact
+  Bayes error (0.036) almost exactly.
+  Right: <strong>grokking</strong> — train error collapses almost immediately, while test error
+  plateaus for thousands of epochs before suddenly dropping (delayed generalization).
+</em></p>
+
+<p align="center">
   <img src="assets/gallery_mixture.png" alt="Gaussian-mixture classification: measured error matches the Bayes formula" width="90%">
 </p>
 <p align="center"><em>
-  Gaussian-mixture classification (<code>statphys study mixture</code>): the numerically
-  measured generalization error matches the exact analytic Bayes formula
-  &Phi;(&minus;&mu; cos&theta;) at every &alpha; — a direct, literature-grounded check
-  that the package's generalization-error bookkeeping is correct.
+  The same Gaussian-mixture check (<code>statphys study mixture</code>) as a function of
+  &alpha;: the numerically measured generalization error matches the exact analytic Bayes
+  formula &Phi;(&minus;&mu; cos&theta;) at every &alpha; — a direct, literature-grounded
+  check that the package's generalization-error bookkeeping is correct.
 </em></p>
 
 <p align="center">
@@ -171,6 +190,7 @@ Detailed documentation lives in [`docs/`](docs/README.md):
 | [Slurm Guide](docs/slurm.md) | Cluster execution: single jobs, arrays, verification CLI |
 | [Key Concepts](docs/concepts.md) | Order parameters, $E_g$ formulas, scaling conventions |
 | [Order Parameters (full reference)](docs/order_parameters.md) | Every order parameter/generalization-error formula, with derivations: multi-index subspace overlap, Gaussian-mixture Bayes error, lazy/rich weight movement, LoRA adapter recovery |
+| [Glossary](docs/glossary.md) | Statistical-physics ↔ ML dictionary, for readers with no stat-mech background |
 | [Theory & Literature](docs/THEORY.md) | Feature ↔ paper map; exact vs heuristic status |
 | [Package Structure](docs/package_structure.md) | Source-tree layout and design conventions |
 

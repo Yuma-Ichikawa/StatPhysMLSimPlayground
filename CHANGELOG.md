@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Educational/usability pass**: `docs/glossary.md`, a statistical-physics
+  ↔ ML dictionary (order parameter, replica, susceptibility, lazy/rich,
+  ...) with a suggested reading order for newcomers with no stat-mech
+  background; linked from the README, `docs/README.md`, and
+  `docs/getting_started.md` (which also gains a "single most rewarding
+  first command" section)
+- `animate_decision_boundary`: a new animation showing a 2D linear
+  classifier's decision line rotating into place on labelled data
+  (e.g. Gaussian-mixture classification) — the most intuitive animation
+  in the package for teaching what "recovering the signal" means
+- `animate_learning_curve(..., logx=, logy=)`: optional log-scaled axes,
+  for epoch-resolved (grokking-style) error curves spanning decades
+- README animations: the online-SGD learning-curve GIF now also shows
+  the generalization error `eps_g` alongside `m`/`q`; two new GIFs
+  (`anim_grokking.gif`, `anim_mixture_boundary.gif`) added to the
+  phenomenology gallery, the latter demonstrating the measured
+  generalization error matching the analytic Bayes error to three
+  significant figures
 - **Realistic settings, round 2**: `multi_index_model` preset (K-direction
   multi-index teacher; supports `k_student != k_teacher`),
   `mixture_classification` preset + `GaussianMixtureDataset` (generative

@@ -3,11 +3,16 @@ Animation utilities for learning dynamics.
 
 Creates GIF/MP4 animations from simulation results:
 
-- animate_learning_curve: order parameters growing over time
+- animate_learning_curve: order parameters (and/or generalization error)
+  growing over time, with optional log axes
 - animate_phase_plane: a point moving through the (m, q) plane,
   optionally on top of the ODE flow field
 - animate_overlap_matrix: the M overlap matrix evolving during training
   (specialization becoming visible as an emerging diagonal)
+- animate_decision_boundary: a 2D classifier's decision line rotating
+  into place as it is trained, next to the (fixed) labelled data —
+  the most intuitive, "textbook-figure" animation for teaching what
+  generalization/recovery means
 
 Saving uses matplotlib writers: "pillow" (GIF, always available with
 Pillow) or "ffmpeg" (MP4, requires ffmpeg on PATH).
@@ -42,17 +47,24 @@ def animate_learning_curve(
     figsize: tuple[float, float] = (7, 5),
     xlabel: str = r"$t = \tau/d$",
     ylabel: str = "order parameters",
+    logx: bool = False,
+    logy: bool = False,
 ) -> FuncAnimation:
     """
-    Animate order-parameter curves being drawn over time.
+    Animate order-parameter (or error) curves being drawn over time.
 
     Args:
         t_values: Time grid of shape (T,).
-        trajectories: Mapping from name to array of shape (T,).
+        trajectories: Mapping from name to array of shape (T,). Any
+            quantity works, e.g. {"m": ..., "q": ..., "eps_g": ...} or
+            {"train_error": ..., "test_error": ...} for grokking-style
+            plots (use logx=True, logy=True for the latter).
         theory: Optional theory curves drawn as static dashed lines.
         interval: Milliseconds between frames.
         figsize: Figure size.
         xlabel, ylabel: Axis labels.
+        logx, logy: Use log-scaled axes (e.g. for epoch-resolved error
+            curves spanning several decades, as in grokking plots).
 
     Returns:
         FuncAnimation (call .save(path, writer="pillow") to export).
@@ -75,9 +87,19 @@ def animate_learning_curve(
             ax.plot(t, theory[name], color=color, linestyle="--", linewidth=1, alpha=0.7)
 
     all_vals = np.concatenate(list(data.values()))
-    pad = 0.1 * (all_vals.max() - all_vals.min() + 1e-12)
-    ax.set_xlim(t.min(), t.max())
-    ax.set_ylim(all_vals.min() - pad, all_vals.max() + pad)
+    if logx:
+        ax.set_xscale("log")
+        ax.set_xlim(max(t.min(), 1e-3), t.max())
+    else:
+        ax.set_xlim(t.min(), t.max())
+    if logy:
+        ax.set_yscale("log")
+        positive = all_vals[all_vals > 0]
+        lo = positive.min() * 0.5 if positive.size else 1e-3
+        ax.set_ylim(lo, all_vals.max() * 2)
+    else:
+        pad = 0.1 * (all_vals.max() - all_vals.min() + 1e-12)
+        ax.set_ylim(all_vals.min() - pad, all_vals.max() + pad)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.grid(True, linestyle="--", alpha=0.3)
@@ -222,6 +244,88 @@ def animate_overlap_matrix(
         return [im]
 
     return FuncAnimation(fig, update, frames=len(mats), interval=interval, blit=False)
+
+
+def animate_decision_boundary(
+    X: np.ndarray,
+    y: np.ndarray,
+    weights: list[np.ndarray] | np.ndarray,
+    t_values: np.ndarray | None = None,
+    metric_values: np.ndarray | None = None,
+    metric_name: str = r"$\epsilon_g$",
+    interval: int = 60,
+    figsize: tuple[float, float] = (5.5, 5),
+    title: str = "",
+) -> FuncAnimation:
+    r"""
+    Animate a 2D linear classifier's decision boundary during training.
+
+    The most immediately intuitive animation in the package: labelled
+    data points are fixed, and the decision line $\{x : w \cdot x = 0\}$
+    rotates into place as the classifier is trained -- a direct visual
+    for what "recovering the teacher direction" / generalization means,
+    useful for teaching the Gaussian-mixture classification setting
+    (see docs/order_parameters.md, section 5) to newcomers.
+
+    Args:
+        X: Inputs of shape (n, 2) (exactly 2D; project down first for
+            higher-dimensional data).
+        y: Labels of shape (n,), any two distinct values (colored).
+        weights: Sequence of (2,) classifier-direction snapshots over
+            training (only the direction matters, not the norm).
+        t_values: Optional times/epochs for the frame title.
+        metric_values: Optional scalar (e.g. test error or overlap) to
+            annotate each frame.
+        metric_name: Label for `metric_values` in the frame title.
+        interval: Milliseconds between frames.
+        figsize: Figure size.
+        title: Base title.
+
+    Returns:
+        FuncAnimation.
+
+    """
+    style = _style()
+    X = np.asarray(X)
+    y = np.asarray(y)
+    W = np.stack([np.asarray(w, dtype=float).reshape(2) for w in weights])
+    if X.shape[1] != 2:
+        raise ValueError(f"animate_decision_boundary requires 2D inputs, got shape {X.shape}")
+
+    fig, ax = plt.subplots(figsize=figsize)
+    classes = np.unique(y)
+    colors = [style.colors[i % len(style.colors)] for i in range(len(classes))]
+    for c, color in zip(classes, colors, strict=True):
+        mask = y == c
+        ax.scatter(X[mask, 0], X[mask, 1], s=14, alpha=0.6, color=color, label=f"$y={c:g}$")
+
+    r = 1.3 * np.abs(X).max()
+    ax.set_xlim(-r, r)
+    ax.set_ylim(-r, r)
+    ax.set_aspect("equal")
+    ax.set_xlabel(r"$x_1$")
+    ax.set_ylabel(r"$x_2$")
+    ax.grid(True, linestyle="--", alpha=0.3)
+    ax.legend(loc="upper right", fontsize=8)
+
+    (boundary,) = ax.plot([], [], "-", color="black", linewidth=2.5)
+    (normal,) = ax.plot([], [], "-", color="crimson", linewidth=1.5, alpha=0.8)
+    ttl = ax.set_title(title + "\n ", fontsize=9.5)
+    fig.tight_layout()
+
+    def update(frame: int):
+        w = W[frame]
+        wn = w / (np.linalg.norm(w) + 1e-12)
+        perp = np.array([-wn[1], wn[0]])
+        boundary.set_data([-r * perp[0], r * perp[0]], [-r * perp[1], r * perp[1]])
+        normal.set_data([0, 0.5 * r * wn[0]], [0, 0.5 * r * wn[1]])
+        suffix = f"\n(t = {t_values[frame]:.2f})" if t_values is not None else "\n"
+        if metric_values is not None:
+            suffix += f"measured {metric_name} = {metric_values[frame]:.3f}"
+        ttl.set_text(title + suffix)
+        return [boundary, normal, ttl]
+
+    return FuncAnimation(fig, update, frames=len(W), interval=interval, blit=False)
 
 
 def save_animation(

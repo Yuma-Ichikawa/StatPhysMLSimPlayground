@@ -37,6 +37,27 @@ result = statphys.quick_experiment("random_mlp", alphas=[1, 2, 4, 8])
 
 Every helper returns the underlying result object, so the quick API also serves as an entry point into the full framework below.
 
+New to statistical mechanics of learning? See the [glossary](glossary.md)
+first — every physics term below (order parameter, replica, phase
+transition, ...) is translated into plain ML language there.
+
+### The single most rewarding first command
+
+If you only run one thing, run this — it trains several independent
+students, measures every physics order parameter automatically, checks
+generalization error, and renders a 4-panel dashboard:
+
+```python
+import statphys
+statphys.quick_order_parameters("random_mlp", alphas=[0.5, 1, 2, 4, 8, 16], show=True)
+```
+
+Or, without writing any Python:
+
+```bash
+statphys order-params random_mlp --alphas 0.5 1 2 4 8 16
+```
+
 ## Full workflow: Replica simulation vs theory
 
 ```python
@@ -124,4 +145,6 @@ pytest tests/test_theory.py
 - Experiments for arbitrary architectures (incl. tiny GPT): [experiments.md](experiments.md)
 - Visualization and animations: [visualization.md](visualization.md)
 - Cluster execution: [slurm.md](slurm.md)
-- The math behind the order parameters: [concepts.md](concepts.md)
+- The math behind the order parameters: [concepts.md](concepts.md) and, for
+  every setting including the realistic extensions, [order_parameters.md](order_parameters.md)
+- Statistical-physics ↔ ML vocabulary: [glossary.md](glossary.md)

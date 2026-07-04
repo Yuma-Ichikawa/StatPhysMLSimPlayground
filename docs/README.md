@@ -13,6 +13,7 @@ Documentation is organized by role: the top-level [README](../README.md) covers 
 | [slurm.md](slurm.md) | Running experiments on Slurm clusters: single jobs, job arrays, the architecture verification CLI |
 | [concepts.md](concepts.md) | Order parameters, generalization error formulas, thermodynamic limits, loss-scaling conventions, automatic order-parameter extraction |
 | [order_parameters.md](order_parameters.md) | Full mathematical reference for every order parameter and generalization-error formula in `statphys.experiment`, including multi-index subspace overlap, the Gaussian-mixture Bayes error, lazy/rich weight movement, and LoRA adapter recovery |
+| [glossary.md](glossary.md) | Statistical-physics ↔ ML dictionary and a suggested reading order for newcomers with no stat-mech background |
 
 ## Theory references
 
