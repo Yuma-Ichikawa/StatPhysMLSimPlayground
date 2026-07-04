@@ -13,6 +13,12 @@ Produces (into assets/ by default):
 - anim_mixture_boundary.gif: a 2D linear classifier's decision line rotating
                              into place on Gaussian-mixture data, with the
                              test error and the exact Bayes error side by side
+- anim_plateau.gif         : specialization-plateau escape in an erf committee
+                             machine — exact eps_g(t) next to the R overlap
+                             matrix breaking permutation symmetry (Saad-Solla)
+- anim_double_descent.gif  : model-wise double descent — the test-error-vs-
+                             width curve being traced through the
+                             interpolation peak
 
 Usage:
     python scripts/generate_readme_assets.py [--out-dir assets] [--fps 20]
@@ -40,9 +46,11 @@ from statphys.experiment import (
     Teacher,
     TeacherStudentExperiment,
     bayes_error,
+    simulate_online_committee,
 )
 from statphys.theory.online import GaussianLinearMseEquations, ODESolver
 from statphys.vis.animation import (
+    animate_curve_and_matrix,
     animate_decision_boundary,
     animate_learning_curve,
     animate_overlap_matrix,
@@ -249,6 +257,66 @@ def make_mixture_boundary_gif(out: Path, fps: int) -> None:
     save_animation(anim, str(out), fps=fps, dpi=80)
 
 
+def make_plateau_gif(out: Path, fps: int) -> None:
+    """Specialization-plateau escape: exact eps_g(t) next to the R matrix."""
+    traj = simulate_online_committee(
+        d=512, k=2, lr=1.0, t_max=400.0, n_snapshots=N_FRAMES, init_scale=1e-3, seed=0
+    )
+    anim = animate_curve_and_matrix(
+        traj["t"],
+        {r"$\epsilon_g$ (exact)": traj["eps_g"]},
+        list(traj["R"]),
+        suptitle="erf committee (K=M=2, d=512): plateau, then symmetry breaking",
+        figsize=(10, 4.2),
+    )
+    save_animation(anim, str(out), fps=fps, dpi=80)
+
+
+def make_double_descent_gif(out: Path, fps: int) -> None:
+    """Model-wise double descent: eps_g vs student width traced live."""
+    torch.manual_seed(0)
+    d, k_teacher, alpha = 32, 2, 3.0
+    widths = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48]
+    teacher = Teacher(
+        torch.nn.Sequential(
+            torch.nn.Linear(d, k_teacher), torch.nn.Tanh(), torch.nn.Linear(k_teacher, 1)
+        ),
+        init="normal",
+        noise_std=0.2,
+    )
+    errs = []
+    for k in widths:
+        exp = TeacherStudentExperiment(
+            teacher=teacher,
+            student_factory=lambda k=k: torch.nn.Sequential(
+                torch.nn.Linear(d, k), torch.nn.Tanh(), torch.nn.Linear(k, 1)
+            ),
+            d=d,
+        )
+        res = exp.run_order_parameters(
+            alphas=[alpha],
+            n_replicas=3,
+            share_data=True,
+            lr=1e-2,
+            max_epochs=800,
+            weight_decay=0.0,
+            verbose=False,
+        )
+        errs.append(float(res.mean("test_error")[0]))
+        print(f"  width={k}: eps_g={errs[-1]:.4f}")
+
+    anim = animate_learning_curve(
+        np.asarray(widths, dtype=float),
+        {r"$\epsilon_g$": np.asarray(errs)},
+        figsize=(6, 4.2),
+        xlabel="student width $K_s$",
+        ylabel=r"test error $\epsilon_g$",
+        logx=True,
+        logy=True,
+    )
+    save_animation(anim, str(out), fps=max(fps // 3, 4), dpi=80)
+
+
 def main() -> None:
     """Generate all README GIF assets."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -260,16 +328,20 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     statphys.fix_seed(0)
 
-    print("[1/5] learning curve animation ...")
+    print("[1/7] learning curve animation ...")
     make_learning_curve_gif(out_dir / "anim_learning_curve.gif", args.fps)
-    print("[2/5] phase plane animation ...")
+    print("[2/7] phase plane animation ...")
     make_phase_plane_gif(out_dir / "anim_phase_plane.gif", args.fps)
-    print("[3/5] specialization animation ...")
+    print("[3/7] specialization animation ...")
     make_specialization_gif(out_dir / "anim_specialization.gif", args.fps)
-    print("[4/5] grokking animation ...")
+    print("[4/7] grokking animation ...")
     make_grokking_gif(out_dir / "anim_grokking.gif", args.fps)
-    print("[5/5] Gaussian-mixture decision-boundary animation ...")
+    print("[5/7] Gaussian-mixture decision-boundary animation ...")
     make_mixture_boundary_gif(out_dir / "anim_mixture_boundary.gif", args.fps)
+    print("[6/7] plateau-escape animation ...")
+    make_plateau_gif(out_dir / "anim_plateau.gif", args.fps)
+    print("[7/7] double-descent animation ...")
+    make_double_descent_gif(out_dir / "anim_double_descent.gif", args.fps)
     print(f"done -> {out_dir}/")
 
 

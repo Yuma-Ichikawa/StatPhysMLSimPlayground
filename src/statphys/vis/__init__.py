@@ -33,6 +33,7 @@ except ImportError as e:
     ) from e
 
 from statphys.vis.animation import (
+    animate_curve_and_matrix,
     animate_decision_boundary,
     animate_learning_curve,
     animate_overlap_matrix,
@@ -78,6 +79,7 @@ __all__ = [
     "animate_phase_plane",
     "animate_overlap_matrix",
     "animate_decision_boundary",
+    "animate_curve_and_matrix",
     "save_animation",
     # Dashboards
     "plot_order_parameter_dashboard",

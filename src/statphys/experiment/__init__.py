@@ -22,6 +22,12 @@ Components:
     - GaussianMixtureDataset / bayes_error: a generative (not
       discriminative) classification setting with an exact closed-form
       generalization error, used to validate the eps_g bookkeeping.
+    - online_committee: exact online-SGD dynamics of erf committee
+      machines (Saad-Solla setting) with the exact order-parameter
+      generalization error, the specialization-gap order parameter, and
+      plateau escape-time measurement -- the numerical counterpart of
+      the DMFT/ODE dynamical theories, including the finite-size
+      ln(d) escape scaling that the d->infinity theory misses.
     - TeacherStudentExperiment: sample-complexity sweeps (alpha = n/d),
       replica-resolved order-parameter sweeps, epoch-resolved training
       dynamics, and online-SGD dynamics for arbitrary teacher-student
@@ -57,6 +63,12 @@ from statphys.experiment.metrics import (
     weight_overlap,
 )
 from statphys.experiment.mixture import GaussianMixtureDataset, bayes_error
+from statphys.experiment.online_committee import (
+    committee_generalization_error,
+    escape_time,
+    simulate_online_committee,
+    specialization_gap,
+)
 from statphys.experiment.observables import (
     binder_cumulant,
     function_order_params,
@@ -96,6 +108,10 @@ __all__ = [
     "generalization_error_decomposition",
     "GaussianMixtureDataset",
     "bayes_error",
+    "simulate_online_committee",
+    "committee_generalization_error",
+    "specialization_gap",
+    "escape_time",
     "PhaseDiagramResult",
     "run_phase_diagram",
     "PRESETS",

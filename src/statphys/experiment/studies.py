@@ -25,6 +25,10 @@ records as JSON, and renders a publication-style figure:
 - lazy_rich      : lazy (NTK/kernel) vs rich (feature-learning) regime
                    via init-scale (Chizat & Bach 2019)
 - lora           : LoRA-style low-rank fine-tuning adapter recovery
+- plateau        : specialization-plateau escape in online committee
+                   learning; escape time grows as ln(d) -- a finite-size
+                   symmetry-breaking effect invisible in the d->inf ODEs
+                   (Saad & Solla 1995; Biehl et al. 1996)
 
 Use `run_study(name, out_dir, quick=...)` or the `statphys study` CLI.
 """
@@ -800,6 +804,104 @@ def study_lora(out_dir: Path, quick: bool) -> None:
     _save({str(k): r.to_dict() for k, r in results.items()}, fig, out_dir, "lora")
 
 
+def study_plateau(out_dir: Path, quick: bool) -> None:
+    r"""
+    Specialization-plateau escape and its ln(d) finite-size scaling.
+
+    Online SGD of an erf committee (K=M=2, T=I) starting from a nearly
+    symmetric state: eps_g is trapped at the unspecialized plateau, then
+    permutation symmetry breaks and each student unit specializes to one
+    teacher unit. Because the initial asymmetry is O(1/sqrt(d)) and
+    grows exponentially with rate lambda, the escape time scales as
+
+        t_esc ~ (1/lambda) * ln(sqrt(d)) + const  ~  a * ln d + b,
+
+    a *dynamical finite-size effect* that the d->infinity ODE theory
+    misses entirely (it predicts an infinite plateau for symmetric
+    initial conditions). Left: eps_g(t) trajectories across d with the
+    specialization gap Delta_spec; right: measured t_esc vs d with a
+    ln(d) fit.
+    """
+    import matplotlib.pyplot as plt
+
+    from statphys.experiment.online_committee import simulate_online_committee
+
+    k, lr = 2, 1.0
+    dims = [64, 256] if quick else [64, 128, 256, 512, 1024, 2048]
+    seeds = list(range(2 if quick else 6))
+    t_max = 400.0 if quick else 600.0
+
+    trajs: dict[int, dict] = {}
+    esc: dict[int, list[float]] = {}
+    for d in dims:
+        esc[d] = []
+        for s in seeds:
+            traj = simulate_online_committee(
+                d=d, k=k, lr=lr, t_max=t_max, n_snapshots=300, init_scale=1e-3, seed=s
+            )
+            if np.isfinite(traj["escape_time"]):
+                esc[d].append(traj["escape_time"])
+            if s == 0:
+                trajs[d] = traj
+        print(f"d={d}: t_esc = {np.mean(esc[d]):.1f} +- {np.std(esc[d]):.1f}")
+
+    fig, axes = plt.subplots(1, 2, figsize=(12.5, 4.6))
+    ax = axes[0]
+    cmap = plt.get_cmap("viridis")
+    for i, d in enumerate(dims):
+        traj = trajs[d]
+        color = cmap(i / max(len(dims) - 1, 1))
+        ax.plot(traj["t"], traj["eps_g"], color=color, label=f"$d={d}$")
+    ax.set_yscale("log")
+    ax.set_xlabel(r"$t = \#\mathrm{samples}/d$")
+    ax.set_ylabel(r"$\epsilon_g$ (exact, from $Q, R, T$)")
+    ax.legend(fontsize=8)
+    ax.grid(True, linestyle="--", alpha=0.3)
+    ax.set_title("plateau lengthens with d")
+
+    ax = axes[1]
+    d_arr = np.array([d for d in dims if esc[d]], dtype=float)
+    mean_esc = np.array([np.mean(esc[d]) for d in dims if esc[d]])
+    std_esc = np.array([np.std(esc[d]) for d in dims if esc[d]])
+    ax.errorbar(d_arr, mean_esc, yerr=std_esc, fmt="o", markersize=6, capsize=3, color="crimson")
+    if len(d_arr) >= 2:
+        a, b = np.polyfit(np.log(d_arr), mean_esc, 1)
+        xs = np.linspace(d_arr.min(), d_arr.max(), 100)
+        ax.plot(
+            xs,
+            a * np.log(xs) + b,
+            "--",
+            color="gray",
+            label=rf"$t_{{esc}} = {a:.1f}\,\ln d {b:+.1f}$",
+        )
+        ax.legend()
+    ax.set_xscale("log")
+    ax.set_xlabel(r"$d$")
+    ax.set_ylabel(r"escape time $t_{esc}$")
+    ax.grid(True, linestyle="--", alpha=0.3)
+    ax.set_title(r"$t_{esc} \sim \ln d$ (symmetry-breaking escape)")
+
+    fig.suptitle(f"specialization plateau, erf committee (K=M={k}, eta={lr}, online SGD)")
+    fig.tight_layout()
+    _save(
+        {
+            "dims": dims,
+            "escape_times": {str(d): esc[d] for d in dims},
+            "example_trajectories": {
+                str(d): {
+                    "t": trajs[d]["t"].tolist(),
+                    "eps_g": trajs[d]["eps_g"].tolist(),
+                    "spec_gap": trajs[d]["spec_gap"].tolist(),
+                }
+                for d in trajs
+            },
+        },
+        fig,
+        out_dir,
+        "plateau",
+    )
+
+
 STUDIES = {
     "committee": study_committee,
     "fss": study_fss,
@@ -815,6 +917,7 @@ STUDIES = {
     "mixture": study_mixture,
     "lazy_rich": study_lazy_rich,
     "lora": study_lora,
+    "plateau": study_plateau,
 }
 
 

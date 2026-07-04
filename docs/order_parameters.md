@@ -413,7 +413,91 @@ too-large rank has more free parameters to fit noise at small $\alpha$
 
 ---
 
-## 7. Custom generative datasets: `dataset=...`
+## 7. Online dynamics: specialization plateaus and escape times
+
+The dynamical counterpart of everything above, in the classic
+Saad–Solla online (one-pass) setting implemented **exactly** by
+`statphys.experiment.online_committee`. Student and teacher are erf
+soft committee machines,
+
+$$
+f(x) = \frac{1}{\sqrt K}\sum_{k=1}^{K} g\!\left(\frac{\mathbf w_k \cdot \mathbf x}{\sqrt d}\right),
+\qquad g(x) = \mathrm{erf}(x/\sqrt 2),
+$$
+
+and every macroscopic observable is an exact function of the overlap
+matrices
+
+$$
+Q_{kl} = \frac{\mathbf w_k \cdot \mathbf w_l}{d},\qquad
+R_{km} = \frac{\mathbf w_k \cdot \mathbf w^*_m}{d},\qquad
+T_{mn} = \frac{\mathbf w^*_m \cdot \mathbf w^*_n}{d}.
+$$
+
+**Exact generalization error** (`committee_generalization_error`), from
+the Gaussian arcsine identity
+$\mathbb E[g(u)g(v)] = \tfrac{2}{\pi}\arcsin\frac{c_{12}}{\sqrt{(1+c_{11})(1+c_{22})}}$:
+
+$$
+\epsilon_g \;=\; \frac12\left[
+\frac{1}{K}\sum_{kl} G(Q_{kl}) + \frac{1}{M}\sum_{mn} G(T_{mn})
+- \frac{2}{\sqrt{KM}}\sum_{km} G(R_{km})
+\right],
+\tag{7.1}
+$$
+
+exact at any finite $K, M, d$ (Saad & Solla 1995) — no probe set, no
+sampling error. This is the same quantity the DMFT / ODE theories
+predict in the $d\to\infty$ limit, so simulation and theory can be
+compared curve-to-curve.
+
+**Specialization-gap order parameter** (`specialization_gap`). The
+unstable fixed point of the dynamics is the *permutation-symmetric*
+state where every student unit has the same overlap with every teacher
+unit. The natural scalar magnetization of this symmetry breaking is
+the sorted-overlap gap
+
+$$
+\Delta_{\rm spec} \;=\; \frac{1}{K} \sum_k \Big( |R|_{k,(1)} - |R|_{k,(2)} \Big),
+\tag{7.2}
+$$
+
+where $|R|_{k,(1)} \ge |R|_{k,(2)}$ are the two largest absolute
+overlaps of student unit $k$. $\Delta_{\rm spec}\approx 0$ on the
+plateau; $\Delta_{\rm spec} = O(1)$ once each unit commits to one
+teacher direction.
+
+**Escape-time scaling** (`escape_time`, `study_plateau`). The escape
+time is defined as the first time $\Delta_{\rm spec}(t)$ crosses an
+$O(1)$ threshold. Starting from a small random initialization, the
+overlap asymmetry is $O(1/\sqrt d)$ and grows exponentially with the
+instability rate $\lambda$ of the symmetric fixed point, so the
+plateau escape time is
+
+$$
+t_{\rm esc} \;\simeq\; \frac{1}{\lambda}\,\ln\sqrt{d} + \text{const}
+\;=\; \frac{1}{2\lambda}\,\ln d + \text{const}.
+\tag{7.3}
+$$
+
+This is a **finite-size dynamical effect invisible in the
+$d\to\infty$ ODEs** (which predict an infinite plateau for exactly
+symmetric initial conditions): the numerical experiment quantitatively
+probes where the thermodynamic-limit theory stops being the whole
+story — precisely the theory-toward-reality direction of the modern
+DMFT program. `study_plateau` measures $t_{\rm esc}$ across
+$d = 64 \dots 2048$ and fits the $\ln d$ law.
+
+```python
+from statphys.experiment import simulate_online_committee
+
+traj = simulate_online_committee(d=512, k=2, lr=0.5, t_max=300)
+traj["eps_g"], traj["spec_gap"], traj["escape_time"]
+```
+
+---
+
+## 8. Custom generative datasets: `dataset=...`
 
 Every setting above except Gaussian-mixture classification is
 *discriminative* ($x$ sampled, then $y=f_t(x)$), implemented by
@@ -438,7 +522,7 @@ mixture, `sign(v \cdot x)`, the Bayes-consistent rule) so that
 
 ---
 
-## 8. Summary table: setting → order parameter → formula
+## 9. Summary table: setting → order parameter → formula
 
 | Setting | Preset / study | Order parameter | Formula |
 |---|---|---|---|
@@ -454,6 +538,7 @@ mixture, `sign(v \cdot x)`, the Bayes-consistent rule) so that
 | Lazy vs. rich | `study_lazy_rich` | weight movement | (4.1) |
 | Gaussian-mixture classification | `mixture_classification`, `study_mixture` | cluster overlap $\cos\theta$, $\epsilon_g$ | (5.2), verified |
 | LoRA fine-tuning | `lora_finetune`, `study_lora` | adapter overlap | (6.1) |
+| Online committee dynamics | `simulate_online_committee`, `study_plateau` | exact $\epsilon_g$, $\Delta_{\rm spec}$, $t_{\rm esc}$ | (7.1)–(7.3), exact |
 
 ---
 
@@ -467,6 +552,10 @@ mixture, `sign(v \cdot x)`, the Bayes-consistent rule) so that
   Learning*. Cambridge University Press.
 - Zdeborová, L. & Krzakala, F. (2016). Statistical physics of
   inference: thresholds and algorithms. *Advances in Physics*.
+- Saad, D. & Solla, S. A. (1995). On-line learning in soft committee
+  machines. *Phys. Rev. E* 52, 4225. Biehl, M., Riegler, P. & Wöhler,
+  C. (1996). Transient dynamics of on-line learning in two-layered
+  neural networks (plateau lengths and symmetry breaking). *J. Phys. A*.
 - Advani, M. S., Saxe, A. M. & Ganguli, S. (2020). High-dimensional
   dynamics of generalization error in neural networks. *Neural
   Networks*.

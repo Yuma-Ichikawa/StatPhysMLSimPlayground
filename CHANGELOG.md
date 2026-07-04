@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Exact online committee-machine dynamics**
+  (`statphys.experiment.online_committee`): online SGD for erf soft
+  committee machines with the *exact* order-parameter generalization
+  error (Saad-Solla arcsin formula from Q, R, T — no probe set), a new
+  `specialization_gap` order parameter (sorted-overlap gap, the scalar
+  magnetization of permutation-symmetry breaking), and `escape_time`
+  plateau detection
+- `study_plateau` (`statphys study plateau`): specialization-plateau
+  escape across d = 64..2048 with the ln(d) escape-time fit — a
+  finite-size dynamical effect the d->infinity ODE/DMFT theory misses;
+  documented with full derivations in a new §7 of
+  `docs/order_parameters.md`
+- `animate_curve_and_matrix`: two-panel animation (learning curve +
+  evolving overlap matrix); used for the new README flagship GIF
+  `anim_plateau.gif`, alongside a new `anim_double_descent.gif`
 - **Educational/usability pass**: `docs/glossary.md`, a statistical-physics
   ↔ ML dictionary (order parameter, replica, susceptibility, lazy/rich,
   ...) with a suggested reading order for newcomers with no stat-mech

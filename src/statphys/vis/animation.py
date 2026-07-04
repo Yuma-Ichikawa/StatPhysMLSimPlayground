@@ -13,6 +13,9 @@ Creates GIF/MP4 animations from simulation results:
   into place as it is trained, next to the (fixed) labelled data —
   the most intuitive, "textbook-figure" animation for teaching what
   generalization/recovery means
+- animate_curve_and_matrix: a learning curve and an overlap matrix
+  evolving side by side — the standard two-panel view of plateau
+  escape / specialization in committee machines
 
 Saving uses matplotlib writers: "pillow" (GIF, always available with
 Pillow) or "ffmpeg" (MP4, requires ffmpeg on PATH).
@@ -326,6 +329,96 @@ def animate_decision_boundary(
         return [boundary, normal, ttl]
 
     return FuncAnimation(fig, update, frames=len(W), interval=interval, blit=False)
+
+
+def animate_curve_and_matrix(
+    t_values: np.ndarray,
+    curves: dict[str, np.ndarray],
+    matrices: list[np.ndarray] | np.ndarray,
+    curve_ylabel: str = r"$\epsilon_g$",
+    matrix_title: str = r"$R_{km} = \mathbf{w}_k \cdot \mathbf{w}^*_m / d$",
+    logy: bool = True,
+    cmap: str = "RdBu_r",
+    interval: int = 60,
+    figsize: tuple[float, float] = (10.5, 4.4),
+    suptitle: str = "",
+) -> FuncAnimation:
+    """
+    Animate a learning curve and an overlap matrix side by side.
+
+    The canonical two-panel view of committee-machine specialization:
+    the left panel draws e.g. the exact generalization error over time
+    (plateau, then symmetry-breaking drop), while the right panel shows
+    the student-teacher overlap matrix R developing its (permuted)
+    diagonal at the moment of escape.
+
+    Args:
+        t_values: Time grid of shape (S,).
+        curves: Mapping name -> trajectory of shape (S,) for the left panel.
+        matrices: Sequence of S 2D overlap matrices for the right panel.
+        curve_ylabel: Left-panel y label.
+        matrix_title: Right-panel base title.
+        logy: Log-scale the left panel (typical for eps_g).
+        cmap: Diverging colormap for the matrix.
+        interval: Milliseconds between frames.
+        figsize: Figure size.
+        suptitle: Overall figure title.
+
+    Returns:
+        FuncAnimation.
+
+    """
+    style = _style()
+    t = np.asarray(t_values, dtype=float)
+    mats = [np.atleast_2d(np.asarray(m, dtype=float)) for m in matrices]
+    if len(mats) != len(t):
+        raise ValueError(f"len(matrices)={len(mats)} must equal len(t_values)={len(t)}")
+
+    fig, (ax_c, ax_m) = plt.subplots(1, 2, figsize=figsize)
+
+    lines = {}
+    dots = {}
+    data = {k: np.asarray(v, dtype=float) for k, v in curves.items()}
+    for i, (name, v) in enumerate(data.items()):
+        color = style.colors[i % len(style.colors)]
+        (lines[name],) = ax_c.plot([], [], color=color, linewidth=2, label=name)
+        (dots[name],) = ax_c.plot([], [], "o", color=color, markersize=7)
+    all_vals = np.concatenate(list(data.values()))
+    ax_c.set_xlim(t.min(), t.max())
+    if logy:
+        ax_c.set_yscale("log")
+        positive = all_vals[all_vals > 0]
+        lo = positive.min() * 0.5 if positive.size else 1e-3
+        ax_c.set_ylim(lo, all_vals.max() * 2)
+    else:
+        pad = 0.1 * (all_vals.max() - all_vals.min() + 1e-12)
+        ax_c.set_ylim(all_vals.min() - pad, all_vals.max() + pad)
+    ax_c.set_xlabel(r"$t = \#\mathrm{samples}/d$")
+    ax_c.set_ylabel(curve_ylabel)
+    ax_c.grid(True, linestyle="--", alpha=0.3)
+    ax_c.legend(loc="best", fontsize=9)
+
+    vabs = max(max(np.abs(m).max() for m in mats), 1e-12)
+    im = ax_m.imshow(mats[0], cmap=cmap, vmin=-vabs, vmax=vabs)
+    fig.colorbar(im, ax=ax_m, fraction=0.046, pad=0.04)
+    ax_m.set_xlabel("teacher unit")
+    ax_m.set_ylabel("student unit")
+    ax_m.set_xticks(range(mats[0].shape[1]))
+    ax_m.set_yticks(range(mats[0].shape[0]))
+    ttl_m = ax_m.set_title(matrix_title)
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+
+    def update(frame: int):
+        for name in data:
+            lines[name].set_data(t[: frame + 1], data[name][: frame + 1])
+            dots[name].set_data([t[frame]], [data[name][frame]])
+        im.set_data(mats[frame])
+        ttl_m.set_text(matrix_title + f"  (t = {t[frame]:.1f})")
+        return [*lines.values(), *dots.values(), im, ttl_m]
+
+    return FuncAnimation(fig, update, frames=len(t), interval=interval, blit=False)
 
 
 def save_animation(

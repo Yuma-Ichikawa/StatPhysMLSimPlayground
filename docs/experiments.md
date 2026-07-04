@@ -165,6 +165,7 @@ command line) bundles complete experiments that save JSON + figure:
 | `mixture` | Gaussian-mixture classification; measured eps_g checked against the exact Bayes error |
 | `lazy_rich` | Lazy (NTK/kernel) vs. rich (feature-learning) regime via init scale (Chizat & Bach 2019) |
 | `lora` | LoRA-style low-rank fine-tuning adapter recovery |
+| `plateau` | Specialization-plateau escape in online committee learning with exact Saad-Solla order parameters; ln(d) escape-time scaling (§7 of order_parameters.md) |
 
 ### Command-line interface
 

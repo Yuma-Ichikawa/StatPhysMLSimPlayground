@@ -131,10 +131,24 @@ generalization), **Gaussian universality** of learning curves,
 **model-wise double descent**, **data-scaling exponents** across
 architectures, **multi-index model** subspace recovery, **Gaussian-
 mixture classification** (with an exactly verifiable generalization
-error), **lazy-vs-rich** feature-learning regimes, and **LoRA-style**
-fine-tuning adapter recovery.
+error), **lazy-vs-rich** feature-learning regimes, **LoRA-style**
+fine-tuning adapter recovery, and **specialization-plateau escape**
+with its ln(d) finite-size scaling (exact Saad-Solla order parameters,
+`statphys study plateau`).
 
 ### Phenomenology gallery
+
+<p align="center">
+  <img src="assets/anim_plateau.gif" alt="Specialization plateau escape in an erf committee machine" width="88%">
+</p>
+<p align="center"><em>
+  <strong>Specialization-plateau escape</strong> (Saad&ndash;Solla setting, exact order parameters):
+  the exact generalization error of an erf committee machine under online SGD stays trapped
+  on the permutation-symmetric plateau, then drops when the student-teacher overlap matrix
+  <em>R</em> (right) breaks symmetry and develops a diagonal. The escape time grows as ln&nbsp;d —
+  a finite-size effect invisible in the d&rarr;&infin; ODE/DMFT theory
+  (<code>statphys study plateau</code>).
+</em></p>
 
 <p align="center">
   <img src="assets/anim_mixture_boundary.gif" alt="Gaussian-mixture classification: decision boundary rotating into place" width="44%">
@@ -146,6 +160,15 @@ fine-tuning adapter recovery.
   Bayes error (0.036) almost exactly.
   Right: <strong>grokking</strong> — train error collapses almost immediately, while test error
   plateaus for thousands of epochs before suddenly dropping (delayed generalization).
+</em></p>
+
+<p align="center">
+  <img src="assets/anim_double_descent.gif" alt="Model-wise double descent" width="55%">
+</p>
+<p align="center"><em>
+  <strong>Model-wise double descent</strong>: the test error traced as the student width grows —
+  rising toward the interpolation threshold, then descending again in the
+  overparameterized regime (<code>statphys study double_descent</code>).
 </em></p>
 
 <p align="center">

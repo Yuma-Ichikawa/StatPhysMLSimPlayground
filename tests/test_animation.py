@@ -8,7 +8,11 @@ import numpy as np
 import pytest
 from matplotlib.animation import FuncAnimation
 
-from statphys.vis.animation import animate_decision_boundary, animate_learning_curve
+from statphys.vis.animation import (
+    animate_curve_and_matrix,
+    animate_decision_boundary,
+    animate_learning_curve,
+)
 
 
 class TestAnimateLearningCurveLogAxes:
@@ -58,3 +62,22 @@ class TestAnimateDecisionBoundary:
         # the boundary line should run purely along x2 (x1 ~ 0 everywhere)
         assert np.allclose(xs, 0.0, atol=1e-8)
         assert ys[0] != ys[1]
+
+
+class TestAnimateCurveAndMatrix:
+    """Two-panel curve + overlap-matrix animation."""
+
+    def test_returns_funcanimation(self):
+        t = np.linspace(0, 10, 8)
+        curves = {"eps_g": np.linspace(0.1, 0.001, 8)}
+        mats = [np.eye(2) * (i / 7) for i in range(8)]
+        anim = animate_curve_and_matrix(t, curves, mats)
+        assert isinstance(anim, FuncAnimation)
+        assert anim._save_count == 8
+
+    def test_rejects_length_mismatch(self):
+        t = np.linspace(0, 10, 5)
+        curves = {"eps_g": np.linspace(0.1, 0.001, 5)}
+        mats = [np.eye(2)] * 3
+        with pytest.raises(ValueError):
+            animate_curve_and_matrix(t, curves, mats)
