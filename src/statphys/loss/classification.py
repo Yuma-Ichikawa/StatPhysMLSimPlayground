@@ -242,8 +242,8 @@ class ExponentialLoss(BaseLoss):
         y_true: torch.Tensor,
     ) -> torch.Tensor:
         """Compute exponential loss."""
-        # Clip to avoid overflow
-        return torch.exp(torch.clamp(-y_true * y_pred, max=50))
+        # Clip to avoid overflow (exp(20) ~ 5e8; safe even when summed over samples)
+        return torch.exp(torch.clamp(-y_true * y_pred, max=20))
 
 
 class RampLoss(BaseLoss):
@@ -463,6 +463,8 @@ class MultiMarginLoss(BaseLoss):
 
         y_true = y_true.long()
         n_classes = y_pred.size(-1)
+        if n_classes < 2:
+            raise ValueError(f"MultiMarginLoss requires n_classes >= 2, got {n_classes}")
 
         # Get correct class scores
         correct_scores = y_pred.gather(1, y_true.unsqueeze(1))  # (batch, 1)

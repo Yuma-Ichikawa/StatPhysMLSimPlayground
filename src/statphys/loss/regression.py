@@ -14,9 +14,14 @@ class MSELoss(BaseLoss):
 
     L(y, ŷ) = (1/n) * Σ(y - ŷ)²
 
+    In `for_online()` the data term is scaled by 1/2 so the effective
+    single-sample loss is (1/2)(y - ŷ)², matching online SGD theory.
+
     The canonical loss for studying ridge regression and
     gradient descent dynamics.
     """
+
+    online_scale = 0.5
 
     def __init__(
         self,
@@ -52,6 +57,8 @@ class RidgeLoss(BaseLoss):
     Equivalent to MSELoss with reg_param > 0, but explicitly named.
     """
 
+    online_scale = 0.5
+
     def __init__(
         self,
         reg_param: float = 0.01,
@@ -83,14 +90,16 @@ class LassoLoss(BaseLoss):
 
     Scaling conventions:
     -------------------
-    **Replica**: L = (1/n) * Σ(y - ŷ)² + λ||w||₁
-        - Regularization: λ * ||w||₁ → O(√d) since ||w||₁ ~ √d * ||w||₂/√d
+    **Replica**: L = Σ(y - ŷ)² + λ||w||₁
 
-    **Online**: L = (1/d) * (y - ŷ)² + (λ/d)||w||₁
+    **Online**: L = (1/2)(y - ŷ)² + (λ/2)||w||₁/d
+        - Data term scaled by 1/2 (squared-error convention)
         - Regularization normalized by d
 
     Important for studying sparse solutions and compressed sensing.
     """
+
+    online_scale = 0.5
 
     def __init__(
         self,
@@ -137,6 +146,7 @@ class LassoLoss(BaseLoss):
     def _compute_regularization_online(
         self,
         model: nn.Module,
+        d: int | None = None,
     ) -> torch.Tensor:
         """
         Compute L1 regularization for online learning.
@@ -144,14 +154,15 @@ class LassoLoss(BaseLoss):
         Online scaling: (λ/d) * ||w||₁
         """
         if self.reg_param == 0:
-            return torch.tensor(0.0, device=next(model.parameters()).device)
+            return torch.tensor(0.0, device=self._model_device(model))
 
-        reg = torch.tensor(0.0, device=next(model.parameters()).device)
-        d = 0
+        reg = torch.tensor(0.0, device=self._model_device(model))
+        numel = 0
         for param in model.parameters():
             reg = reg + torch.sum(torch.abs(param))
-            d += param.numel()
+            numel += param.numel()
 
+        d = self._resolve_dim(model, d, numel)
         return self.reg_param * reg / d
 
     def _compute_regularization(
@@ -172,15 +183,17 @@ class ElasticNetLoss(BaseLoss):
 
     Scaling conventions:
     -------------------
-    **Replica**: L = (1/n) * Σ(y - ŷ)² + λ * (α||w||₁ + (1-α)||w||²)
+    **Replica**: L = Σ(y - ŷ)² + λ * (α||w||₁ + (1-α)||w||²)
         - L1: λ * α * ||w||₁
         - L2: λ * (1-α) * ||w||² → O(d)
 
-    **Online**: L = (1/d) * (y - ŷ)² + (λ/d) * (α||w||₁ + (1-α)||w||²)
-        - All terms normalized by d
+    **Online**: L = (1/2)(y - ŷ)² + (λ/2d) * (α||w||₁ + (1-α)||w||²)
+        - Regularization terms normalized by d
 
     Combines benefits of LASSO and Ridge.
     """
+
+    online_scale = 0.5
 
     def __init__(
         self,
@@ -234,6 +247,7 @@ class ElasticNetLoss(BaseLoss):
     def _compute_regularization_online(
         self,
         model: nn.Module,
+        d: int | None = None,
     ) -> torch.Tensor:
         """
         Compute Elastic Net regularization for online learning.
@@ -241,17 +255,18 @@ class ElasticNetLoss(BaseLoss):
         Online scaling: (λ/d) * (α||w||₁ + (1-α)||w||²)
         """
         if self.reg_param == 0:
-            return torch.tensor(0.0, device=next(model.parameters()).device)
+            return torch.tensor(0.0, device=self._model_device(model))
 
-        l1_reg = torch.tensor(0.0, device=next(model.parameters()).device)
-        l2_reg = torch.tensor(0.0, device=next(model.parameters()).device)
-        d = 0
+        l1_reg = torch.tensor(0.0, device=self._model_device(model))
+        l2_reg = torch.tensor(0.0, device=self._model_device(model))
+        numel = 0
 
         for param in model.parameters():
             l1_reg = l1_reg + torch.sum(torch.abs(param))
             l2_reg = l2_reg + torch.sum(param**2)
-            d += param.numel()
+            numel += param.numel()
 
+        d = self._resolve_dim(model, d, numel)
         reg = self.l1_ratio * l1_reg + (1 - self.l1_ratio) * l2_reg
         return self.reg_param * reg / d
 
@@ -300,6 +315,8 @@ class HuberLoss(BaseLoss):
 
         """
         super().__init__(reg_param=reg_param, reduction=reduction, **kwargs)
+        if delta <= 0:
+            raise ValueError(f"delta must be positive, got {delta}")
         self.delta = delta
 
     def _compute_loss(
@@ -346,6 +363,8 @@ class PseudoHuberLoss(BaseLoss):
 
         """
         super().__init__(reg_param=reg_param, reduction=reduction, **kwargs)
+        if delta <= 0:
+            raise ValueError(f"delta must be positive, got {delta}")
         self.delta = delta
 
     def _compute_loss(

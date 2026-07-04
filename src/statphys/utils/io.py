@@ -99,11 +99,28 @@ def load_results(
     Returns:
         Dictionary containing loaded results.
 
+    Warning:
+        Pickle files can execute arbitrary code when loaded.
+        Only load pickle/npz files from trusted sources.
+
     """
     filepath = Path(filepath)
 
     if format == "auto":
         format = filepath.suffix.lstrip(".")
+        if not format:
+            # No extension given: search for a saved file with a known extension
+            for ext in (".json", ".pkl", ".npz"):
+                candidate = filepath.with_suffix(ext)
+                if candidate.exists():
+                    filepath = candidate
+                    format = ext.lstrip(".")
+                    break
+            else:
+                raise FileNotFoundError(
+                    f"No results file found for '{filepath}' "
+                    "(tried extensions: .json, .pkl, .npz)"
+                )
 
     if format == "json":
         with open(filepath) as f:

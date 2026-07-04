@@ -97,8 +97,11 @@ def _register_defaults() -> None:
         ExponentialLoss,
         HingeLoss,
         LogisticLoss,
+        MultiMarginLoss,
         PerceptronLoss,
+        ProbitLoss,
         RampLoss,
+        SoftmaxCrossEntropyLoss,
         SquaredHingeLoss,
     )
     from statphys.loss.regression import (
@@ -130,6 +133,12 @@ def _register_defaults() -> None:
     _global_registry.register("perceptron", PerceptronLoss)
     _global_registry.register("exponential", ExponentialLoss)
     _global_registry.register("ramp", RampLoss)
+    _global_registry.register("probit", ProbitLoss)
+
+    # Multi-class losses
+    _global_registry.register("softmax_cross_entropy", SoftmaxCrossEntropyLoss)
+    _global_registry.register("softmax_ce", SoftmaxCrossEntropyLoss)
+    _global_registry.register("multi_margin", MultiMarginLoss)
 
 
 # Auto-register on import

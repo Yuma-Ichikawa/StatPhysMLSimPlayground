@@ -143,15 +143,20 @@ class GaussianLinearMseEquations(OnlineEquations):
         """
         Compute steady state (m*, q*) analytically.
 
-        For η < η_c = 2(1+λ), the steady state exists:
-            m* = ρ/(1+λ)
-            q* = ρ/(1+λ) + η²σ²/(2(1+λ) - η(1+λ)²)
+        Setting dq/dt = 0:
+            η²(ρ - 2m* + q* + σ²) + 2η(m* - q*) - 2ηλq* = 0
+            => q* [2η(1+λ) - η²] = η²(ρ - 2m* + σ²) + 2η m*
+
+        The steady state exists (denominator positive) for η < 2(1+λ).
 
         Args:
             **kwargs: Can override rho, eta_noise, lr, reg_param
 
         Returns:
             (m*, q*) steady state values
+
+        Raises:
+            ValueError: If η >= 2(1+λ) (dynamics diverge, no steady state).
 
         """
         rho = kwargs.get("rho", self.rho)
@@ -161,10 +166,13 @@ class GaussianLinearMseEquations(OnlineEquations):
 
         m_star = rho / (1 + lam)
 
-        # Solve for q* from dq/dt = 0
-        # η²(ρ - 2m* + q* + σ²) + 2η(m* - q*) - 2ηλq* = 0
-        # This gives a linear equation in q*
-        a = lr**2 + 2 * lr * (1 + lam)
+        # Solve for q* from dq/dt = 0 (linear equation in q*):
+        # coefficient of q* is -(2η(1+λ) - η²); constant term is b below
+        a = 2 * lr * (1 + lam) - lr**2
+        if a <= 0:
+            raise ValueError(
+                f"No steady state: learning rate lr={lr} >= 2(1+lambda)={2 * (1 + lam)}"
+            )
         b = lr**2 * (rho - 2 * m_star + sigma_sq) + 2 * lr * m_star
         q_star = b / a
 

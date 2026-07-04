@@ -66,6 +66,18 @@ class TheoryResult:
         """Get a specific order parameter as numpy array."""
         return np.array(self.order_params[name])
 
+    def __contains__(self, name: str) -> bool:
+        """Allow ``"m" in result`` to test for an order parameter."""
+        return name in self.order_params
+
+    def __getitem__(self, name: str) -> np.ndarray:
+        """Allow ``result["m"]`` as shorthand for get_order_param."""
+        return self.get_order_param(name)
+
+    def keys(self) -> list[str]:
+        """Return the available order-parameter names."""
+        return list(self.order_params.keys())
+
     def __repr__(self) -> str:
         n_points = len(self.param_values)
         n_converged = sum(self.converged)

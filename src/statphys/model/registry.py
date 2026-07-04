@@ -101,6 +101,12 @@ def _register_defaults() -> None:
         RidgeRegression,
     )
     from statphys.model.mlp import DeepNetwork, TwoLayerNetwork, TwoLayerNetworkReLU
+    from statphys.model.random_features import (
+        DeepLinearNetwork,
+        KernelRidgeModel,
+        RandomFeaturesModel,
+    )
+    from statphys.model.softmax import SoftmaxRegression, SoftmaxRegressionWithBias
     from statphys.model.transformer import SingleLayerAttention, SingleLayerTransformer
 
     _global_registry.register("linear", LinearRegression)
@@ -116,6 +122,16 @@ def _register_defaults() -> None:
     _global_registry.register("deep", DeepNetwork)
     _global_registry.register("attention", SingleLayerAttention)
     _global_registry.register("transformer", SingleLayerTransformer)
+
+    # Random features / kernel / deep linear models
+    _global_registry.register("random_features", RandomFeaturesModel)
+    _global_registry.register("kernel_ridge", KernelRidgeModel)
+    _global_registry.register("deep_linear", DeepLinearNetwork)
+
+    # Multi-class models
+    _global_registry.register("softmax", SoftmaxRegression)
+    _global_registry.register("softmax_regression", SoftmaxRegression)
+    _global_registry.register("softmax_with_bias", SoftmaxRegressionWithBias)
 
 
 # Auto-register on import

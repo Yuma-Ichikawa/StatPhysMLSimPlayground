@@ -38,7 +38,7 @@ from statphys.utils.order_params import (
     default_calculator,
     detailed_calculator,
 )
-from statphys.utils.seed import fix_seed, get_device
+from statphys.utils.seed import fix_seed, get_device, get_seed_list
 from statphys.utils.special_functions import (  # Gaussian distribution functions; Activation functions; Committee machine functions; Proximal operators; Generalization error functions
     I2,
     I3,
@@ -69,6 +69,7 @@ __all__ = [
     # Seed utilities
     "fix_seed",
     "get_device",
+    "get_seed_list",
     # Basic math utilities
     "gaussian_integral",
     "double_gaussian_integral",

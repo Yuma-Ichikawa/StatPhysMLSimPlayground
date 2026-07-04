@@ -5,7 +5,11 @@ This module provides:
 - Plotter: General plotting utilities
 - OrderParamPlotter: Plot order parameter trajectories
 - ComparisonPlotter: Compare theory vs experiment
-- PhaseDiagramPlotter: Phase diagram visualization
+- PhaseDiagramPlotter: Phase diagram visualization (+ compute_phase_grid)
+- DynamicsPlotter: (m, q) phase portraits, ODE flow fields, nullclines
+- OverlapMatrixPlotter: M/Q/R overlap-matrix heatmaps, specialization
+- SweepPlotter: Parameter sweeps, theory-vs-experiment diagnostics
+- Animations: learning curves, phase-plane motion, overlap matrices (GIF/MP4)
 - Default plotting functions for publication-quality figures
 
 Requirements:
@@ -28,7 +32,16 @@ except ImportError as e:
         "Visualization module requires matplotlib. " "Install with: pip install statphys-ml[vis]"
     ) from e
 
+from statphys.vis.animation import (
+    animate_learning_curve,
+    animate_overlap_matrix,
+    animate_phase_plane,
+    save_animation,
+)
 from statphys.vis.comparison import ComparisonPlotter
+from statphys.vis.dynamics import DynamicsPlotter
+from statphys.vis.overlap_matrix import OverlapMatrixPlotter
+from statphys.vis.sweep import SweepPlotter
 from statphys.vis.default_plots import (
     COLORS,
     DEFAULT_FIGSIZE,
@@ -44,7 +57,7 @@ from statphys.vis.default_plots import (
     plot_order_params_time,
 )
 from statphys.vis.order_params import OrderParamPlotter
-from statphys.vis.phase_diagram import PhaseDiagramPlotter
+from statphys.vis.phase_diagram import PhaseDiagramPlotter, compute_phase_grid
 from statphys.vis.plotter import PlotStyle, Plotter
 
 __all__ = [
@@ -54,6 +67,15 @@ __all__ = [
     "OrderParamPlotter",
     "ComparisonPlotter",
     "PhaseDiagramPlotter",
+    "DynamicsPlotter",
+    "OverlapMatrixPlotter",
+    "SweepPlotter",
+    "compute_phase_grid",
+    # Animations
+    "animate_learning_curve",
+    "animate_phase_plane",
+    "animate_overlap_matrix",
+    "save_animation",
     # Default plotting functions
     "apply_paper_style",
     "plot_generalization_error_alpha",

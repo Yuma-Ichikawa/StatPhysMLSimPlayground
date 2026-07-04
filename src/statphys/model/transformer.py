@@ -39,6 +39,8 @@ class SingleLayerAttention(BaseModel):
         """
         super().__init__(d=d, **kwargs)
 
+        if d_model % n_heads != 0:
+            raise ValueError(f"d_model ({d_model}) must be divisible by n_heads ({n_heads})")
         self.d_model = d_model
         self.n_heads = n_heads
         self.d_k = d_model // n_heads
@@ -204,6 +206,8 @@ class SingleLayerTransformer(BaseModel):
         """
         super().__init__(d=d, **kwargs)
 
+        if d_model % n_heads != 0:
+            raise ValueError(f"d_model ({d_model}) must be divisible by n_heads ({n_heads})")
         self.d_model = d_model
         self.d_ff = d_ff
         self.n_heads = n_heads

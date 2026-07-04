@@ -51,6 +51,8 @@ class SoftmaxRegression(BaseModel):
         """
         super().__init__(d=d, **kwargs)
 
+        if n_classes < 2:
+            raise ValueError(f"n_classes must be >= 2, got {n_classes}")
         self.n_classes = n_classes
         self.init_scale = init_scale
         self.init_method = init_method
@@ -68,7 +70,7 @@ class SoftmaxRegression(BaseModel):
         elif self.init_method == "orthogonal":
             nn.init.orthogonal_(self.W, gain=self.init_scale)
         else:
-            nn.init.normal_(self.W, std=self.init_scale / np.sqrt(self.d))
+            raise ValueError(f"Unknown init_method: {self.init_method}")
 
     def forward(
         self,

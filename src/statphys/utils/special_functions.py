@@ -13,7 +13,7 @@ Reference: Engel & Van den Broeck, "Statistical Mechanics of Learning"
 from collections.abc import Callable
 
 import numpy as np
-from scipy.special import erf, erfc, erfinv
+from scipy.special import erf, erfc, erfinv, roots_hermite
 
 # =============================================================================
 # Gaussian Distribution Functions
@@ -94,8 +94,14 @@ def gaussian_quantile(
     Returns:
         Quantile value(s).
 
+    Raises:
+        ValueError: If p is outside [0, 1].
+
     """
-    return mu + sigma * np.sqrt(2) * erfinv(2 * p - 1)
+    p_arr = np.asarray(p)
+    if np.any(p_arr < 0) or np.any(p_arr > 1):
+        raise ValueError("p must be in [0, 1]")
+    return mu + sigma * np.sqrt(2) * erfinv(2 * p_arr - 1)
 
 
 # =============================================================================
@@ -269,73 +275,147 @@ def I2(Q_ab: float, activation: str = "erf") -> float:
         raise ValueError(f"Unknown activation: {activation}")
 
 
-def I3(Q_ab: float, Q_ac: float, Q_bc: float, activation: str = "erf") -> float:
+def _activation_fns(
+    activation: str,
+) -> tuple[Callable[[np.ndarray], np.ndarray], Callable[[np.ndarray], np.ndarray]]:
+    """Return vectorized (g, g') for a differentiable activation."""
+    if activation == "erf":
+        return (
+            lambda x: erf(x / np.sqrt(2)),
+            lambda x: np.sqrt(2 / np.pi) * np.exp(-(x**2) / 2),
+        )
+    elif activation == "relu":
+        return (
+            lambda x: np.maximum(0.0, x),
+            lambda x: np.where(x > 0, 1.0, 0.0),
+        )
+    raise NotImplementedError(
+        f"Activation '{activation}' not supported for numerical correlation "
+        "integrals (need a differentiable activation like 'erf' or 'relu')."
+    )
+
+
+def _gaussian_correlation_integral(
+    func: Callable[..., np.ndarray],
+    cov: np.ndarray,
+    n_points: int = 30,
+) -> float:
+    """
+    Compute E[func(z_1, ..., z_d)] for z ~ N(0, cov) via Gauss-Hermite quadrature.
+
+    Uses a tensor-product grid with a Cholesky change of variables.
+    `func` must be vectorized (accept and return numpy arrays).
+    """
+    cov = np.asarray(cov, dtype=float)
+    d = cov.shape[0]
+    try:
+        L = np.linalg.cholesky(cov)
+    except np.linalg.LinAlgError:
+        L = np.linalg.cholesky(cov + 1e-10 * np.eye(d))
+
+    x, w = roots_hermite(n_points)
+    x = np.sqrt(2.0) * x
+
+    grids = np.meshgrid(*([x] * d), indexing="ij")
+    X = np.stack([g.ravel() for g in grids], axis=0)  # (d, n^d)
+    Z = L @ X
+
+    w_grids = np.meshgrid(*([w] * d), indexing="ij")
+    W = np.ones_like(w_grids[0].ravel())
+    for g in w_grids:
+        W = W * g.ravel()
+
+    vals = func(*Z)
+    return float(np.sum(W * vals) / np.pi ** (d / 2))
+
+
+def I3(
+    Q_ab: float,
+    Q_ac: float,
+    Q_bc: float,
+    activation: str = "erf",
+    n_points: int = 30,
+) -> float:
     """
     Three-point correlation function I_3 for committee machines.
 
-    I_3 = E[g'(u)g(v)g(w)] where (u, v, w) have correlation Q.
+    I_3 = E[g'(u)g(v)g(w)] where (u, v, w) ~ N(0, C) with unit variances and
+    Cov(u,v) = Q_ab, Cov(u,w) = Q_ac, Cov(v,w) = Q_bc.
 
-    This appears in committee machine saddle-point equations.
+    Computed by exact 3D Gauss-Hermite quadrature (no symmetry assumption).
 
-    WARNING: This is a SIMPLIFIED formula valid only for the symmetric case
-    where all correlations are approximately equal. For the general asymmetric
-    case, use numerical integration over the 3D Gaussian distribution.
-
-    For exact implementation, see:
-    - Saad & Solla (1995) "On-line learning in soft committee machines"
-    - Biehl & Schwarze (1995) "Learning by on-line gradient descent"
+    References:
+        - Saad & Solla (1995) "On-line learning in soft committee machines"
+        - Biehl & Schwarze (1995) "Learning by on-line gradient descent"
 
     Args:
         Q_ab, Q_ac, Q_bc: Pairwise correlations.
-        activation: Activation function ('erf' only).
+        activation: Activation function ('erf' or 'relu').
+        n_points: Gauss-Hermite points per dimension.
 
     Returns:
-        I_3 value (approximate for symmetric case).
-
-    Raises:
-        NotImplementedError: For non-erf activations.
+        I_3 value.
 
     """
-    if activation == "erf":
-        # Simplified formula for symmetric case
-        # Exact: I_3 requires 3D Gaussian integration
-        Q = (Q_ab + Q_ac + Q_bc) / 3  # Average correlation
-        return (2 / np.pi) ** 1.5 / np.sqrt(1 + Q + 1e-10)
-    else:
-        raise NotImplementedError(
-            f"I3 for activation '{activation}' requires numerical integration. "
-            "Only 'erf' is supported with closed-form approximation."
-        )
+    g, g_prime = _activation_fns(activation)
+    cov = np.array(
+        [
+            [1.0, Q_ab, Q_ac],
+            [Q_ab, 1.0, Q_bc],
+            [Q_ac, Q_bc, 1.0],
+        ]
+    )
+    return _gaussian_correlation_integral(
+        lambda u, v, w: g_prime(u) * g(v) * g(w), cov, n_points=n_points
+    )
 
 
-def I4(Q_ab: float, Q_cd: float, Q_ac: float, activation: str = "erf") -> float:
+def I4(
+    Q_ab: float,
+    Q_cd: float,
+    Q_ac: float,
+    activation: str = "erf",
+    Q_ad: float | None = None,
+    Q_bc: float | None = None,
+    Q_bd: float | None = None,
+    n_points: int = 20,
+) -> float:
     """
     Four-point correlation function I_4 for committee machines.
 
-    I_4 = E[g'(u)g'(v)g(w)g(z)]
+    I_4 = E[g'(u_a)g'(u_b)g(u_c)g(u_d)] where u ~ N(0, C) with unit variances.
 
-    WARNING: This is an APPROXIMATE formula using independence assumption.
-    For exact results, use numerical integration over the 4D Gaussian.
+    Computed by exact 4D Gauss-Hermite quadrature. Correlations not provided
+    (Q_ad, Q_bc, Q_bd) default to Q_ac, which reproduces the common symmetric
+    parameterization used in committee machine analysis.
 
     Args:
-        Q_ab, Q_cd, Q_ac: Correlations.
-        activation: Activation function ('erf' only).
+        Q_ab: Correlation between the two g' units (a, b).
+        Q_cd: Correlation between the two g units (c, d).
+        Q_ac: Cross correlation between g' and g units.
+        activation: Activation function ('erf' or 'relu').
+        Q_ad, Q_bc, Q_bd: Remaining cross correlations (default: Q_ac).
+        n_points: Gauss-Hermite points per dimension.
 
     Returns:
-        I_4 value (approximate).
-
-    Raises:
-        NotImplementedError: For non-erf activations.
+        I_4 value.
 
     """
-    if activation == "erf":
-        # Factorized approximation (assumes independence)
-        return I2(Q_ab, "erf") * I2(Q_cd, "erf")
-    else:
-        raise NotImplementedError(
-            f"I4 for activation '{activation}' requires numerical integration. "
-            "Only 'erf' is supported with factorized approximation."
-        )
+    g, g_prime = _activation_fns(activation)
+    Q_ad = Q_ac if Q_ad is None else Q_ad
+    Q_bc = Q_ac if Q_bc is None else Q_bc
+    Q_bd = Q_ac if Q_bd is None else Q_bd
+    cov = np.array(
+        [
+            [1.0, Q_ab, Q_ac, Q_ad],
+            [Q_ab, 1.0, Q_bc, Q_bd],
+            [Q_ac, Q_bc, 1.0, Q_cd],
+            [Q_ad, Q_bd, Q_cd, 1.0],
+        ]
+    )
+    return _gaussian_correlation_integral(
+        lambda a, b, c, dd: g_prime(a) * g_prime(b) * g(c) * g(dd), cov, n_points=n_points
+    )
 
 
 # =============================================================================
@@ -457,9 +537,16 @@ def training_error_linear(
     m: float, q: float, rho: float, eta: float, alpha: float, reg_param: float = 0.0
 ) -> float:
     """
-    Training error for ridge regression.
+    Approximate training error for ridge regression.
 
-    Uses replica formula for training error.
+    Heuristic replica-inspired estimate: the residual variance V = ρ - 2m + q + η
+    suppressed by the regularization factor λ²/(λ + α)². This is a rough
+    approximation, exact only in limiting regimes (λ → 0 gives e_train → 0 in
+    the interpolating regime; λ → ∞ recovers V).
+
+    Note:
+        For quantitatively exact training-error curves, derive the expression
+        from the replica free energy of the specific scenario instead.
 
     Args:
         m: Teacher-student overlap.
@@ -470,16 +557,16 @@ def training_error_linear(
         reg_param: Regularization parameter.
 
     Returns:
-        Training error.
+        Approximate training error.
 
     """
+    if alpha <= 0:
+        return 0.0
+
     # Residual variance
     V = rho - 2 * m + q + eta
 
-    # Training error from replica calculation
-    e_train = V * reg_param**2 / (alpha * (reg_param + alpha) ** 2 + 1e-10) if alpha > 0 else 0.0
-
-    return e_train
+    return V * reg_param**2 / ((reg_param + alpha) ** 2 + 1e-10)
 
 
 # =============================================================================

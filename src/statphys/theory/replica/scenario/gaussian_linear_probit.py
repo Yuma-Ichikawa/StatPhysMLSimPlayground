@@ -12,6 +12,11 @@ References:
     - Opper, Kinzel (1996). "Statistical mechanics of generalization."
       Physics of Neural Networks III
 
+Warning:
+    This implementation uses a heuristic gradient-flow relaxation of the
+    regularized ERM stationarity conditions, not the exact RS saddle-point
+    equations. Results are qualitatively correct but not quantitatively exact.
+
 """
 
 from typing import Any
@@ -52,6 +57,7 @@ class GaussianLinearProbitEquations(ReplicaEquations):
         self,
         rho: float = 1.0,
         reg_param: float = 0.01,
+        damping: float = 0.1,
         **params: Any,
     ):
         """
@@ -60,11 +66,13 @@ class GaussianLinearProbitEquations(ReplicaEquations):
         Args:
             rho: Teacher norm (||W₀||²/d). Default 1.0.
             reg_param: L2 regularization λ. Default 0.01.
+            damping: Step size of the internal gradient-flow relaxation.
 
         """
         super().__init__(rho=rho, reg_param=reg_param, **params)
         self.rho = rho
         self.reg_param = reg_param
+        self.damping = damping
 
     def _Phi(self, x: float | np.ndarray) -> float | np.ndarray:
         """Gaussian CDF: Φ(x) = P(Z ≤ x) for Z ~ N(0,1)."""
@@ -186,7 +194,7 @@ class GaussianLinearProbitEquations(ReplicaEquations):
         E_gu, E_g2 = self._compute_expectations(m, q, rho)
 
         scale = alpha / (1 + lam)
-        lr = 0.1
+        lr = self.damping
 
         # Gradient-based update
         new_m = m + lr * (scale * np.sqrt(rho) * E_gu - lam * m)

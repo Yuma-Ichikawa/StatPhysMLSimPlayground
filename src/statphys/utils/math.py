@@ -164,7 +164,11 @@ def double_gaussian_integral(
         cov = np.eye(2)
 
     # Cholesky decomposition for correlated Gaussians
-    L = np.linalg.cholesky(cov)
+    try:
+        L = np.linalg.cholesky(cov)
+    except np.linalg.LinAlgError:
+        # Regularize marginally non-positive-definite covariances
+        L = np.linalg.cholesky(np.asarray(cov) + 1e-10 * np.eye(2))
 
     points, weights = np.polynomial.hermite.hermgauss(n_points)
     points = np.sqrt(2) * points
@@ -210,6 +214,9 @@ def proximal_operator(
 ) -> torch.Tensor:
     """
     Apply proximal operator for regularization.
+
+    Convention: the regularizer is λ·r(w) with r(w) = ||w||₁ (l1) or
+    ||w||² (l2, i.e. without the 1/2 factor), matching `BaseLoss`.
 
     Args:
         w: Weight tensor.

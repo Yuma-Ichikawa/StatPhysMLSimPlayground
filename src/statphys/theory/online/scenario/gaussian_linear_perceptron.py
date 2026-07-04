@@ -30,19 +30,20 @@ class GaussianLinearPerceptronEquations(OnlineEquations):
     Teacher-student setup for binary classification:
         y = sign((1/√d) W₀ᵀ x)
 
-    Perceptron update rule:
-        w^{τ+1} = w^τ + η y x  (if y ≠ sign(wᵀx))
+    Perceptron update rule (SGD on the perceptron loss with rate η):
+        w^{τ+1} = w^τ + η y x/√d   (if y ≠ sign(wᵀx/√d))
 
-    In the d → ∞ limit with t = τ/d, order parameter dynamics:
+    In the d → ∞ limit with t = τ/d, the order parameter dynamics follow
+    from averaging the update over the joint Gaussian fields
+    u = W₀ᵀx/√d ~ N(0, ρ), v = wᵀx/√d ~ N(0, q) with correlation κ:
 
-        dm/dt = η √ρ · φ(κ) / √q
-        dq/dt = 2η² ε(κ)
+        dm/dt = η E[y u Θ(-y v)]           = η √ρ (1 - κ) / √(2π)
+        dq/dt = 2η E[y v Θ(-y v)] + η² ε(κ)
+              = -2η √q (1 - κ) / √(2π) + η² ε(κ)
 
     where:
         - κ = m / √(qρ) : stability parameter (cosine of angle)
-        - φ(κ) = (1/√(2π)) exp(-κ²/2) : Gaussian PDF
-        - ε(κ) = H(κ) : error rate (complementary Gaussian CDF)
-        - H(x) = (1/2)(1 - erf(x/√2)) : Gaussian tail function
+        - ε(κ) = (1/π) arccos(κ) : misclassification probability
 
     Classification error:
         P(error) = (1/π) arccos(κ) = (1/π) arccos(m/√(qρ))
@@ -94,10 +95,15 @@ class GaussianLinearPerceptronEquations(OnlineEquations):
         Compute dm/dt and dq/dt for online perceptron.
 
         ODE system:
-            dm/dt = η √ρ · φ(κ) / √q
-            dq/dt = 2η² H(κ)
+            dm/dt = η √ρ (1 - κ) / √(2π)
+            dq/dt = -2η √q (1 - κ) / √(2π) + η² ε(κ)
 
-        where κ = m / √(qρ) is the stability parameter.
+        where κ = m / √(qρ) is the stability parameter and
+        ε(κ) = arccos(κ)/π is the misclassification probability.
+
+        Derivation uses the identity, for jointly Gaussian (u, v) with
+        unit variances and correlation c:
+            E[|u| Θ(-uv)] = (1 - c) / √(2π)
 
         Args:
             t: Normalized time t = τ/d
@@ -113,19 +119,19 @@ class GaussianLinearPerceptronEquations(OnlineEquations):
         rho = params.get("rho", self.rho)
         lr = params.get("lr", self.lr)
 
-        # Stability parameter (avoid division by zero)
+        # Stability parameter (correlation between teacher/student fields)
         kappa = m / np.sqrt(q * rho + 1e-10)
-        kappa = np.clip(kappa, -10, 10)
+        kappa = np.clip(kappa, -1.0, 1.0)
 
-        # Error rate (probability of misclassification)
-        epsilon = self._H(kappa)
+        # Misclassification probability
+        epsilon = np.arccos(kappa) / np.pi
 
-        # Gaussian density at stability
-        phi_kappa = self._phi(kappa)
+        # E[|u| Θ(-uv)] type averages
+        mistake_factor = (1.0 - kappa) / np.sqrt(2 * np.pi)
 
-        # ODE equations (Saad & Solla style)
-        dm_dt = lr * np.sqrt(rho) * phi_kappa / np.sqrt(q + 1e-10)
-        dq_dt = lr**2 * 2 * epsilon
+        # ODE equations
+        dm_dt = lr * np.sqrt(rho) * mistake_factor
+        dq_dt = -2 * lr * np.sqrt(max(q, 0.0)) * mistake_factor + lr**2 * epsilon
 
         return np.array([dm_dt, dq_dt])
 

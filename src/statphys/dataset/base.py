@@ -166,6 +166,9 @@ class BaseDataset(ABC):
         """
         Move dataset to specified device.
 
+        Moves all tensor attributes (teacher weights, covariance matrices,
+        cached Cholesky factors, etc.) in addition to `_teacher_params`.
+
         Args:
             device: Target device.
 
@@ -178,6 +181,10 @@ class BaseDataset(ABC):
         for key, value in self._teacher_params.items():
             if isinstance(value, torch.Tensor):
                 self._teacher_params[key] = value.to(self.device)
+        # Move all other tensor attributes (W0, cov_matrix, _cholesky, ...)
+        for key, value in vars(self).items():
+            if isinstance(value, torch.Tensor):
+                setattr(self, key, value.to(self.device))
         return self
 
     def __repr__(self) -> str:

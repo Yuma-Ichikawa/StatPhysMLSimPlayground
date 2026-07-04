@@ -82,7 +82,7 @@ class ReplicaSimulation(BaseSimulation):
             seed_converged = []
 
             for alpha in alpha_values:
-                n_samples = int(d * alpha)
+                n_samples = max(1, int(d * alpha))
 
                 # Train model
                 result = self._train_single_alpha(
@@ -181,7 +181,7 @@ class ReplicaSimulation(BaseSimulation):
         for iteration in range(self.config.max_iter):
             optimizer.zero_grad()
             y_pred = model(X_data)
-            # Use for_replica for proper scaling: L = (1/n)Σℓ + λ||w||² (O(d))
+            # Use for_replica for proper scaling: L = Σℓ + λ||w||² (both O(d))
             loss = loss_fn.for_replica(y_pred, y_data, model)
             loss.backward()
             optimizer.step()

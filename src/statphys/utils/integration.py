@@ -30,6 +30,7 @@ def gaussian_integral_1d(
     method: str = "hermite",
     n_points: int = 100,
     limits: tuple[float, float] = (-np.inf, np.inf),
+    rng: np.random.Generator | None = None,
 ) -> float:
     """
     Compute univariate Gaussian integral: E[f(z)] where z ~ N(mean, variance).
@@ -90,8 +91,11 @@ def gaussian_integral_1d(
         return result
 
     elif method == "monte_carlo":
-        # Monte Carlo sampling
-        samples = np.random.normal(mean, std, n_points)
+        # Monte Carlo sampling (pass rng for reproducibility independent of global state)
+        if rng is not None:
+            samples = rng.normal(mean, std, n_points)
+        else:
+            samples = np.random.normal(mean, std, n_points)
         return np.mean([func(s) for s in samples])
 
     else:
@@ -123,6 +127,7 @@ def gaussian_integral_2d(
     cov: np.ndarray | None = None,
     method: str = "hermite",
     n_points: int = 50,
+    rng: np.random.Generator | None = None,
 ) -> float:
     """
     Compute bivariate Gaussian integral: E[f(z1, z2)] where (z1, z2) ~ N(μ, Σ).
@@ -205,7 +210,10 @@ def gaussian_integral_2d(
         return result
 
     elif method == "monte_carlo":
-        samples = np.random.multivariate_normal(mean, cov, n_points)
+        if rng is not None:
+            samples = rng.multivariate_normal(mean, cov, n_points)
+        else:
+            samples = np.random.multivariate_normal(mean, cov, n_points)
         return np.mean([func(s[0], s[1]) for s in samples])
 
     else:
@@ -224,6 +232,7 @@ def gaussian_integral_nd(
     dim: int = 2,
     method: str = "monte_carlo",
     n_points: int = 10000,
+    rng: np.random.Generator | None = None,
 ) -> float:
     """
     Compute multivariate Gaussian integral: E[f(z)] where z ~ N(μ, Σ).
@@ -255,12 +264,20 @@ def gaussian_integral_nd(
     cov = np.eye(d) if cov is None else np.asarray(cov)
 
     if method == "monte_carlo":
-        samples = np.random.multivariate_normal(mean, cov, n_points)
+        if rng is not None:
+            samples = rng.multivariate_normal(mean, cov, n_points)
+        else:
+            samples = np.random.multivariate_normal(mean, cov, n_points)
         return np.mean([func(s) for s in samples])
 
     elif method == "hermite":
         if d > 4:
-            print(f"Warning: Hermite quadrature with d={d} is expensive. Consider 'monte_carlo'.")
+            import warnings
+
+            warnings.warn(
+                f"Hermite quadrature with d={d} is expensive. Consider 'monte_carlo'.",
+                stacklevel=2,
+            )
 
         # Tensor product quadrature
         try:
@@ -400,7 +417,7 @@ def logistic_gaussian_integral(
     Compute integral E[f(y, z)] where y is generated from logistic teacher.
 
     y = sign(u) with probability sigmoid(u), u ~ N(0, rho)
-    z ~ N(m/sqrt(rho) * u, q - m²/rho) conditionally
+    z | u ~ N((m/rho) * u, q - m²/rho)
 
     Args:
         func: Function of (label y ∈ {-1, +1}, student field z).
@@ -415,9 +432,9 @@ def logistic_gaussian_integral(
     from statphys.utils.special_functions import sigmoid
 
     def integrand(u, z_noise):
-        # Student field given teacher field
+        # Student field given teacher field: E[z|u] = (m/rho) u since Cov(u,z) = m
         cond_var = max(q - m**2 / (rho + 1e-10), 1e-10)
-        z = (m / np.sqrt(rho + 1e-10)) * u + np.sqrt(cond_var) * z_noise
+        z = (m / (rho + 1e-10)) * u + np.sqrt(cond_var) * z_noise
 
         # Logistic probability
         prob_plus = sigmoid(u)

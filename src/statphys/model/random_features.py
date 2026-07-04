@@ -65,10 +65,14 @@ class RandomFeaturesModel(BaseModel):
         self.feature_scale = feature_scale
 
         # Fixed random projection matrix (not trainable)
-        self.register_buffer("B", torch.randn(p, d, dtype=dtype) * np.sqrt(feature_scale))
+        self.register_buffer(
+            "B", torch.randn(p, d, dtype=dtype, device=device) * np.sqrt(feature_scale)
+        )
 
         # Learnable output weights
-        self.a = nn.Parameter(torch.randn(p, dtype=dtype) * init_scale / np.sqrt(p))
+        self.a = nn.Parameter(
+            torch.randn(p, dtype=dtype, device=device) * init_scale / np.sqrt(p)
+        )
 
         # Activation function
         self._setup_activation(activation)
@@ -281,6 +285,8 @@ class DeepLinearNetwork(BaseModel):
         # Determine layer widths
         if widths is not None:
             self.widths = [d] + list(widths) + [1]
+            # depth is determined by the explicit widths list
+            self.depth = len(self.widths) - 1
         elif width is not None:
             self.widths = [d] + [width] * (depth - 1) + [1]
         else:
@@ -289,7 +295,7 @@ class DeepLinearNetwork(BaseModel):
 
         # Create weight matrices
         self.layers = nn.ModuleList()
-        for l in range(depth):
+        for l in range(self.depth):
             d_in = self.widths[l]
             d_out = self.widths[l + 1]
             layer = nn.Linear(d_in, d_out, bias=False)

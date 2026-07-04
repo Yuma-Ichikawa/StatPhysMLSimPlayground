@@ -13,6 +13,12 @@ References:
     - Dietrich, Opper, Sompolinsky (1999). "Statistical mechanics
       of support vector networks." Phys. Rev. Lett. 82, 2975
 
+Warning:
+    This implementation uses a heuristic gradient-flow relaxation of the
+    regularized ERM stationarity conditions, not the exact Gardner/RS
+    saddle-point equations. Results are qualitatively correct but not
+    quantitatively exact.
+
 """
 
 from typing import Any
@@ -56,6 +62,7 @@ class GaussianLinearHingeEquations(ReplicaEquations):
         rho: float = 1.0,
         margin: float = 0.0,
         reg_param: float = 0.0,
+        damping: float = 0.1,
         **params: Any,
     ):
         """
@@ -66,12 +73,14 @@ class GaussianLinearHingeEquations(ReplicaEquations):
             margin: Margin parameter κ. Default 0.0 (perceptron).
                    κ > 0 for SVM with margin.
             reg_param: L2 regularization λ. Default 0.0.
+            damping: Step size of the internal gradient-flow relaxation.
 
         """
         super().__init__(rho=rho, margin=margin, reg_param=reg_param, **params)
         self.rho = rho
         self.margin = margin
         self.reg_param = reg_param
+        self.damping = damping
 
     def _H(self, x: float) -> float:
         """Gaussian tail function: H(x) = P(Z > x) for Z ~ N(0,1)."""
@@ -136,8 +145,8 @@ class GaussianLinearHingeEquations(ReplicaEquations):
         dm_contrib, _ = quad(integrand_m, -10, 10)
         dq_contrib, _ = quad(integrand_q, -10, 10)
 
-        # Damped update
-        lr = 0.1
+        # Damped gradient-flow relaxation (heuristic, see module docstring)
+        lr = self.damping
         new_m = m + lr * (alpha * np.sqrt(rho) * dm_contrib - lam * m)
         new_q = q + lr * (alpha * dq_contrib - lam * q)
 
@@ -173,7 +182,7 @@ class GaussianLinearHingeEquations(ReplicaEquations):
             return np.arccos(cos_angle) / np.pi
         return 0.5
 
-    def critical_capacity(self, margin: float = None) -> float:
+    def critical_capacity(self, margin: float | None = None) -> float:
         """
         Compute critical storage capacity α_c.
 

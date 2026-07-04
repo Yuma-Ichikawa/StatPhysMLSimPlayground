@@ -5,9 +5,16 @@ This package provides tools for:
 - Teacher-Student model analysis
 - Replica method calculations
 - Online learning dynamics
+- General (theory-free) teacher-student experiments for arbitrary models
 - DMFT (coming soon)
 
-Example:
+Quick start (one-liners):
+    >>> import statphys
+    >>> statphys.quick_online(d=400, lr=0.5, t_max=10)      # SGD vs ODE theory
+    >>> statphys.quick_replica(d=200, reg_param=0.1)        # ERM vs replica theory
+    >>> statphys.quick_experiment("random_mlp")             # theory-free preset
+
+Full API example:
     >>> import statphys
     >>> from statphys.dataset import GaussianDataset
     >>> from statphys.model import LinearRegression
@@ -33,6 +40,13 @@ Example:
     >>> plotter = ComparisonPlotter()
     >>> plotter.plot_theory_vs_experiment(results)
 
+General teacher-student experiments (works for any nn.Module):
+    >>> from statphys.experiment import Teacher, TeacherStudentExperiment
+    >>> teacher = Teacher(my_transformer, init="low_rank",
+    ...                   init_kwargs={"rank": 4})
+    >>> exp = TeacherStudentExperiment(teacher, student_factory=make_student)
+    >>> exp.run_sample_complexity(alphas=[1, 2, 4, 8]).plot()
+
 """
 
 __version__ = "0.1.0"
@@ -44,6 +58,14 @@ from statphys.dataset import (
     GaussianDataset,
     SparseDataset,
     get_dataset,
+)
+
+# General teacher-student experiments
+from statphys.experiment import (
+    ExperimentResult,
+    Teacher,
+    TeacherStudentDataset,
+    TeacherStudentExperiment,
 )
 
 # Loss imports
@@ -73,6 +95,9 @@ from statphys.simulation import (
     SimulationConfig,
     SimulationRunner,
 )
+
+# One-liner high-level API
+from statphys.quick import quick_experiment, quick_online, quick_replica
 
 # Theory imports
 from statphys.theory import ODESolver, SaddlePointSolver, TheoryResult
@@ -133,6 +158,15 @@ __all__ = [
     "ReplicaSimulation",
     "OnlineSimulation",
     "SimulationRunner",
+    # General experiments
+    "Teacher",
+    "TeacherStudentDataset",
+    "TeacherStudentExperiment",
+    "ExperimentResult",
+    # One-liner API
+    "quick_online",
+    "quick_replica",
+    "quick_experiment",
     # Theory
     "SaddlePointSolver",
     "ODESolver",
@@ -156,6 +190,7 @@ __all__ = [
     "loss",
     "theory",
     "simulation",
+    "experiment",
     "vis",
     "utils",
 ]
@@ -175,5 +210,8 @@ def info() -> None:
     print("  - model: Learning models (Linear, Committee, MLP, Transformer)")
     print("  - loss: Loss functions (MSE, Ridge, LASSO, Hinge, Logistic)")
     print("  - theory: Theoretical calculations (Replica, Online ODEs)")
-    print("  - simulation: Numerical experiments")
-    print("  - vis: Visualization tools")
+    print("  - simulation: Numerical experiments (with theory comparison)")
+    print("  - experiment: General teacher-student experiments (any nn.Module)")
+    print("  - vis: Visualization tools (plots, phase portraits, animations)")
+    print("\nQuick start: statphys.quick_online(), statphys.quick_replica(),")
+    print("             statphys.quick_experiment('random_mlp')")

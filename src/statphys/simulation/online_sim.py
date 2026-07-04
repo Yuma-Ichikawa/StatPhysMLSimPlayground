@@ -34,6 +34,7 @@ class OnlineSimulation(BaseSimulation):
         loss_fn: Callable,
         calc_order_params: Callable | None = None,
         theory_solver: Any | None = None,
+        theory_init_values: tuple[float, ...] | None = None,
         **kwargs: Any,
     ) -> SimulationResult:
         """
@@ -46,6 +47,10 @@ class OnlineSimulation(BaseSimulation):
             calc_order_params: Function to compute order parameters.
                               If None and config.auto_order_params=True, uses OrderParameterCalculator.
             theory_solver: ODE solver for comparison.
+            theory_init_values: Initial order-parameter values for the theory
+                ODE (e.g. (m0, q0)). If None, estimated from a freshly
+                initialized model so that theory and experiment start from
+                matching initial conditions.
             **kwargs: Additional arguments.
 
         Returns:
@@ -103,9 +108,23 @@ class OnlineSimulation(BaseSimulation):
             self._print_progress("Computing theory predictions...")
             teacher_params = dataset.get_teacher_params()
 
+            if theory_init_values is None:
+                # Match the theory initial condition to the experiment: order
+                # parameters of a freshly initialized model (averaged trials
+                # use the same init distribution, so one draw is a good proxy;
+                # trajectories recorded at t=0 use exactly these statistics).
+                n_theory_params = len(getattr(theory_solver, "order_params", [])) or 2
+                theory_init_values = self._estimate_init_values(
+                    dataset, model_class, calc_order_params, n_theory_params
+                )
+
+            # Note on lr convention: with the model normalization
+            # f(x) = w·x/√d, the per-step change of m, q is already O(1/d),
+            # so the optimizer learning rate maps 1:1 onto the ODE η.
             theory_results = theory_solver.solve(
                 t_span=(0, self.config.t_max),
                 t_eval=t_values,
+                init_values=theory_init_values,
                 rho=teacher_params.get("rho", 1.0),
                 eta_noise=teacher_params.get("eta", 0.0),
                 lr=self.config.lr,
@@ -123,6 +142,26 @@ class OnlineSimulation(BaseSimulation):
                 "dataset_config": dataset.get_config(),
             },
         )
+
+    def _estimate_init_values(
+        self,
+        dataset: Any,
+        model_class: type[nn.Module],
+        calc_order_params: Callable,
+        n_params: int,
+    ) -> tuple[float, ...]:
+        """
+        Estimate ODE initial values from a freshly initialized model.
+
+        Uses the first seed so that the estimate matches the t=0 point of
+        the recorded experimental trajectories.
+        """
+        fix_seed(self.config.seed_list[0])
+        model = model_class(d=dataset.d).to(self.device)
+        order_params = calc_order_params(dataset, model)
+        if isinstance(order_params, dict):
+            order_params = list(order_params.values())
+        return tuple(float(v) for v in order_params[:n_params])
 
     def _run_single_seed(
         self,
@@ -156,13 +195,17 @@ class OnlineSimulation(BaseSimulation):
         trajectory = []
         eval_idx = 0
 
-        # Initial state
-        if 0 in eval_indices:
+        def record() -> None:
             order_params = calc_order_params(dataset, model)
             if isinstance(order_params, dict):
                 order_params = list(order_params.values())
             trajectory.append(order_params)
-            eval_idx = 1
+
+        # Initial state (record every eval point mapped to sample index 0 so
+        # that len(trajectory) always matches len(eval_indices))
+        while eval_idx < len(eval_indices) and eval_indices[eval_idx] == 0:
+            record()
+            eval_idx += 1
 
         model.train()
 
@@ -176,19 +219,18 @@ class OnlineSimulation(BaseSimulation):
                 else y_sample.to(self.device)
             )
 
-            # SGD step with online scaling: L = (1/d)ℓ + (λ/d)||w||² (O(1/d))
+            # SGD step with online scaling: L = c·ℓ(y, ŷ) + (λ/2)||w||²/d
+            # (c = loss_fn.online_scale; with f(x) = w·x/√d the optimizer lr
+            # equals the ODE η, and time is t = #samples/d)
             optimizer.zero_grad()
             y_pred = model(x_sample)
             loss = loss_fn.for_online(y_pred, y_sample, model, d=d)
             loss.backward()
             optimizer.step()
 
-            # Record if at evaluation point
-            if eval_idx < len(eval_indices) and (epoch + 1) >= eval_indices[eval_idx]:
-                order_params = calc_order_params(dataset, model)
-                if isinstance(order_params, dict):
-                    order_params = list(order_params.values())
-                trajectory.append(order_params)
+            # Record all evaluation points reached by this sample count
+            while eval_idx < len(eval_indices) and (epoch + 1) >= eval_indices[eval_idx]:
+                record()
                 eval_idx += 1
 
             # Verbose

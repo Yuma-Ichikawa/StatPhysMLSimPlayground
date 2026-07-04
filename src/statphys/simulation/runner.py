@@ -155,6 +155,10 @@ class SimulationRunner:
             # Create modified config
             config_dict = base_config.to_dict()
             config_dict[param_name] = value
+            # alpha_values is derived from alpha_range/alpha_steps; drop the
+            # stale cached values so the sweep actually takes effect
+            if param_name in ("alpha_range", "alpha_steps"):
+                config_dict["alpha_values"] = None
             config = SimulationConfig.from_dict(config_dict)
 
             results[value] = self.run(

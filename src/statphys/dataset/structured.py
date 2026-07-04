@@ -8,6 +8,21 @@ import torch
 from statphys.dataset.base import BaseDataset
 
 
+def _safe_cholesky(cov: torch.Tensor) -> torch.Tensor:
+    """Cholesky factorization with a clear error for non-PSD matrices."""
+    try:
+        return torch.linalg.cholesky(cov)
+    except torch.linalg.LinAlgError:
+        # Retry with small jitter for marginally non-PD matrices
+        jitter = 1e-8 * torch.eye(cov.shape[0], device=cov.device, dtype=cov.dtype)
+        try:
+            return torch.linalg.cholesky(cov + jitter)
+        except torch.linalg.LinAlgError as exc:
+            raise ValueError(
+                "Covariance matrix must be (approximately) positive definite."
+            ) from exc
+
+
 class StructuredDataset(BaseDataset):
     """
     Dataset with structured (non-iid) inputs.
@@ -49,12 +64,14 @@ class StructuredDataset(BaseDataset):
 
         # Set covariance matrix
         if cov_matrix is not None:
+            if cov_matrix.shape != (d, d):
+                raise ValueError(f"cov_matrix must have shape ({d}, {d}), got {tuple(cov_matrix.shape)}")
             self.cov_matrix = cov_matrix.to(device=self.device, dtype=self.dtype)
         else:
             self.cov_matrix = torch.eye(d, device=self.device, dtype=self.dtype)
 
         # Compute Cholesky decomposition for sampling
-        self._cholesky = torch.linalg.cholesky(self.cov_matrix)
+        self._cholesky = _safe_cholesky(self.cov_matrix)
 
         # Initialize teacher weights
         if W0 is not None:
@@ -107,11 +124,12 @@ class CorrelatedGaussianDataset(BaseDataset):
         self,
         d: int,
         correlation: float = 0.5,
-        teacher_rho: float = 1.0,
+        teacher_rho: float | None = None,
         eta: float = 0.0,
         W0: torch.Tensor | None = None,
         device: str = "cpu",
         dtype: torch.dtype = torch.float32,
+        rho: float | None = None,
         **kwargs: Any,
     ):
         """
@@ -125,14 +143,19 @@ class CorrelatedGaussianDataset(BaseDataset):
             W0: Teacher weights.
             device: Computation device.
             dtype: Data type.
+            rho: Alias for teacher_rho (consistent with other datasets).
 
         """
         super().__init__(d=d, device=device, dtype=dtype, **kwargs)
 
-        assert 0 <= correlation < 1, "Correlation must be in [0, 1)"
+        if not 0 <= correlation < 1:
+            raise ValueError(f"Correlation must be in [0, 1), got {correlation}")
+        if teacher_rho is not None and rho is not None and teacher_rho != rho:
+            raise ValueError("Specify only one of teacher_rho and rho.")
 
         self.correlation = correlation
-        self.teacher_rho = teacher_rho
+        self.teacher_rho = teacher_rho if teacher_rho is not None else (rho if rho is not None else 1.0)
+        self.rho = self.teacher_rho
         self.eta = eta
 
         # Build Toeplitz covariance matrix
@@ -140,13 +163,15 @@ class CorrelatedGaussianDataset(BaseDataset):
         self.cov_matrix = correlation ** torch.abs(indices.unsqueeze(0) - indices.unsqueeze(1))
 
         # Cholesky decomposition
-        self._cholesky = torch.linalg.cholesky(self.cov_matrix)
+        self._cholesky = _safe_cholesky(self.cov_matrix)
 
         # Initialize teacher
         if W0 is not None:
             self.W0 = W0.to(device=self.device, dtype=self.dtype)
         else:
-            self.W0 = torch.randn(d, 1, device=self.device, dtype=self.dtype) * np.sqrt(teacher_rho)
+            self.W0 = torch.randn(d, 1, device=self.device, dtype=self.dtype) * np.sqrt(
+                self.teacher_rho
+            )
 
         self._teacher_params = {
             "W0": self.W0,
@@ -244,7 +269,7 @@ class SpikedCovarianceDataset(BaseDataset):
             self.cov_matrix = self.cov_matrix + spike_strengths[i] * (v @ v.T)
 
         # Cholesky
-        self._cholesky = torch.linalg.cholesky(self.cov_matrix)
+        self._cholesky = _safe_cholesky(self.cov_matrix)
 
         # Teacher
         if W0 is not None:

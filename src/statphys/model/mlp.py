@@ -96,6 +96,8 @@ class TwoLayerNetwork(BaseModel):
             nn.init.kaiming_normal_(self.W, nonlinearity="relu")
         elif self.init_method == "orthogonal":
             nn.init.orthogonal_(self.W, gain=self.init_scale)
+        else:
+            raise ValueError(f"Unknown init_method: {self.init_method}")
 
         # Second layer initialization
         if second_layer_init == "ones":
@@ -104,7 +106,13 @@ class TwoLayerNetwork(BaseModel):
             nn.init.normal_(self.a, mean=0.0, std=1.0)
         elif second_layer_init == "alternating":
             # +1, -1, +1, -1, ...
-            self.a.data = torch.tensor([(-1) ** i for i in range(self.k)], dtype=self.W.dtype)
+            self.a.data = torch.tensor(
+                [(-1) ** i for i in range(self.k)],
+                dtype=self.W.dtype,
+                device=self.W.device,
+            )
+        else:
+            raise ValueError(f"Unknown second_layer_init: {second_layer_init}")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -117,7 +125,8 @@ class TwoLayerNetwork(BaseModel):
             Output tensor.
 
         """
-        if x.dim() == 1:
+        single_sample = x.dim() == 1
+        if single_sample:
             x = x.unsqueeze(0)
 
         # First layer: (batch, K) = (batch, d) @ (d, K)
@@ -129,7 +138,8 @@ class TwoLayerNetwork(BaseModel):
         # Second layer: (batch,) = (batch, K) @ (K,)
         output = (activated @ self.a) / np.sqrt(self.k)
 
-        return output.squeeze()
+        # Preserve batch dimension for batched inputs (even batch_size=1)
+        return output[0] if single_sample else output
 
     def get_weight_vector(self) -> torch.Tensor:
         """Return first layer weights (flattened)."""
@@ -305,10 +315,13 @@ class DeepNetwork(BaseModel):
                 nn.init.xavier_normal_(layer.weight, gain=self.init_scale)
             elif self.init_method == "normal":
                 nn.init.normal_(layer.weight, mean=0.0, std=self.init_scale)
+            else:
+                raise ValueError(f"Unknown init_method: {self.init_method}")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass through all layers."""
-        if x.dim() == 1:
+        single_sample = x.dim() == 1
+        if single_sample:
             x = x.unsqueeze(0)
 
         h = x
@@ -319,7 +332,8 @@ class DeepNetwork(BaseModel):
         # Output layer (no activation)
         output = self.layers[-1](h) / np.sqrt(self.layers[-1].in_features)
 
-        return output.squeeze()
+        output = output.squeeze(-1)
+        return output[0] if single_sample else output
 
     def get_weight_vector(self) -> torch.Tensor:
         """Return first layer weights."""

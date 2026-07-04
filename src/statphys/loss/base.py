@@ -25,17 +25,28 @@ class BaseLoss(ABC):
         - Regularization: λ * ||w||² = λ * d * q → O(d)
         - Total loss: O(d)
 
-    **Online learning**:
-        L = (1/d) * ℓ(y, ŷ) + (λ/d) * ||w||²
-        - Data term: O(1/d) per sample
-        - Regularization: (λ/d) * ||w||² = λ * q → O(1)
-        - Total loss: O(1/d)
+    **Online learning** (single sample; with the f(x) = w·x/√d model
+    normalization the optimizer lr maps 1:1 onto the ODE learning rate η):
+        L = c * ℓ(y, ŷ) + (λ/2) * ||w||² / d
+        - Data term: single-sample loss, scaled by ``online_scale`` (c).
+          For squared-error losses c = 1/2 so that the data term matches
+          the theory convention ℓ = (1/2)(y - ŷ)².
+          For margin/log losses c = 1 (the loss is already in standard form).
+        - Regularization: (λ/2) * ||w||²/d = (λ/2) * q → O(1)
 
     Attributes:
         reg_param: Regularization parameter (λ).
         reduction: How to reduce the loss ('mean', 'sum', 'none').
+        online_scale: Multiplier applied to the data term in `for_online()`.
+            Subclasses override this to match the theory convention
+            (0.5 for squared-error losses, 1.0 otherwise).
 
     """
+
+    #: Multiplier applied to the data term in `for_online()`.
+    #: Squared-error losses override this with 0.5 so that the effective
+    #: single-sample loss is (1/2)(y - ŷ)², matching online SGD theory.
+    online_scale: float = 1.0
 
     def __init__(
         self,
@@ -91,9 +102,9 @@ class BaseLoss(ABC):
 
         """
         if self.reg_param == 0:
-            return torch.tensor(0.0, device=next(model.parameters()).device)
+            return torch.tensor(0.0, device=self._model_device(model))
 
-        reg = torch.tensor(0.0, device=next(model.parameters()).device)
+        reg = torch.tensor(0.0, device=self._model_device(model))
         for param in model.parameters():
             reg = reg + torch.sum(param**2)
 
@@ -103,6 +114,7 @@ class BaseLoss(ABC):
     def _compute_regularization_online(
         self,
         model: nn.Module,
+        d: int | None = None,
     ) -> torch.Tensor:
         """
         Compute regularization term for online learning.
@@ -112,22 +124,42 @@ class BaseLoss(ABC):
 
         Args:
             model: The model (for accessing parameters).
+            d: Normalization dimension. If None, inferred from the model
+               (`model.d` if available, otherwise total parameter count).
 
         Returns:
             Regularization term.
 
         """
         if self.reg_param == 0:
-            return torch.tensor(0.0, device=next(model.parameters()).device)
+            return torch.tensor(0.0, device=self._model_device(model))
 
-        reg = torch.tensor(0.0, device=next(model.parameters()).device)
-        d = 0
+        reg = torch.tensor(0.0, device=self._model_device(model))
+        numel = 0
         for param in model.parameters():
             reg = reg + torch.sum(param**2)
-            d += param.numel()
+            numel += param.numel()
+
+        d = self._resolve_dim(model, d, numel)
 
         # Online: (λ/d) * ||w||² = λ * (||w||²/d) = λ * q
         return self.reg_param * reg / d
+
+    @staticmethod
+    def _model_device(model: nn.Module) -> torch.device:
+        """Return the device of the model's first parameter (CPU if none)."""
+        param = next(model.parameters(), None)
+        return param.device if param is not None else torch.device("cpu")
+
+    @staticmethod
+    def _resolve_dim(model: nn.Module, d: int | None, numel: int) -> int:
+        """Resolve normalization dimension: explicit d > model.d > numel."""
+        if d is not None:
+            return d
+        model_d = getattr(model, "d", None)
+        if isinstance(model_d, int) and model_d > 0:
+            return model_d
+        return max(numel, 1)
 
     def _compute_regularization(
         self,
@@ -209,49 +241,47 @@ class BaseLoss(ABC):
         """
         Compute loss for online learning (single sample).
 
-        Scaling: L = ℓ(y, ŷ) + (λ/2) * ||w||²/d
-        - Data term: Single sample loss (no 1/d scaling)
-        - Regularization: (λ/2) * ||w||²/d = (λ/2) * q → O(1)
+        Scaling: L = c * ℓ(y, ŷ) + (λ/2) * ||w||²/d
+        where c = ``self.online_scale`` (0.5 for squared-error losses,
+        1.0 for margin/log losses whose standard form needs no factor).
 
-        This scaling, combined with learning rate η/d, matches the
-        standard online learning ODE theory:
+        With this scaling, SGD with optimizer learning rate η matches the
+        standard online learning ODE theory in time t = τ/d. For MSE:
             dm/dt = η(ρ - m) - ηλm
             dq/dt = η²V + 2η(m - q) - 2ηλq
 
         Usage:
-            optimizer = torch.optim.SGD(model.parameters(), lr=lr/d)
+            optimizer = torch.optim.SGD(model.parameters(), lr=eta)
             loss = loss_fn.for_online(y_pred, y_true, model, d=d)
 
         Args:
             y_pred: Predicted value (single sample).
             y_true: True value (single sample).
             model: Model for computing regularization and dimension.
-            d: Input dimension. If None, inferred from model.
+            d: Input dimension used for the regularization normalization.
+               If None, inferred from `model.d` (fallback: parameter count).
 
         Returns:
             Total loss value for online learning.
 
         """
-        # Infer dimension from model if not provided
-        if d is None:
-            d = sum(p.numel() for p in model.parameters())
-
-        # Compute main loss for single sample (NO 1/d scaling on data term)
+        # Compute main loss for single sample (no 1/d scaling on data term)
         loss = self._compute_loss(y_pred, y_true)
 
         # Handle both scalar and batched predictions
         if loss.dim() > 0:
             loss = loss.mean()  # If batched, take mean first
 
-        # Apply (1/2) factor to match standard loss form L = (1/2)(y-ŷ)² + (λ/2)||w||²/d
-        # This ensures gradients match ODE theory:
-        #   ∇L = (ŷ - y)x/√d + (λ/d)w
-        loss = 0.5 * loss
+        # Scale data term to the theory-standard form.
+        # For squared-error losses online_scale = 0.5, giving (1/2)(y-ŷ)²
+        # so that ∇L = (ŷ - y)x/√d + (λ/d)w matches the ODE theory.
+        if self.online_scale != 1.0:
+            loss = self.online_scale * loss
 
         # Add regularization: (λ/2) * ||w||²/d = (λ/2) * q
         # _compute_regularization_online returns λ * ||w||²/d
         if self.reg_param > 0:
-            reg = self._compute_regularization_online(model)
+            reg = self._compute_regularization_online(model, d=d)
             loss = loss + 0.5 * reg
 
         return loss
@@ -270,7 +300,8 @@ class BaseLoss(ABC):
         which have clearer scaling semantics.
 
         Note: This method uses mean reduction for backward compatibility.
-        Use `for_replica()` (sum) or `for_online()` (1/d scaling) for
+        Use `for_replica()` (sum over samples) or `for_online()`
+        (single-sample loss with (λ/2)||w||²/d regularization) for
         proper statistical mechanics scaling.
 
         Args:

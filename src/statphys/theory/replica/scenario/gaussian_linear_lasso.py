@@ -166,23 +166,8 @@ class GaussianLinearLassoEquations(ReplicaEquations):
         eta = kwargs.get("eta", self.eta)
         lam = kwargs.get("reg_param", self.reg_param)
 
-        # Ensure stability
-        q = max(q, 1e-6)
-        m = np.clip(m, -np.sqrt(q * rho) * 0.999, np.sqrt(q * rho) * 0.999)
-
-        # Compute effective noise parameter
-        # Use current order params to estimate σ
-        V = rho - 2 * m + q + eta  # residual variance
-
-        # For α > 1: σ² ≈ V / (α - 1) (from ridge-like analysis)
-        # For α < 1: use regularized version
-        if alpha > 1:
-            sigma_sq = V / (alpha - 1 + lam)
-        else:
-            # Underparameterized: regularization dominates
-            sigma_sq = V / (lam + 0.1)
-
-        sigma = np.sqrt(max(sigma_sq, 1e-6))
+        # Solve the CGMT-style fixed point for the effective noise σ
+        sigma = self._compute_effective_noise(alpha, rho, eta, lam)
         threshold = lam / sigma
 
         sqrt_rho = np.sqrt(rho)
@@ -261,13 +246,7 @@ class GaussianLinearLassoEquations(ReplicaEquations):
         rho = kwargs.get("rho", self.rho)
         eta = kwargs.get("eta", self.eta)
 
-        # Estimate effective noise
-        V = rho - 2 * m + q + eta
-        if alpha > 1:
-            sigma = np.sqrt(V / (alpha - 1 + lam))
-        else:
-            sigma = np.sqrt(V / (lam + 0.1))
-
+        sigma = self._compute_effective_noise(alpha, rho, eta, lam)
         threshold = lam / max(sigma, 0.01)
 
         # P(|√ρ·ξ + σZ| > threshold) where ξ, Z ~ N(0,1)

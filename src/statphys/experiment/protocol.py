@@ -1,0 +1,410 @@
+"""
+Experiment protocols for general teacher-student setups.
+
+TeacherStudentExperiment runs purely numerical experiments for arbitrary
+architectures — no analytic theory required:
+
+- run_sample_complexity: sweep alpha = n/d, train to convergence, and
+  measure test error / overlaps. Phase transitions appear as sharp drops
+  in the error-vs-alpha curve.
+- run_online: single-pass online SGD; records learning dynamics in
+  normalized time t = #samples / d.
+
+Custom observables can be attached via the `metrics` dict; each metric is
+a callable (student, dataset) -> float and is recorded alongside the
+built-in test error.
+
+Example:
+    >>> exp = TeacherStudentExperiment(teacher=teacher,
+    ...                                student_factory=make_student)
+    >>> res = exp.run_sample_complexity(alphas=np.linspace(0.5, 8, 12))
+    >>> res.plot()            # error bars vs alpha
+    >>> res.to_dict()         # raw records for custom analysis
+
+"""
+
+import time
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from typing import Any
+
+import numpy as np
+import torch
+import torch.nn as nn
+
+from statphys.experiment.dataset import TeacherStudentDataset
+from statphys.experiment.metrics import test_error, weight_overlap
+from statphys.experiment.teacher import Teacher
+from statphys.utils.seed import fix_seed
+
+MetricFn = Callable[[nn.Module, TeacherStudentDataset], float]
+
+
+@dataclass
+class ExperimentResult:
+    """
+    Container for general teacher-student experiment results.
+
+    Attributes:
+        x_name: Name of the sweep variable ("alpha" or "t").
+        x_values: Sweep values.
+        records: records[metric][seed_idx] is a list aligned with x_values.
+        config: Experiment configuration snapshot.
+        metadata: Extra info (wall time, etc.).
+
+    """
+
+    x_name: str
+    x_values: list[float]
+    records: dict[str, list[list[float]]]
+    config: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def mean(self, metric: str) -> np.ndarray:
+        """Seed-averaged values of a metric."""
+        return np.array(self.records[metric]).mean(axis=0)
+
+    def std(self, metric: str) -> np.ndarray:
+        """Seed std of a metric."""
+        return np.array(self.records[metric]).std(axis=0)
+
+    def metrics(self) -> list[str]:
+        """Names of recorded metrics."""
+        return list(self.records.keys())
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to a plain dictionary (JSON-serializable)."""
+        return {
+            "x_name": self.x_name,
+            "x_values": self.x_values,
+            "records": self.records,
+            "config": self.config,
+            "metadata": self.metadata,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ExperimentResult":
+        """Restore from a dictionary."""
+        return cls(**data)
+
+    def plot(
+        self,
+        metrics: list[str] | None = None,
+        logx: bool = False,
+        logy: bool = False,
+        ax=None,
+        show: bool = False,
+    ):
+        """
+        Plot seed-averaged metrics with error bands.
+
+        Args:
+            metrics: Which metrics to draw (default: all).
+            logx, logy: Log axes (useful for locating transitions).
+            ax: Existing matplotlib Axes.
+            show: Call plt.show().
+
+        Returns:
+            Tuple of (Figure, Axes).
+
+        """
+        import matplotlib.pyplot as plt
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(7, 5))
+        else:
+            fig = ax.get_figure()
+
+        x = np.array(self.x_values)
+        for name in metrics or self.metrics():
+            mean, std = self.mean(name), self.std(name)
+            (line,) = ax.plot(x, mean, marker="o", markersize=4, label=name)
+            ax.fill_between(x, mean - std, mean + std, alpha=0.25, color=line.get_color())
+
+        if logx:
+            ax.set_xscale("log")
+        if logy:
+            ax.set_yscale("log")
+        xlabel = r"$\alpha = n/d$" if self.x_name == "alpha" else r"$t = \tau/d$"
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel("observable")
+        ax.grid(True, linestyle="--", alpha=0.3)
+        ax.legend()
+        fig.tight_layout()
+        if show:
+            plt.show()
+        return fig, ax
+
+    def __repr__(self) -> str:
+        return (
+            f"ExperimentResult({self.x_name}: {len(self.x_values)} points, "
+            f"metrics={self.metrics()})"
+        )
+
+
+class TeacherStudentExperiment:
+    """
+    Numerical teacher-student experiment for arbitrary models.
+
+    Args:
+        teacher: Teacher instance, or a raw nn.Module (wrapped automatically).
+        student_factory: Zero-argument callable returning a fresh student
+            nn.Module. Called once per (sweep point, seed).
+        d: Input dimension. Inferred from the teacher's first Linear layer
+            if omitted.
+        input_dist: Input distribution for TeacherStudentDataset.
+        input_kwargs: Options for the input distribution.
+        loss_fn: Training loss; defaults to MSE on raw outputs
+            (works for sign teachers too, as ±1 regression).
+        metrics: Extra observables {name: fn(student, dataset) -> float}.
+            Built-in: "test_error" always; "overlap_avg" when student and
+            teacher share parameter shapes.
+        device: Torch device.
+
+    """
+
+    def __init__(
+        self,
+        teacher: Teacher | nn.Module,
+        student_factory: Callable[[], nn.Module],
+        d: int | None = None,
+        input_dist: str | Callable[[int], torch.Tensor] = "gaussian",
+        input_kwargs: dict[str, Any] | None = None,
+        loss_fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor] | None = None,
+        metrics: dict[str, MetricFn] | None = None,
+        device: str = "cpu",
+    ):
+        if not isinstance(teacher, Teacher):
+            teacher = Teacher(teacher, device=device)
+        self.teacher = teacher
+        self.student_factory = student_factory
+        self.device = torch.device(device)
+
+        if d is None:
+            d = self._infer_dim(teacher)
+        self.d = d
+
+        self.dataset = TeacherStudentDataset(
+            teacher, d=d, input_dist=input_dist, input_kwargs=input_kwargs, device=device
+        )
+        self.loss_fn = loss_fn or (lambda pred, y: 0.5 * ((pred - y) ** 2).mean())
+        self.custom_metrics = metrics or {}
+
+    @staticmethod
+    def _infer_dim(teacher: Teacher) -> int:
+        model = teacher.model
+        if isinstance(model, nn.Module):
+            for mod in model.modules():
+                if isinstance(mod, nn.Linear):
+                    return mod.in_features
+            for p in model.parameters():
+                if p.dim() >= 2:
+                    return p.shape[-1]
+        raise ValueError("Could not infer input dimension d; pass d explicitly.")
+
+    def _forward(self, student: nn.Module, X: torch.Tensor) -> torch.Tensor:
+        pred = student(X)
+        if pred.dim() > 1 and pred.shape[-1] == 1:
+            pred = pred.squeeze(-1)
+        return pred
+
+    def _measure(self, student: nn.Module, n_test: int) -> dict[str, float]:
+        out: dict[str, float] = {"test_error": test_error(student, self.dataset, n_test=n_test)}
+        tw = self.teacher.named_weights()
+        if tw:
+            ov = weight_overlap(student, tw)
+            if "avg" in ov:
+                out["overlap_avg"] = ov["avg"]
+        for name, fn in self.custom_metrics.items():
+            out[name] = float(fn(student, self.dataset))
+        return out
+
+    def _train_offline(
+        self,
+        student: nn.Module,
+        X: torch.Tensor,
+        y: torch.Tensor,
+        lr: float,
+        max_epochs: int,
+        batch_size: int | None,
+        tol: float,
+        patience: int,
+        weight_decay: float,
+    ) -> None:
+        opt = torch.optim.Adam(student.parameters(), lr=lr, weight_decay=weight_decay)
+        n = X.shape[0]
+        batch_size = batch_size or n
+        prev, stall = float("inf"), 0
+
+        for _ in range(max_epochs):
+            perm = torch.randperm(n, device=X.device)
+            epoch_loss = 0.0
+            for start in range(0, n, batch_size):
+                idx = perm[start : start + batch_size]
+                opt.zero_grad()
+                loss = self.loss_fn(self._forward(student, X[idx]), y[idx])
+                loss.backward()
+                opt.step()
+                epoch_loss += loss.item() * idx.numel()
+            epoch_loss /= n
+
+            if abs(prev - epoch_loss) < tol:
+                stall += 1
+                if stall >= patience:
+                    break
+            else:
+                stall = 0
+            prev = epoch_loss
+
+    def run_sample_complexity(
+        self,
+        alphas: list[float] | np.ndarray,
+        n_seeds: int = 3,
+        base_seed: int = 0,
+        lr: float = 1e-2,
+        max_epochs: int = 2000,
+        batch_size: int | None = None,
+        tol: float = 1e-7,
+        patience: int = 20,
+        weight_decay: float = 0.0,
+        n_test: int = 2048,
+        verbose: bool = True,
+    ) -> ExperimentResult:
+        """
+        Sweep the sample ratio alpha = n/d and train to convergence.
+
+        Args:
+            alphas: Sample ratios to sweep.
+            n_seeds: Seeds per alpha.
+            base_seed: First seed value.
+            lr: Adam learning rate.
+            max_epochs: Max training epochs per point.
+            batch_size: Minibatch size (None = full batch).
+            tol: Convergence tolerance on epoch loss.
+            patience: Epochs of stagnation before early stop.
+            weight_decay: L2 regularization for the optimizer.
+            n_test: Fresh test samples per measurement.
+            verbose: Print progress.
+
+        Returns:
+            ExperimentResult with per-seed records of all metrics vs alpha.
+
+        """
+        alphas = [float(a) for a in alphas]
+        records: dict[str, list[list[float]]] = {}
+        t_start = time.time()
+
+        for s in range(n_seeds):
+            seed = base_seed + s
+            fix_seed(seed)
+            seed_vals: dict[str, list[float]] = {}
+
+            for a in alphas:
+                n = max(1, int(a * self.d))
+                X, y = self.dataset.sample(n)
+                student = self.student_factory().to(self.device)
+                self._train_offline(
+                    student, X, y, lr, max_epochs, batch_size, tol, patience, weight_decay
+                )
+                for k, v in self._measure(student, n_test).items():
+                    seed_vals.setdefault(k, []).append(v)
+                if verbose:
+                    print(f"[seed {seed}] alpha={a:.3g}: " f"E_test={seed_vals['test_error'][-1]:.4f}")
+
+            for k, v in seed_vals.items():
+                records.setdefault(k, []).append(v)
+
+        return ExperimentResult(
+            x_name="alpha",
+            x_values=alphas,
+            records=records,
+            config={
+                "d": self.d,
+                "n_seeds": n_seeds,
+                "lr": lr,
+                "max_epochs": max_epochs,
+                "batch_size": batch_size,
+                "weight_decay": weight_decay,
+                "dataset": self.dataset.get_config(),
+            },
+            metadata={"wall_time_sec": time.time() - t_start},
+        )
+
+    def run_online(
+        self,
+        t_max: float = 20.0,
+        t_steps: int = 50,
+        n_seeds: int = 3,
+        base_seed: int = 0,
+        lr: float = 0.1,
+        batch_size: int = 1,
+        n_test: int = 2048,
+        verbose: bool = True,
+    ) -> ExperimentResult:
+        """
+        Single-pass online SGD in normalized time t = #samples / d.
+
+        Args:
+            t_max: Maximum normalized time.
+            t_steps: Number of measurement points.
+            n_seeds: Seeds.
+            base_seed: First seed.
+            lr: SGD learning rate.
+            batch_size: Samples per SGD step (1 = classic online).
+            n_test: Fresh test samples per measurement.
+            verbose: Print progress.
+
+        Returns:
+            ExperimentResult with per-seed records of all metrics vs t.
+
+        """
+        t_values = np.linspace(0.0, t_max, t_steps)
+        eval_steps = np.unique((t_values * self.d / batch_size).astype(int))
+        # Re-derive actual t grid from integer step counts
+        t_values = eval_steps * batch_size / self.d
+        n_steps = int(eval_steps.max()) if len(eval_steps) else 0
+
+        records: dict[str, list[list[float]]] = {}
+        t_start = time.time()
+
+        for s in range(n_seeds):
+            seed = base_seed + s
+            fix_seed(seed)
+            student = self.student_factory().to(self.device)
+            opt = torch.optim.SGD(student.parameters(), lr=lr)
+            seed_vals: dict[str, list[float]] = {}
+
+            eval_set = set(eval_steps.tolist())
+            if 0 in eval_set:
+                for k, v in self._measure(student, n_test).items():
+                    seed_vals.setdefault(k, []).append(v)
+
+            for step in range(1, n_steps + 1):
+                X, y = self.dataset.sample(batch_size)
+                opt.zero_grad()
+                loss = self.loss_fn(self._forward(student, X), y)
+                loss.backward()
+                opt.step()
+
+                if step in eval_set:
+                    for k, v in self._measure(student, n_test).items():
+                        seed_vals.setdefault(k, []).append(v)
+
+            if verbose:
+                print(f"[seed {seed}] final E_test={seed_vals['test_error'][-1]:.4f}")
+            for k, v in seed_vals.items():
+                records.setdefault(k, []).append(v)
+
+        return ExperimentResult(
+            x_name="t",
+            x_values=t_values.tolist(),
+            records=records,
+            config={
+                "d": self.d,
+                "n_seeds": n_seeds,
+                "lr": lr,
+                "batch_size": batch_size,
+                "dataset": self.dataset.get_config(),
+            },
+            metadata={"wall_time_sec": time.time() - t_start},
+        )

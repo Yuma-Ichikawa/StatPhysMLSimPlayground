@@ -1,18 +1,15 @@
 """Configuration classes for simulations."""
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import Any
 
 import numpy as np
 
+# Canonical TheoryType lives in statphys.theory.base; re-exported here
+# for backwards compatibility.
+from statphys.theory.base import TheoryType
 
-class TheoryType(Enum):
-    """Enum for theory types."""
-
-    REPLICA = "replica"
-    ONLINE = "online"
-    DMFT = "dmft"
+__all__ = ["SimulationConfig", "TheoryType"]
 
 
 @dataclass

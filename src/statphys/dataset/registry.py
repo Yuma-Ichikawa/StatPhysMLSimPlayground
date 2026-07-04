@@ -124,10 +124,30 @@ def get_dataset(name: str, **kwargs: Any) -> BaseDataset:
 # Register default datasets
 def _register_defaults() -> None:
     """Register default dataset classes."""
+    from statphys.dataset.attention import AttentionIndexedModelDataset
+    from statphys.dataset.fairness import TeacherMixtureFairnessDataset
     from statphys.dataset.gaussian import (
         GaussianClassificationDataset,
         GaussianDataset,
         GaussianMultiOutputDataset,
+    )
+    from statphys.dataset.glm import (
+        GaussianMixtureDataset,
+        LogisticTeacherDataset,
+        MulticlassGaussianMixtureDataset,
+        ProbitTeacherDataset,
+    )
+    from statphys.dataset.icl import (
+        ICLLinearRegressionDataset,
+        ICLNonlinearRegressionDataset,
+    )
+    from statphys.dataset.noisy import NoisyGMMSelfDistillationDataset
+    from statphys.dataset.sequence import (
+        CopyTaskDataset,
+        GeneralizedPottsDataset,
+        MarkovChainDataset,
+        MixedGaussianSequenceDataset,
+        TiedLowRankAttentionDataset,
     )
     from statphys.dataset.sparse import BernoulliGaussianDataset, SparseDataset
     from statphys.dataset.structured import (
@@ -145,6 +165,28 @@ def _register_defaults() -> None:
     _global_registry.register("structured", StructuredDataset)
     _global_registry.register("correlated_gaussian", CorrelatedGaussianDataset)
     _global_registry.register("spiked_covariance", SpikedCovarianceDataset)
+
+    # GLM / mixture datasets
+    _global_registry.register("logistic_teacher", LogisticTeacherDataset)
+    _global_registry.register("probit_teacher", ProbitTeacherDataset)
+    _global_registry.register("gaussian_mixture", GaussianMixtureDataset)
+    _global_registry.register("multiclass_gaussian_mixture", MulticlassGaussianMixtureDataset)
+
+    # In-context learning datasets
+    _global_registry.register("icl_linear_regression", ICLLinearRegressionDataset)
+    _global_registry.register("icl_nonlinear_regression", ICLNonlinearRegressionDataset)
+
+    # Sequence / token datasets
+    _global_registry.register("markov_chain", MarkovChainDataset)
+    _global_registry.register("copy_task", CopyTaskDataset)
+    _global_registry.register("generalized_potts", GeneralizedPottsDataset)
+    _global_registry.register("tied_low_rank_attention", TiedLowRankAttentionDataset)
+    _global_registry.register("mixed_gaussian_sequence", MixedGaussianSequenceDataset)
+
+    # Specialized datasets
+    _global_registry.register("attention_indexed", AttentionIndexedModelDataset)
+    _global_registry.register("teacher_mixture_fairness", TeacherMixtureFairnessDataset)
+    _global_registry.register("noisy_gmm_self_distillation", NoisyGMMSelfDistillationDataset)
 
 
 # Auto-register on import

@@ -245,31 +245,36 @@ class OrderParameterCalculator:
         # Get teacher parameters
         teacher_params = dataset.get_teacher_params()
 
+        # Resolve input dimension (model.d preferred, dataset.d as fallback)
+        d = getattr(model, "d", None) or getattr(dataset, "d", None)
+        if d is None:
+            raise ValueError(
+                "Cannot determine input dimension: neither model.d nor dataset.d is set."
+            )
+
         # Create order parameters container
         params = OrderParameters()
         params.metadata = {
             "model_type": model_type.value,
             "task_type": task_type.value,
-            "d": getattr(model, "d", None),
+            "d": d,
         }
 
         # Extract student parameters
-        student_params = self._extract_student_params(model)
+        student_params = self._extract_student_params(model, d)
 
         # Extract teacher parameters
         teacher_weight_params = self._extract_teacher_weight_params(teacher_params)
 
         # Compute all student-teacher overlaps
-        self._compute_student_teacher_overlaps(
-            student_params, teacher_weight_params, model.d, params
-        )
+        self._compute_student_teacher_overlaps(student_params, teacher_weight_params, d, params)
 
         # Compute all student self-overlaps
-        self._compute_student_self_overlaps(student_params, model.d, params)
+        self._compute_student_self_overlaps(student_params, d, params)
 
         # Compute teacher self-overlaps if requested
         if self.include_teacher_overlaps:
-            self._compute_teacher_self_overlaps(teacher_weight_params, model.d, params)
+            self._compute_teacher_self_overlaps(teacher_weight_params, d, params)
 
         # Extract O(1) scalars
         self._extract_scalars(model, teacher_params, params)
@@ -338,7 +343,7 @@ class OrderParameterCalculator:
 
         return TaskType.REGRESSION
 
-    def _extract_student_params(self, model: nn.Module) -> dict[str, torch.Tensor]:
+    def _extract_student_params(self, model: nn.Module, d: int | None = None) -> dict[str, torch.Tensor]:
         """
         Extract all weight parameters from student model.
 
@@ -348,6 +353,7 @@ class OrderParameterCalculator:
         - Other keys: O(1), recorded in scalars
         """
         params = {}
+        d = d or getattr(model, "d", None)
 
         # Linear models
         if hasattr(model, "W"):
@@ -357,7 +363,10 @@ class OrderParameterCalculator:
                     # Linear: (d,1) or (1,d)
                     params["w"] = W.flatten()
                 else:
-                    # Committee/TwoLayer: (K, d)
+                    # Committee/TwoLayer: expect rows to be hidden units (K, d).
+                    # If the matrix is stored transposed as (d, K), fix orientation.
+                    if d is not None and W.shape[0] == d and W.shape[1] != d:
+                        W = W.T
                     K = W.shape[0]
                     for i in range(K):
                         params[f"W_{i}"] = W[i]
@@ -619,25 +628,38 @@ class OrderParameterCalculator:
         rho = teacher_params.get("rho", 1.0)
         eta = teacher_params.get("eta", 0.0)
 
-        # Get main overlaps
-        m = params.student_teacher_overlaps.get("avg", 0.0)
-        if m == 0.0:
-            m = params.student_teacher_overlaps.get("w_W0", 0.0)
-        if m == 0.0:
-            # Try first value
-            for v in params.student_teacher_overlaps.values():
-                if isinstance(v, (int, float)):
-                    m = v
-                    break
+        # Summary statistics that must not be mistaken for individual overlaps
+        summary_keys = {"avg", "matrix", "matrix_mean", "matrix_diag", "matrix_offdiag"}
 
-        q = params.student_self_overlaps.get("diag_avg", 0.0)
-        if q == 0.0:
-            q = params.student_self_overlaps.get("w_w", 0.0)
-        if q == 0.0:
-            for k, v in params.student_self_overlaps.items():
-                if isinstance(v, (int, float)) and k.split("_")[0] == k.split("_")[-1]:
-                    q = v
-                    break
+        # Get main overlaps with a fixed priority (0.0 is a valid value, so
+        # check key presence instead of comparing against zero)
+        st = params.student_teacher_overlaps
+        if "w_W0" in st:
+            m = st["w_W0"]
+        elif "avg" in st:
+            m = st["avg"]
+        else:
+            m = next(
+                (v for k, v in st.items() if k not in summary_keys and isinstance(v, (int, float))),
+                0.0,
+            )
+
+        ss = params.student_self_overlaps
+        if "w_w" in ss:
+            q = ss["w_w"]
+        elif "diag_avg" in ss:
+            q = ss["diag_avg"]
+        else:
+            q = next(
+                (
+                    v
+                    for k, v in ss.items()
+                    if k not in summary_keys
+                    and isinstance(v, (int, float))
+                    and k.split("_")[0] == k.split("_")[-1]
+                ),
+                0.0,
+            )
 
         if task_type == TaskType.REGRESSION:
             # E_g = 0.5 * (rho - 2m + q) + noise

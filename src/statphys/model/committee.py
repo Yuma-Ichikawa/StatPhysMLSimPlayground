@@ -62,6 +62,8 @@ class CommitteeMachine(BaseModel):
         elif self.init_method == "uniform":
             bound = self.init_scale * np.sqrt(3.0)
             nn.init.uniform_(self.W, -bound, bound)
+        else:
+            raise ValueError(f"Unknown init_method: {self.init_method}")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -74,7 +76,8 @@ class CommitteeMachine(BaseModel):
             Output tensor of shape (batch_size,) or scalar.
 
         """
-        if x.dim() == 1:
+        single_sample = x.dim() == 1
+        if single_sample:
             x = x.unsqueeze(0)
 
         # Hidden layer: (batch, K) = (batch, d) @ (d, K)
@@ -84,7 +87,7 @@ class CommitteeMachine(BaseModel):
         activated = torch.sign(hidden)
         output = activated.sum(dim=-1) / np.sqrt(self.k)
 
-        return output.squeeze()
+        return output[0] if single_sample else output
 
     def get_weight_vector(self) -> torch.Tensor:
         """Return flattened weight matrix."""
@@ -212,6 +215,8 @@ class SoftCommitteeMachine(BaseModel):
             nn.init.orthogonal_(self.W, gain=self.init_scale)
         elif self.init_method == "xavier":
             nn.init.xavier_normal_(self.W, gain=self.init_scale)
+        else:
+            raise ValueError(f"Unknown init_method: {self.init_method}")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -224,14 +229,15 @@ class SoftCommitteeMachine(BaseModel):
             Output tensor.
 
         """
-        if x.dim() == 1:
+        single_sample = x.dim() == 1
+        if single_sample:
             x = x.unsqueeze(0)
 
         hidden = x @ self.W.T / np.sqrt(self.d)
         activated = self.activation(hidden)
         output = activated.sum(dim=-1) / np.sqrt(self.k)
 
-        return output.squeeze()
+        return output[0] if single_sample else output
 
     def get_weight_vector(self) -> torch.Tensor:
         """Return flattened weights."""

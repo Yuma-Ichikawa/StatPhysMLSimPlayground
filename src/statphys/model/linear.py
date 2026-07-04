@@ -214,6 +214,8 @@ class LinearClassifier(BaseModel):
         elif self.init_method == "uniform":
             bound = self.init_scale * np.sqrt(3.0)
             nn.init.uniform_(self.W, -bound, bound)
+        else:
+            raise ValueError(f"Unknown init_method: {self.init_method}")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """

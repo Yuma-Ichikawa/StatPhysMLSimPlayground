@@ -13,6 +13,11 @@ References:
     - Saad, Solla (1995). "Exact asymptotic analysis
       of committee machine learning." Phys. Rev. E
 
+Warning:
+    This implementation uses a heuristic gradient-flow relaxation with a
+    linear-response approximation, not the exact RS saddle-point equations
+    for the committee machine. Results are qualitative only.
+
 """
 
 from typing import Any
@@ -134,7 +139,6 @@ class GaussianCommitteeMseEquations(ReplicaEquations):
 
         """
         rho = kwargs.get("rho", self.rho)
-        kwargs.get("eta", self.eta)
         lam = kwargs.get("reg_param", self.reg_param)
         K = kwargs.get("K", self.K)
 
@@ -146,7 +150,7 @@ class GaussianCommitteeMseEquations(ReplicaEquations):
         # Generalization error contribution
         eg = rho - 2 * m + q + (K - 1) * c
 
-        # Update equations (simplified for K=M symmetric case)
+        # Damped gradient-flow relaxation (heuristic, see module docstring)
         lr = 0.1
 
         # Approximate updates using symmetric ansatz

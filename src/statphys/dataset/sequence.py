@@ -56,6 +56,8 @@ class MarkovChainDataset(BaseDataset):
         device: str = "cpu",
     ):
         super().__init__(d=d, device=device)
+        if seq_len < 2:
+            raise ValueError(f"MarkovChainDataset requires seq_len >= 2, got {seq_len}")
         self.n_states = n_states
         self.seq_len = seq_len
         self.dirichlet_alpha = dirichlet_alpha
@@ -158,6 +160,8 @@ class CopyTaskDataset(BaseDataset):
         device: str = "cpu",
     ):
         super().__init__(d=d, device=device)
+        if seq_len < 4:
+            raise ValueError(f"CopyTaskDataset requires seq_len >= 4, got {seq_len}")
         self.vocab_size = vocab_size
         self.seq_len = seq_len
         self.n_triggers = n_triggers
@@ -528,6 +532,11 @@ class MixedGaussianSequenceDataset(BaseDataset):
         elif self.correlation_type == "uniform":
             cluster = torch.multinomial(self.priors.expand(batch_size, -1), 1).squeeze(-1)
             c = cluster.unsqueeze(1).expand(-1, self.seq_len)
+        else:
+            raise ValueError(
+                f"Unknown correlation_type: {self.correlation_type!r} "
+                "(expected 'independent', 'markov', or 'uniform')"
+            )
 
         return c
 

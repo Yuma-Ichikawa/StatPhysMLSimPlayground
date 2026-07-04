@@ -13,6 +13,12 @@ References:
     - Salehi et al. (2019). "The impact of regularization on
       high-dimensional logistic regression." NeurIPS
 
+Warning:
+    This implementation uses a heuristic gradient-flow relaxation of the
+    regularized ERM stationarity conditions, not the exact RS saddle-point
+    equations (which require proximal operators, cf. Salehi et al. 2019).
+    Results are qualitatively correct but not quantitatively exact.
+
 """
 
 from typing import Any
@@ -54,6 +60,7 @@ class GaussianLinearLogisticEquations(ReplicaEquations):
         rho: float = 1.0,
         reg_param: float = 0.01,
         n_quad: int = 50,
+        damping: float = 0.1,
         **params: Any,
     ):
         """
@@ -63,12 +70,14 @@ class GaussianLinearLogisticEquations(ReplicaEquations):
             rho: Teacher norm (||W₀||²/d). Default 1.0.
             reg_param: L2 regularization parameter λ. Default 0.01.
             n_quad: Number of quadrature points for numerical integration.
+            damping: Step size of the internal gradient-flow relaxation.
 
         """
         super().__init__(rho=rho, reg_param=reg_param, n_quad=n_quad, **params)
         self.rho = rho
         self.reg_param = reg_param
         self.n_quad = n_quad
+        self.damping = damping
 
     def _compute_joint_expectations(
         self,
@@ -171,8 +180,8 @@ class GaussianLinearLogisticEquations(ReplicaEquations):
         # Effective scale
         scale = alpha / (1 + lam)
 
-        # Damped fixed-point iteration
-        lr = 0.1
+        # Damped gradient-flow relaxation (heuristic, see module docstring)
+        lr = self.damping
 
         # Gradient-based update for m and q
         # dm/dt ∝ α·√ρ·E[g·u/√ρ] - λ·m

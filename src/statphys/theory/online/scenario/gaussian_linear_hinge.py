@@ -29,19 +29,18 @@ class GaussianLinearHingeEquations(OnlineEquations):
         y = sign((1/√d) W₀ᵀ x)
 
     Hinge loss: ℓ(y, z) = max(0, κ - yz)
-    where κ is the margin parameter.
+    where κ is the margin parameter. The SGD gradient is
+        g(y, z) = y · Θ(κ - yz)
+    (update whenever the margin is violated).
 
     In the d → ∞ limit with t = τ/d, order parameter dynamics:
 
-        dm/dt = η √ρ · φ(θ)/Δ - ηλm
-        dq/dt = 2η² H(-θ) - 2ηλq
+        dm/dt = η E[g(y,z) u] - ηλm
+        dq/dt = 2η E[g(y,z) z] + η² E[g²] - 2ηλq
 
-    where:
-        - κ is the margin
-        - Δ = √(q(1 - ρ_corr²)) : conditional std of student field
-        - θ = (κ - effective_mean) / Δ : threshold parameter
-        - H(x) = (1/2)(1 - erf(x/√2)) : Gaussian tail
-        - φ(x) = (1/√(2π)) exp(-x²/2) : Gaussian PDF
+    where expectations are over the joint Gaussian fields
+    u = W₀ᵀx/√d ~ N(0, ρ), z = wᵀx/√d ~ N(0, q) with Cov(u, z) = m,
+    and y = sign(u). They are evaluated by numerical quadrature.
 
     Classification error:
         P(error) = (1/π) arccos(m/√(qρ))
@@ -75,9 +74,62 @@ class GaussianLinearHingeEquations(OnlineEquations):
         """Complementary Gaussian CDF: H(x) = P(Z > x)."""
         return 0.5 * (1 - erf(x / np.sqrt(2)))
 
-    def _phi(self, x: float) -> float:
-        """Gaussian PDF: φ(x) = (1/√(2π)) exp(-x²/2)."""
-        return np.exp(-(x**2) / 2) / np.sqrt(2 * np.pi)
+    def _Phi(self, x: np.ndarray) -> np.ndarray:
+        """Standard Gaussian CDF."""
+        return 0.5 * (1 + erf(x / np.sqrt(2)))
+
+    def _compute_expectations(
+        self,
+        m: float,
+        q: float,
+        rho: float,
+        kappa: float,
+        n_points: int = 80,
+    ) -> tuple[float, float, float]:
+        """
+        Compute (E[g u], E[g z], E[g²]) for g = y Θ(κ - y z), y = sign(u).
+
+        Uses the decomposition u = √ρ s, z = √q (c s + √(1-c²) ζ) with
+        s, ζ iid N(0,1) and c = m/√(qρ). Conditioning on s and integrating
+        the (linear-in-ζ) integrands analytically over the margin-violation
+        region leaves 1D Gauss-Hermite quadrature over s.
+        """
+        q = max(q, 1e-10)
+        rho = max(rho, 1e-10)
+        max_m = np.sqrt(q * rho) * 0.9999
+        m = float(np.clip(m, -max_m, max_m))
+        c = m / np.sqrt(q * rho)
+        s_perp = np.sqrt(max(1 - c**2, 1e-12))
+
+        from scipy.special import roots_hermite
+
+        x_nodes, w_nodes = roots_hermite(n_points)
+        s = np.sqrt(2.0) * x_nodes  # s ~ N(0,1) nodes
+        w = w_nodes / np.sqrt(np.pi)
+
+        y_sign = np.where(s >= 0, 1.0, -1.0)
+
+        # Margin violation: y z < κ  <=>  y(c s + s_perp ζ) < κ/√q
+        # For y=+1: ζ < a with a = (κ/√q - c s)/s_perp
+        # For y=-1: ζ > -a' with a' = (κ/√q + c s)/s_perp (by symmetry handled via y)
+        a = (kappa / np.sqrt(q) - y_sign * c * s) / s_perp
+
+        # P(violation | s): Φ(a) for y=+1; for y=-1 the event is ζ > -a, also Φ(a)
+        prob = self._Phi(a)
+        phi_a = np.exp(-0.5 * a**2) / np.sqrt(2 * np.pi)
+
+        # E[ζ 1{ζ < a}] = -φ(a); for y=-1, E[ζ 1{ζ > -a}] = φ(-a) = φ(a)
+        e_zeta = np.where(y_sign >= 0, -phi_a, phi_a)
+
+        # g = y on the violation event
+        # E[g u] = Σ w · y √ρ s · P(violation|s)
+        E_gu = float(np.sum(w * y_sign * np.sqrt(rho) * s * prob))
+        # E[g z] = Σ w · y √q (c s P + s_perp E[ζ 1])
+        E_gz = float(np.sum(w * y_sign * np.sqrt(q) * (c * s * prob + s_perp * e_zeta)))
+        # E[g²] = P(violation)
+        E_g2 = float(np.sum(w * prob))
+
+        return E_gu, E_gz, E_g2
 
     def __call__(
         self,
@@ -89,8 +141,10 @@ class GaussianLinearHingeEquations(OnlineEquations):
         Compute dm/dt and dq/dt for online hinge loss.
 
         ODE system:
-            dm/dt = η √ρ · φ(θ)/Δ - ηλm
-            dq/dt = 2η² H(-θ) - 2ηλq
+            dm/dt = η E[g u] - ηλm
+            dq/dt = 2η E[g z] + η² E[g²] - 2ηλq
+
+        with g = y Θ(κ - yz), evaluated by quadrature.
 
         Args:
             t: Normalized time t = τ/d
@@ -108,25 +162,10 @@ class GaussianLinearHingeEquations(OnlineEquations):
         kappa = params.get("margin", self.margin)
         lam = params.get("reg_param", self.reg_param)
 
-        # Stability parameter (cosine of angle)
-        stability = m / np.sqrt(q * rho + 1e-10)
-        stability = np.clip(stability, -10, 10)
+        E_gu, E_gz, E_g2 = self._compute_expectations(m, q, rho, kappa)
 
-        # Conditional standard deviation of student field
-        Delta = np.sqrt(q * (1 - stability**2) + 1e-10)
-
-        # Effective threshold for hinge loss margin condition
-        threshold = (kappa - m * stability / np.sqrt(q + 1e-10)) / Delta
-
-        # Probability of margin violation
-        prob_violation = self._H(-threshold)
-
-        # Gradient contributions (from violated samples)
-        phi_threshold = self._phi(threshold)
-
-        # ODE equations
-        dm_dt = lr * np.sqrt(rho) * phi_threshold / Delta - lr * lam * m
-        dq_dt = lr**2 * 2 * prob_violation - 2 * lr * lam * q
+        dm_dt = lr * E_gu - lr * lam * m
+        dq_dt = 2 * lr * E_gz + lr**2 * E_g2 - 2 * lr * lam * q
 
         return np.array([dm_dt, dq_dt])
 

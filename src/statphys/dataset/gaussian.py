@@ -117,9 +117,10 @@ class GaussianClassificationDataset(BaseDataset):
 
     The data generation follows:
         x ~ N(0, I_d)
-        y = sign((1/sqrt(d)) * W0^T @ x)  [noiseless]
-        or
-        y = sign((1/sqrt(d)) * W0^T @ x + noise)  [noisy]
+        y = sign((1/sqrt(d)) * W0^T @ x)
+
+    and each label is independently flipped with probability `flip_prob`
+    (label noise).
 
     Attributes:
         d: Input dimension.
@@ -186,9 +187,10 @@ class GaussianClassificationDataset(BaseDataset):
         if self.flip_prob > 0 and torch.rand(1).item() < self.flip_prob:
             y = -y
 
-        # Handle exact zero case
+        # Handle exact zero case (random sign to preserve teacher symmetry)
         if y == 0:
-            y = torch.tensor(1.0, device=self.device, dtype=self.dtype)
+            sign = 1.0 if torch.rand(1).item() < 0.5 else -1.0
+            y = torch.tensor(sign, device=self.device, dtype=self.dtype)
 
         return x, y
 

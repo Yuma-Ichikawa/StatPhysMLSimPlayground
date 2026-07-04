@@ -43,11 +43,22 @@ class GaussianCommitteeMseEquations(OnlineEquations):
     For the simplified symmetric ansatz, we track:
         - r: Average student-teacher overlap
         - q: Average student self-overlap
-        - c: Average student cross-overlap (can be set to 0 initially)
 
-    The ODE system (Saad & Solla 1995, erf activation):
-        dr/dt = η [(T-r)/√(1+Q) - (r-S)r/(1+Q)^(3/2)]
-        dQ/dt = 2η [(r-S)/√(1+Q) - (Q-C)/(1+Q)^(3/2)] + 2η²/(π(1+Q))
+    The ODE system uses the exact Saad-Solla closed forms for erf
+    activation (single-unit reduction, exact for K = M = 1):
+
+        dr/dt = η ( I3(λ; ν; ν) - I3(λ; ν; λ) )
+        dq/dt = 2η ( I3(λ; λ; ν) - I3(λ; λ; λ) )
+              + η² ( I4(ν,ν) - 2 I4(ν,λ) + I4(λ,λ) )
+
+    where λ (variance q) is the student field, ν (variance T) the teacher
+    field with covariance r, and I3 = E[g'(u) v g(w)],
+    I4 = E[g'(λ)² g(w) g(z)] are Gaussian correlation integrals with
+    closed forms for g(x) = erf(x/√2) (Saad & Solla 1995, Appendix).
+
+    For K = M > 1 the same per-unit equations are used as a symmetric
+    ansatz approximation with negligible cross-overlaps (C = S = 0);
+    they are then only approximate.
     """
 
     def __init__(
@@ -89,33 +100,47 @@ class GaussianCommitteeMseEquations(OnlineEquations):
                 f"Activation '{activation}' not implemented. Use 'erf' for closed-form equations."
             )
 
-    def _I2(self, a: float, b: float) -> float:
+    @staticmethod
+    def _i3(c11: float, c12: float, c13: float, c23: float, c33: float) -> float:
         """
-        Correlation integral I_2 for erf activation.
+        Saad-Solla I3 = E[g'(x1) x2 g(x3)] for g(x) = erf(x/√2).
 
-        I_2(a, b) = (2/π) arcsin(ab / √((1+a²)(1+b²)))
-
-        This is E[g(u)g(v)] where g = erf(x/√2) and Cov(u,v) = ab.
+        Closed form (Saad & Solla 1995, Appendix):
+            Λ3 = (1+c11)(1+c33) - c13²
+            I3 = (2/π) [c23(1+c11) - c12 c13] / ((1+c11) √Λ3)
         """
-        denom = np.sqrt((1 + a**2) * (1 + b**2))
-        if denom < 1e-10:
+        lam3 = (1 + c11) * (1 + c33) - c13**2
+        if lam3 <= 0:
             return 0.0
-        arg = a * b / denom
-        arg = np.clip(arg, -1, 1)
-        return (2 / np.pi) * np.arcsin(arg)
+        return (2 / np.pi) * (c23 * (1 + c11) - c12 * c13) / ((1 + c11) * np.sqrt(lam3))
 
-    def _I3(self, a: float, b: float, c: float) -> float:
+    @staticmethod
+    def _i4_same_deriv(
+        Q: float,
+        c13: float,
+        c14: float,
+        c33: float,
+        c34: float,
+        c44: float,
+    ) -> float:
         """
-        Correlation integral I_3 for erf activation (derivative term).
+        Saad-Solla I4 = E[g'(x1) g'(x2) g(x3) g(x4)] with x1 = x2 (both the
+        student field, variance Q), for g(x) = erf(x/√2).
 
-        I_3(a,b,c) = E[g'(u)g(v)g(w)] for correlated Gaussians.
-
-        For symmetric case where a=b=c=Q (diagonal self-overlap):
-            I_3 ≈ (2/π) / √(1 + Q)
+        With c11 = c22 = c12 = Q the general closed form reduces to:
+            Λ4 = 1 + 2Q
+            Λ0 = Λ4 c34 - 2(1+Q)(c13 c14) + 2Q c13 c14   [x1=x2 → c23=c13 etc.]
+            Λ1 = Λ4 (1+c33) - 2 c13² (1+Q) + 2Q c13²
+            Λ2 = Λ4 (1+c44) - 2 c14² (1+Q) + 2Q c14²
+            I4 = (4/π²) arcsin(Λ0/√(Λ1 Λ2)) / √Λ4
         """
-        # Simplified symmetric approximation
-        Q_avg = (a + b + c) / 3
-        return (2 / np.pi) / np.sqrt(1 + Q_avg + 1e-10)
+        lam4 = 1 + 2 * Q
+        lam0 = lam4 * c34 - 2 * c13 * c14 * (1 + Q) + 2 * Q * c13 * c14
+        lam1 = lam4 * (1 + c33) - 2 * c13**2 * (1 + Q) + 2 * Q * c13**2
+        lam2 = lam4 * (1 + c44) - 2 * c14**2 * (1 + Q) + 2 * Q * c14**2
+        denom = np.sqrt(max(lam1 * lam2, 1e-30))
+        arg = np.clip(lam0 / denom, -1, 1)
+        return (4 / np.pi**2) * np.arcsin(arg) / np.sqrt(lam4)
 
     def __call__(
         self,
@@ -124,18 +149,15 @@ class GaussianCommitteeMseEquations(OnlineEquations):
         params: dict[str, Any],
     ) -> np.ndarray:
         """
-        Compute ODE dynamics for committee machine (symmetric ansatz).
+        Compute ODE dynamics (Saad-Solla, erf activation).
 
-        This implements a simplified 2-parameter model:
+        Tracks the 2-parameter reduction:
             y = [r, q] where:
-            - r: student-teacher overlap (average R_kk)
-            - q: student self-overlap (average Q_kk)
+            - r: student-teacher overlap R
+            - q: student self-overlap Q
 
-        The symmetric ansatz assumes:
-            - All K student units are equivalent
-            - K = M (matched architecture)
-            - R_kl = s for k ≠ l (cross-overlap, assumed small)
-            - Q_kl = c for k ≠ l (student cross-overlap, assumed 0)
+        Exact for K = M = 1; for K = M > 1 this is the symmetric ansatz
+        with negligible cross-overlaps.
 
         Args:
             t: Normalized time t = τ/d
@@ -150,31 +172,29 @@ class GaussianCommitteeMseEquations(OnlineEquations):
 
         T = params.get("rho", self.rho)  # Teacher self-overlap
         lr = params.get("lr", self.lr)
-        params.get("k_student", self.k_student)
 
-        # Ensure numerical stability
+        # Ensure numerical stability (Cauchy-Schwarz: r² ≤ qT; the closed
+        # forms remain finite at the boundary, so no shrink factor is needed)
         q = max(q, 1e-6)
-        r = np.clip(r, -np.sqrt(q * T) * 0.999, np.sqrt(q * T) * 0.999)
+        r = np.clip(r, -np.sqrt(q * T), np.sqrt(q * T))
 
-        # Symmetric ansatz: c = 0 (no student cross-correlation initially)
-        c = 0.0
-        # s = 0 (no cross student-teacher overlap)
-        s = 0.0
+        # Drift terms: E[g'(λ) x δ] with δ = g(ν) - g(λ)
+        # dr/dt = η ( I3(λ; ν; ν) - I3(λ; ν; λ) )
+        i3_r_teacher = self._i3(q, r, r, T, T)
+        i3_r_student = self._i3(q, r, q, r, q)
+        dr_dt = lr * (i3_r_teacher - i3_r_student)
 
-        # Denominators
-        sqrt_1_q = np.sqrt(1 + q)
+        # dq/dt drift: 2η ( I3(λ; λ; ν) - I3(λ; λ; λ) )
+        i3_q_teacher = self._i3(q, q, r, r, T)
+        i3_q_student = self._i3(q, q, q, q, q)
 
-        # ODE for r (student-teacher overlap)
-        # dr/dt = η * [(T - r) / √(1+q) - (r - s) * r / (1+q)^(3/2)]
-        # Simplified for symmetric ansatz:
-        dr_dt = lr * ((T - r) / sqrt_1_q - (r - s) * r / (sqrt_1_q**3))
+        # dq/dt noise: η² E[g'(λ)² δ²]
+        #            = η² ( I4(ν,ν) - 2 I4(ν,λ) + I4(λ,λ) )
+        i4_tt = self._i4_same_deriv(q, r, r, T, T, T)
+        i4_ts = self._i4_same_deriv(q, r, q, T, r, q)
+        i4_ss = self._i4_same_deriv(q, q, q, q, q, q)
 
-        # ODE for q (student self-overlap)
-        # dq/dt = 2η * [(r - s) / √(1+q) - (q - c) / (1+q)^(3/2)] + noise term
-        # The noise term from SGD: η² * E[gradient²]
-        # For erf: noise ≈ 2η² / (π(1+q))
-        gradient_noise = 2 * lr**2 / (np.pi * (1 + q))
-        dq_dt = 2 * lr * ((r - s) / sqrt_1_q - (q - c) / (sqrt_1_q**3)) + gradient_noise
+        dq_dt = 2 * lr * (i3_q_teacher - i3_q_student) + lr**2 * (i4_tt - 2 * i4_ts + i4_ss)
 
         return np.array([dr_dt, dq_dt])
 

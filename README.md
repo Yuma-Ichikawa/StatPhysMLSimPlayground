@@ -28,7 +28,9 @@
   - **Online Learning**: ODE solver for learning dynamics with adaptive stepping
   - **DMFT**: Coming soon
 - **Simulation Framework**: Unified interface for experiments with automatic theory comparison
-- **Visualization**: Publication-quality plots for theory vs experiment comparison
+- **General Teacher-Student Experiments**: Theory-free numerical experiments for *any* PyTorch model (MLPs, attention/LLM-style blocks, ...) with customizable teacher weight structure (random, sparse, low-rank, spiked, power-law, binary)
+- **Visualization**: Publication-quality plots, phase portraits/flow fields, overlap-matrix heatmaps, parameter sweeps, and GIF/MP4 animations
+- **One-liner API**: `quick_online()`, `quick_replica()`, `quick_experiment()` for instant experiments
 - **Utility Functions**: Special functions, Gaussian integrals (Gauss-Hermite/numerical quadrature), proximal operators
 
 ## Installation
@@ -48,6 +50,21 @@ uv pip install -e ".[dev]"
 ```
 
 ## Quick Start
+
+### One-liners
+
+```python
+import statphys
+
+# Online SGD vs exact ODE theory (linear regression), with plots
+result = statphys.quick_online(d=400, lr=0.5, t_max=10)
+
+# Ridge regression at several alpha = n/d vs replica theory
+result = statphys.quick_replica(d=200, reg_param=0.1)
+
+# Theory-free teacher-student experiment (works for any architecture)
+result = statphys.quick_experiment("random_mlp", alphas=[1, 2, 4, 8])
+```
 
 ### Example: Ridge Regression with Replica Theory
 
@@ -114,6 +131,59 @@ results = sim.run(
     loss_fn=RidgeLoss(0.01),
     theory_solver=theory_solver,
 )
+```
+
+### Example: General Teacher-Student Experiments (any model, no theory needed)
+
+For models where no analytic theory exists (deep networks, attention/LLM-style
+blocks, ...), the `statphys.experiment` subpackage measures phase transitions
+purely numerically:
+
+```python
+import torch.nn as nn
+from statphys.experiment import Teacher, TeacherStudentExperiment
+
+# Teacher: any nn.Module, with structured weights
+teacher = Teacher(
+    nn.Sequential(nn.Linear(200, 32), nn.ReLU(), nn.Linear(32, 1)),
+    init="low_rank",              # random / sparse / low_rank / spiked / power_law / binary
+    init_kwargs={"rank": 4},
+    noise_std=0.05,
+)
+
+exp = TeacherStudentExperiment(
+    teacher=teacher,
+    student_factory=lambda: nn.Sequential(
+        nn.Linear(200, 32), nn.ReLU(), nn.Linear(32, 1)),
+    input_dist="correlated",      # gaussian / correlated / rademacher / sphere / custom
+    input_kwargs={"ar_coeff": 0.5},
+)
+
+# Sample-complexity sweep: phase transitions appear as sharp error drops
+result = exp.run_sample_complexity(alphas=[0.5, 1, 2, 4, 8, 16], n_seeds=5)
+result.plot(logy=True)
+
+# Or single-pass online SGD dynamics in normalized time t = #samples/d
+result = exp.run_online(t_max=50, lr=0.1)
+```
+
+Ready-made presets: `random_mlp`, `sparse_teacher`, `spiked_teacher`,
+`mismatched_width`, `low_rank_attention` (see `statphys.experiment.presets`).
+
+### Example: Phase Portraits and Animations
+
+```python
+from statphys.vis import DynamicsPlotter, animate_phase_plane, save_animation
+from statphys.theory.online import GaussianLinearMseEquations
+
+eqs = GaussianLinearMseEquations(rho=1.0, lr=0.5)
+
+# Flow field + nullclines + theory/experiment trajectories in the (m, q) plane
+DynamicsPlotter().plot_phase_portrait(eqs, result=results)
+
+# Animated trajectory on top of the flow field (GIF/MP4)
+anim = animate_phase_plane(m_traj, q_traj, equations=eqs)
+save_animation(anim, "dynamics.gif", fps=20)
 ```
 
 ## Supported Components
@@ -313,17 +383,28 @@ src/statphys/
 │   │       ├── gaussian_linear_hinge.py   # Online SVM/hinge
 │   │       └── gaussian_committee_mse.py  # Online committee (erf)
 │   └── dmft/         # DMFT (coming soon)
-├── simulation/       # Numerical experiments
+├── simulation/       # Numerical experiments (with theory comparison)
 │   ├── base.py       # BaseSimulation
 │   ├── config.py     # SimulationConfig
 │   ├── replica_sim.py # ReplicaSimulation
 │   ├── online_sim.py  # OnlineSimulation
 │   └── runner.py     # SimulationRunner
+├── experiment/       # General teacher-student experiments (theory-free)
+│   ├── teacher.py    # Teacher wrapper + weight-init strategies
+│   ├── dataset.py    # TeacherStudentDataset (input distributions)
+│   ├── metrics.py    # test error, weight overlap, CKA
+│   ├── protocol.py   # TeacherStudentExperiment, ExperimentResult
+│   └── presets.py    # Ready-made setups (random_mlp, sparse_teacher, ...)
 ├── vis/              # Visualization
 │   ├── comparison.py # ComparisonPlotter
-│   ├── phase_diagram.py # PhaseDiagramPlotter
+│   ├── phase_diagram.py # PhaseDiagramPlotter (+ compute_phase_grid)
 │   ├── order_params.py # OrderParamPlotter
+│   ├── dynamics.py   # DynamicsPlotter (flow fields, phase portraits)
+│   ├── overlap_matrix.py # OverlapMatrixPlotter (M/Q/R heatmaps)
+│   ├── sweep.py      # SweepPlotter (sweeps, diagnostics)
+│   ├── animation.py  # GIF/MP4 animations
 │   └── default_plots.py # Publication-quality default plots
+├── quick.py          # One-liner API (quick_online / quick_replica / quick_experiment)
 └── utils/            # Utilities
     ├── special_functions.py # Special functions (Gaussian, erf, etc.)
     ├── integration.py # Gaussian integrals (Hermite/quad/MC)

@@ -1,5 +1,6 @@
 """Phase diagram visualization."""
 
+from collections.abc import Callable
 from typing import Any
 
 import numpy as np
@@ -8,6 +9,47 @@ from matplotlib.colors import Normalize
 from matplotlib.figure import Figure
 
 from statphys.vis.plotter import PlotStyle, Plotter
+
+
+def compute_phase_grid(
+    func: Callable[[float, float], dict[str, float]],
+    x_values: np.ndarray,
+    y_values: np.ndarray,
+    verbose: bool = False,
+) -> dict[str, np.ndarray]:
+    """
+    Evaluate order parameters on a 2D parameter grid.
+
+    Convenience helper to build the input for PhaseDiagramPlotter
+    from any solver: ``func(x, y)`` should return a dict of scalar
+    order parameters, e.g. {"m": ..., "q": ..., "eg": ...}.
+
+    Args:
+        func: Callable mapping (x, y) grid point to order parameter dict.
+            Failures (exceptions) are stored as NaN.
+        x_values: 1D array of x grid values (e.g. alpha).
+        y_values: 1D array of y grid values (e.g. lambda).
+        verbose: Print progress per row.
+
+    Returns:
+        Dict mapping order parameter names to 2D arrays of shape
+        (len(y_values), len(x_values)), suitable for plot_heatmap.
+
+    """
+    grids: dict[str, np.ndarray] = {}
+    for j, y in enumerate(y_values):
+        if verbose:
+            print(f"phase grid row {j + 1}/{len(y_values)} (y={y:.4g})")
+        for i, x in enumerate(x_values):
+            try:
+                out = func(float(x), float(y))
+            except Exception:
+                out = {}
+            for key, val in out.items():
+                if key not in grids:
+                    grids[key] = np.full((len(y_values), len(x_values)), np.nan)
+                grids[key][j, i] = val
+    return grids
 
 
 class PhaseDiagramPlotter(Plotter):
