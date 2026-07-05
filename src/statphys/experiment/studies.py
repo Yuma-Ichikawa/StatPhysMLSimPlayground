@@ -920,6 +920,14 @@ STUDIES = {
     "plateau": study_plateau,
 }
 
+# Frontier studies (modern paradigms: SFT, RLHF, weak-to-strong, model
+# collapse, ICL emergence) live in statphys.frontier but share this
+# registry so the CLI exposes everything uniformly. The import is safe:
+# statphys.frontier.studies has no top-level statphys imports.
+from statphys.frontier.studies import FRONTIER_STUDIES  # noqa: E402
+
+STUDIES.update(FRONTIER_STUDIES)
+
 
 def run_study(name: str, out_dir: str | Path = "phase_results", quick: bool = False) -> None:
     """

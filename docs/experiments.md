@@ -166,6 +166,12 @@ command line) bundles complete experiments that save JSON + figure:
 | `lazy_rich` | Lazy (NTK/kernel) vs. rich (feature-learning) regime via init scale (Chizat & Bach 2019) |
 | `lora` | LoRA-style low-rank fine-tuning adapter recovery |
 | `plateau` | Specialization-plateau escape in online committee learning with exact Saad-Solla order parameters; ln(d) escape-time scaling (§7 of order_parameters.md) |
+| `sft` | Fine-tuning as a two-teacher problem: catastrophic forgetting + transfer sign boundary in the (task similarity, alpha_ft) plane ([frontier.md](frontier.md) §1) |
+| `rlhf` | Reward-model overoptimization: Goodhart transition KL*(alpha_r) under best-of-n optimization ([frontier.md](frontier.md) §2) |
+| `weak_to_strong` | Weak supervisor -> strong student: PGR surface, when imitation becomes generalization ([frontier.md](frontier.md) §3) |
+| `collapse` | Model collapse under recursive synthetic data; real-data anchoring boundary ([frontier.md](frontier.md) §4) |
+| `icl` | Emergence of in-context learning vs pretraining task diversity ([frontier.md](frontier.md) §5) |
+| `taxonomy` | Teacher structure x paradigm cross table: every taxonomy teacher (random / structured / trained-on-real-images) through every frontier probe ([frontier.md](frontier.md) §6) |
 
 ### Command-line interface
 

@@ -46,6 +46,7 @@
 - **General teacher-student experiments**: theory-free numerical experiments for *any* PyTorch model, with structured teacher weights (sparse, low-rank, spiked, power-law, ...) and configurable input distributions — including **hidden-manifold** inputs for realistic data structure
 - **Physics order parameters for any architecture**: function-space magnetization, replica overlap, susceptibility, Binder cumulant, specialization index, subspace overlap, weight movement — locate phase transitions numerically even where no theory exists, with generalization error checked against exact formulas where available
 - **Realistic modern settings**: multi-index models (feature learning, subspace recovery), Gaussian-mixture classification (exactly verifiable Bayes error), lazy-vs-rich training regimes (Chizat & Bach), and LoRA-style low-rank fine-tuning — see [order_parameters.md](docs/order_parameters.md) for full derivations
+- **Frontier paradigms as physics experiments** (`statphys.frontier`): SFT forgetting/transfer phase diagrams, RLHF reward-model **overoptimization (Goodhart) transitions**, **weak-to-strong generalization** surfaces, **model collapse** under synthetic-data loops, and the **emergence of in-context learning** — the same order parameters, applied where no theory exists yet ([docs/frontier.md](docs/frontier.md))
 - **Numerical phase diagrams**: 2D (parameter × α) sweeps with contour-based boundary estimation, plus finite-size-scaling protocols
 - **Architecture zoo**: matched teacher-student pairs for linear / MLP / deep MLP / CNN / LSTM / attention / tiny-GPT
 - **Visualization**: publication-quality plots, phase portraits, overlap-matrix heatmaps, order-parameter dashboards, and GIF/MP4 animations
@@ -136,6 +137,23 @@ fine-tuning adapter recovery, and **specialization-plateau escape**
 with its ln(d) finite-size scaling (exact Saad-Solla order parameters,
 `statphys study plateau`).
 
+Five **frontier studies** push the same order parameters into paradigms
+with no exact theory yet (see [docs/frontier.md](docs/frontier.md)):
+
+```bash
+statphys study sft            # catastrophic forgetting + transfer sign boundary
+statphys study rlhf           # reward overoptimization (Goodhart) transition
+statphys study weak_to_strong # when a student surpasses its supervisor
+statphys study collapse       # model collapse under recursive synthetic data
+statphys study icl            # emergence of in-context learning vs task diversity
+statphys study taxonomy       # teacher structure x paradigm cross table
+```
+
+The frontier settings share a **teacher taxonomy** (random, structured
+— sparse / low-rank / spiked / heavy-tailed / binary — and networks
+*genuinely trained on real images*), so every paradigm can be swept
+across teacher structure with one command and managed as a table.
+
 ### Phenomenology gallery
 
 <p align="center">
@@ -191,6 +209,67 @@ with its ln(d) finite-size scaling (exact Saad-Solla order parameters,
   generalization error (right).
 </em></p>
 
+### Frontier gallery: beyond exact theory
+
+<p align="center">
+  <img src="assets/frontier/rlhf.png" alt="Reward-model overoptimization (Goodhart transition)" width="90%">
+</p>
+<p align="center"><em>
+  <strong>Reward overoptimization</strong> (<code>statphys study rlhf</code>): a proxy reward model
+  trained on pairwise preferences is optimized by a KL-regularized policy. The proxy reward
+  (dotted) keeps rising while the <em>true</em> reward (solid) peaks and turns over — Goodhart's
+  law as a phase boundary KL*(&alpha;<sub>r</sub>) that moves out as the reward model gets more data.
+</em></p>
+
+<p align="center">
+  <img src="assets/frontier/sft.png" alt="SFT forgetting and transfer phase diagram" width="90%">
+</p>
+<p align="center"><em>
+  <strong>SFT as a two-teacher problem</strong> (<code>statphys study sft</code>): fine-tuning on task B
+  erases task A unless the tasks are similar; the (similarity, &alpha;<sub>ft</sub>) plane shows the
+  forgetting phase diagram with the transfer-gain sign boundary in cyan.
+</em></p>
+
+<p align="center">
+  <img src="assets/frontier/weak_to_strong.png" alt="Weak-to-strong generalization" width="90%">
+</p>
+<p align="center"><em>
+  <strong>Weak-to-strong generalization</strong> (<code>statphys study weak_to_strong</code>): a strong
+  student trained only on a weak supervisor's labels consistently lands above the imitation
+  diagonal; the PGR surface shows where the gains concentrate.
+</em></p>
+
+<p align="center">
+  <img src="assets/frontier/taxonomy.png" alt="Teacher taxonomy x paradigm cross" width="90%">
+</p>
+<p align="center"><em>
+  <strong>Teacher taxonomy &times; paradigm</strong> (<code>statphys study taxonomy</code>): every teacher
+  (random / structured / trained-on-real-images) through every frontier probe. Teacher structure
+  moves every boundary — the Goodhart point spans a ~40&times; range across teacher ensembles.
+</em></p>
+
+<p align="center">
+  <img src="assets/frontier/collapse.png" alt="Model collapse under recursive synthetic data" width="90%">
+</p>
+<p align="center"><em>
+  <strong>Model collapse</strong> (<code>statphys study collapse</code>): retraining each generation on the
+  previous generation's outputs erodes the teacher overlap and shrinks the output variance;
+  a modest fraction of real data anchors the loop — the terminal overlap vs p<sub>real</sub>
+  (right) is the collapse boundary.
+</em></p>
+
+<!-- icl.png: regenerating; re-enable when the full sweep lands
+<p align="center">
+  <img src="assets/frontier/icl.png" alt="Emergence of in-context learning" width="90%">
+</p>
+<p align="center"><em>
+  <strong>Emergence of in-context learning</strong> (<code>statphys study icl</code>): a small causal
+  transformer pretrained on a finite pool of regression tasks memorizes when the pool is small,
+  then transitions to a genuine in-context regression algorithm (tracking the Bayes-optimal
+  ridge predictor) once task diversity crosses a threshold.
+</em></p>
+-->
+
 Verify the whole architecture zoo locally or as a Slurm job array:
 
 ```bash
@@ -213,7 +292,9 @@ Detailed documentation lives in [`docs/`](docs/README.md):
 | [Slurm Guide](docs/slurm.md) | Cluster execution: single jobs, arrays, verification CLI |
 | [Key Concepts](docs/concepts.md) | Order parameters, $E_g$ formulas, scaling conventions |
 | [Order Parameters (full reference)](docs/order_parameters.md) | Every order parameter/generalization-error formula, with derivations: multi-index subspace overlap, Gaussian-mixture Bayes error, lazy/rich weight movement, LoRA adapter recovery |
+| [Frontier Experiments](docs/frontier.md) | SFT, RLHF overoptimization, weak-to-strong, model collapse, ICL emergence — modern paradigms measured with physics order parameters |
 | [Glossary](docs/glossary.md) | Statistical-physics ↔ ML dictionary, for readers with no stat-mech background |
+| [Paper draft](paper/README.md) | *Phase Diagrams Without Solvable Models* — a paper built entirely from the frontier studies of this repository (LaTeX + figures) |
 | [Theory & Literature](docs/THEORY.md) | Feature ↔ paper map; exact vs heuristic status |
 | [Package Structure](docs/package_structure.md) | Source-tree layout and design conventions |
 
