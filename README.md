@@ -258,7 +258,6 @@ across teacher structure with one command and managed as a table.
   (right) is the collapse boundary.
 </em></p>
 
-<!-- icl.png: regenerating; re-enable when the full sweep lands
 <p align="center">
   <img src="assets/frontier/icl.png" alt="Emergence of in-context learning" width="90%">
 </p>
@@ -266,9 +265,8 @@ across teacher structure with one command and managed as a table.
   <strong>Emergence of in-context learning</strong> (<code>statphys study icl</code>): a small causal
   transformer pretrained on a finite pool of regression tasks memorizes when the pool is small,
   then transitions to a genuine in-context regression algorithm (tracking the Bayes-optimal
-  ridge predictor) once task diversity crosses a threshold.
+  ridge predictor) once task diversity crosses N<sub>tasks</sub> &asymp; 8&ndash;16.
 </em></p>
--->
 
 Verify the whole architecture zoo locally or as a Slurm job array:
 
