@@ -1,0 +1,61 @@
+\section{Discussion and limitations}
+\label{sec:discussion}
+
+\paragraph{What a positive result would mean.}
+A stable boundary through several ladder stages would not prove universality
+for language models.  It would show that a particular competition between
+positional displacement and latent semantic recovery survives named
+architectural interventions along named scaling paths.  That is a useful,
+mechanism-level statement and a sharper target for theory than an analogy to
+thermodynamics in general.
+
+\paragraph{What a negative result would mean.}
+Disappearance is equally informative.  Because stages are cumulative and
+instrumented identically, the first stage that loses functional order or
+finite-size evidence locates the assumption responsible for the solvable
+model's behavior.  A spectral outlier without semantic function, for example,
+would falsify spectral norm as a sufficient mechanism; functional order
+without a stable weight signature would instead favor reparameterization-
+invariant descriptions.
+
+\paragraph{Optimization is not a nuisance variable.}
+SGD is part of the fidelity gate, while Adam/AdamW and momentum are robustness
+interventions.  Curvature heterogeneity makes optimizer dependence plausible
+\citep{zhang2024adam}, but different outcomes do not automatically constitute
+distinct thermodynamic ensembles.  We report optimizer-resolved phase cards,
+gradient/update norms, and convergence failures, and require loss-matched
+comparisons before interpreting a boundary shift.
+
+\paragraph{Finite size and nonequilibrium training.}
+Our networks are finite, training is history dependent, and $M8$ is explicitly
+nonequilibrium.  Binder-like statistics and rate functions are diagnostics of
+replica distributions, not assertions of equilibrium Gibbs sampling.
+Critical exponents are reported only when stable across width windows and
+scaling choices.  Otherwise we use ``sharp crossover'' or ``candidate
+transition.''
+
+\paragraph{Synthetic data scope.}
+D0--D5 isolate controlled departures from Gaussianity but are not natural
+language.  The grammar is fixed length and the HMM has a small latent state;
+neither captures open-vocabulary semantics.  Their purpose is causal
+diagnosis: they reveal whether token correlation, discrete support, heavy
+tails, or hierarchical latent structure is sufficient to change the phase
+card.  Natural corpora are a later rung, not evidence retroactively attributed
+to these ensembles.
+
+\paragraph{Compute and multiplicity.}
+Architecture, data, scale, optimizer, initialization, and seed create many
+comparisons.  We distinguish a small set of registered headline hypotheses
+from exploratory diagnostics, retain all state points, and do not select a
+favorable width window after inspection.  Adaptive refinement creates a new
+manifest.  The price is substantial compute; the benefit is that negative and
+failed results remain auditable.
+
+\paragraph{Reproducibility boundary.}
+The repository records software and hardware provenance but cannot guarantee
+bitwise identity across ROCm/PyTorch kernels.  Deterministic algorithms are
+requested where available and scientific conclusions are based on
+hierarchical variation, not one bitwise trajectory.  Raw model weights are not
+required for paper reproduction; compact teacher states, trajectories,
+diagnostics, and checksums are retained.
+

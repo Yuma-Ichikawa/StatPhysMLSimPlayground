@@ -1,0 +1,58 @@
+[sweep]
+name = "architecture_heads_blocks"
+description = "M3--M6: heads, residual/norm, MLP, causal mask and RoPE."
+stage = "exploratory-architecture"
+replicas = 6
+root_seed = 271828
+
+[base]
+experiment = "architecture_robustness_heads_blocks"
+initialization = "random"
+tags = ["exploratory", "architecture-ladder", "multi-head"]
+
+[base.phase]
+architecture = "m3_multi_head"
+data = "d0_gaussian"
+semantic_mixture = 0.7
+input_noise = 0.5
+regularization = 0.0001
+temperature = 1.0
+
+[base.phase.scaling]
+d_model = 64
+sequence_length = 8
+n_heads = 4
+head_dim = 16
+n_layers = 1
+ff_dim = 256
+teacher_rank = 4
+sample_coefficient = 1.0
+
+[base.training]
+optimizer = "adamw"
+learning_rate = 0.001
+weight_decay = 0.0001
+batch_size = 256
+max_steps = 3000
+min_steps = 750
+checkpoint_interval = 300
+log_interval = 25
+patience = 600
+gradient_clip = 1.0
+precision = "bfloat16"
+
+[base.observables]
+heldout_size = 2048
+trajectory_interval = 25
+spectrum_interval = 300
+intervention_interval = 3000
+
+[base.seeds]
+root = 271828
+
+[grid]
+"phase.architecture" = ["m3_multi_head", "m4_residual_norm", "m5_mlp", "m6_causal_rope"]
+"phase.scaling.d_model" = [64, 128]
+"phase.scaling.sample_coefficient" = [0.5, 1.0, 2.0, 4.0]
+"phase.semantic_mixture" = [0.6, 0.7, 0.8]
+

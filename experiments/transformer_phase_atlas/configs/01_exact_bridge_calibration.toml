@@ -1,0 +1,60 @@
+[sweep]
+name = "exact_bridge_calibration"
+description = "Faithful finite-d reproduction of the NeurIPS 2024 bridge."
+stage = "calibration"
+replicas = 8
+root_seed = 240203902
+
+[base]
+experiment = "exact_positional_semantic_bridge"
+initialization = "positional"
+tags = ["calibration", "exact-bridge", "basin-resolved"]
+
+[base.phase]
+architecture = "m0_tied_low_rank"
+data = "d0_gaussian"
+semantic_mixture = 0.7
+input_noise = 0.5
+regularization = 0.01
+temperature = 1.0
+
+[base.phase.scaling]
+d_model = 128
+sequence_length = 2
+n_heads = 1
+head_dim = 1
+n_layers = 1
+teacher_rank = 1
+sample_coefficient = 1.0
+sample_exponent = 1.0
+
+[base.training]
+optimizer = "sgd"
+learning_rate = 0.15
+weight_decay = 0.01
+max_steps = 5000
+min_steps = 5000
+checkpoint_interval = 500
+log_interval = 25
+patience = 5001
+convergence_rtol = 1e-10
+precision = "float32"
+deterministic = true
+
+[base.observables]
+heldout_size = 8192
+trajectory_interval = 25
+spectrum_interval = 500
+intervention_interval = 5000
+save_predictions = false
+save_attention = false
+
+[base.seeds]
+root = 240203902
+
+[grid]
+"phase.scaling.d_model" = [64, 128, 256, 512]
+"phase.scaling.sample_coefficient" = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+"phase.semantic_mixture" = [0.5, 0.7, 0.9]
+"initialization" = ["positional", "semantic"]
+

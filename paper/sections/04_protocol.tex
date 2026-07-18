@@ -1,0 +1,84 @@
+\section{Observables and statistical protocol}
+\label{sec:protocol}
+
+\subsection{Functional order parameters}
+
+On a held-out probe set, define pure teacher functions
+$F_{\pos}=\bA\bX$ and $F_{\sem}=\bS^*(\bX)\bX$.  After centering and unit-norm
+normalizing the vectorized outputs and templates, we solve
+\begin{equation}
+  \widehat F = \mpos \widehat F_{\pos}
+             + \msem \widehat F_{\sem}+R
+  \label{eq:functional-decomposition}
+\end{equation}
+by least squares.  We report both partial coefficients, marginal overlaps,
+$\|R\|^2$, $R^2$, and the template condition number.  Coefficients are not
+clipped to $[-1,1]$: correlated templates can produce larger partial
+coefficients, in which case the conditioning diagnostic prevents an
+overconfident phase label.  A conservative classifier returns positional,
+semantic, coexistence, disordered/unresolved, or unresolved.
+
+\subsection{Mechanistic instrument panel}
+
+For each layer/head, effective QK and OV operators are retained with their
+singular spectra, stable ranks, leading gaps, and planted-subspace principal
+angles.  Head--latent overlap matrices are matched by a maximum-weight
+assignment, with permutation-invariant singular spectra, specialization
+entropy, effective head count, and dead/redundant-head fractions.  Attention
+geometry includes entropy, effective support, span, diagonal, previous-token,
+and sink mass.  Hidden states yield covariance participation ratio, effective
+rank, anisotropy, position correlations, and correlation length.  Removing
+attention or the MLP provides a causal loss delta rather than a purely
+correlational attribution.
+
+To test whether a spectral outlier precedes semantic order, QK diagnostics and
+$(\mpos,\msem)$ are sampled on the same registered trajectory.  Onset rules are
+fixed before confirmatory inspection and uncertainty is bootstrapped over
+teachers, data sets, and optimization replicas.  A lead/lag claim requires a
+confidence interval on the onset difference, not visual ordering of two
+curves.
+
+\subsection{Fluctuations and finite-size evidence}
+
+Let $m$ denote a scalar order parameter over independent replicas.  We measure
+\begin{align}
+  \chi_N &= N_{\rm eff}\left(\langle m^2\rangle-\langle m\rangle^2\right),\\
+  U_4 &= 1-\frac{\langle m^4\rangle}{3\langle m^2\rangle^2},\\
+  I_N(m)&=-N_{\rm eff}^{-1}\log P_N(m)+\mathrm{const}.
+\end{align}
+The effective size $N_{\rm eff}$ is specified by the scaling path rather than
+inferred from array length.  We retain $P_N(m)$ to diagnose bimodality and
+barrier growth, use matched forward/backward initialization scans for
+hysteresis, and locate Binder crossings by pairwise interpolation without
+silently discarding multiple crossings.
+
+For a continuous-transition candidate we test
+\begin{equation}
+  m(N,g)=N^{-\beta/\nu}
+  \mathcal F\!\left((g-g_c)N^{1/\nu}\right)
+  \label{eq:fss}
+\end{equation}
+using a declared exponent grid, interpolation-aware collapse score, and
+hierarchical bootstrap.  A distribution-shift peak or maximum slope proposes
+a region for refinement; it never alone upgrades the language from
+``crossover'' to ``transition.''
+
+\subsection{Replication, exploration, and artifacts}
+
+Randomness is split into teacher, quenched data distribution, initialization,
+minibatch order, and dropout streams derived from a root seed.  Estimation is
+nested in that order.  Treating optimization replicas as independent teachers
+would understate uncertainty, so confidence intervals use the same hierarchy.
+
+Exploratory manifests localize candidate regions and may propose a new,
+separately saved refinement manifest.  Confirmatory grids are content-addressed
+before their outcomes are aggregated.  Each run directory contains its exact
+specification, Git and accelerator provenance, status/attempt history,
+checksummed trajectories and diagnostics, teacher state, and a compact
+summary.  Missing and failed runs remain visible.  A run is claim-eligible only
+after schema, status, required-artifact, checksum, provenance, and finite-value
+validation.
+
+The five headline hypotheses, their observables, controls, and rejection
+conditions are machine-readable in \code{experiments/transformer\_phase\_atlas/claims.toml}.
+

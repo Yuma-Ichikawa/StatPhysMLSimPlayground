@@ -1,0 +1,58 @@
+[sweep]
+name = "architecture_norm"
+description = "Matched pre/post LayerNorm and residual-path comparison for H3."
+stage = "exploratory-architecture"
+replicas = 12
+root_seed = 2236067
+
+[base]
+experiment = "normalization_transition_character"
+initialization = "random"
+tags = ["exploratory", "architecture-ladder", "normalization", "hysteresis"]
+
+[base.phase]
+architecture = "m4_residual_norm"
+data = "d0_gaussian"
+positional_mixture = 0.3
+input_noise = 0.5
+regularization = 0.0001
+temperature = 1.0
+norm = "pre"
+
+[base.phase.scaling]
+d_model = 64
+sequence_length = 8
+n_heads = 4
+head_dim = 16
+n_layers = 1
+teacher_rank = 4
+sample_coefficient = 1.0
+
+[base.training]
+optimizer = "adamw"
+learning_rate = 0.001
+weight_decay = 0.0001
+batch_size = 256
+max_steps = 3000
+min_steps = 750
+checkpoint_interval = 300
+log_interval = 25
+patience = 600
+gradient_clip = 1.0
+precision = "bfloat16"
+
+[base.observables]
+heldout_size = 2048
+trajectory_interval = 25
+spectrum_interval = 100
+intervention_interval = 3000
+
+[base.seeds]
+root = 2236067
+
+[grid]
+"phase.norm" = ["pre", "post"]
+"phase.scaling.d_model" = [64, 128, 256]
+"phase.scaling.sample_coefficient" = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+"phase.positional_mixture" = [0.2, 0.3, 0.4]
+

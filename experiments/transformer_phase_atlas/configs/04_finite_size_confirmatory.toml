@@ -1,0 +1,58 @@
+[sweep]
+name = "finite_size_confirmatory"
+description = "Preregistered FSS sweep after exploratory boundary localization."
+stage = "confirmatory"
+replicas = 24
+root_seed = 1414213
+
+[base]
+experiment = "finite_size_universality_confirmatory"
+initialization = "random"
+tags = ["confirmatory", "finite-size-scaling", "registered-grid"]
+notes = "Grid frozen before confirmatory outcomes are inspected."
+
+[base.phase]
+architecture = "m3_multi_head"
+data = "d0_gaussian"
+semantic_mixture = 0.7
+input_noise = 0.5
+regularization = 0.0001
+temperature = 1.0
+
+[base.phase.scaling]
+d_model = 32
+sequence_length = 8
+n_heads = 4
+head_dim = 16
+n_layers = 1
+teacher_rank = 4
+sample_coefficient = 1.0
+sample_exponent = 1.0
+
+[base.training]
+optimizer = "adamw"
+learning_rate = 0.001
+weight_decay = 0.0001
+batch_size = 256
+max_steps = 4000
+min_steps = 1000
+checkpoint_interval = 400
+log_interval = 20
+patience = 800
+gradient_clip = 1.0
+precision = "bfloat16"
+
+[base.observables]
+heldout_size = 4096
+trajectory_interval = 20
+spectrum_interval = 400
+intervention_interval = 4000
+
+[base.seeds]
+root = 1414213
+
+[grid]
+"phase.scaling.d_model" = [32, 48, 64, 96, 128, 192, 256]
+"phase.scaling.sample_coefficient" = [0.75, 0.875, 1.0, 1.125, 1.25, 1.375, 1.5, 1.625, 1.75]
+"phase.semantic_mixture" = [0.65, 0.7, 0.75]
+

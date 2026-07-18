@@ -1,0 +1,103 @@
+\section{Controlled teacher--student system}
+\label{sec:model}
+
+\subsection{Exact bridge}
+
+Let $\bX\in\R^{L\times d}$ contain raw token rows
+$\bx_\ell\sim\mathcal N(0,\sigma^2 I_d)$.  The exact bridge uses $L=2$,
+$\sigma=0.5$, one planted semantic vector $\bq^*\sim\mathcal N(0,I_d)$,
+and antipodal position shifts
+\begin{equation}
+  \bp_1=\frac{\bm 1}{\sqrt d},\qquad
+  \bp_2=-\frac{\bm 1}{\sqrt d},\qquad
+  \widetilde{\bX}=\bX+\bP.
+\end{equation}
+The semantic teacher attention and fixed positional operator are
+\begin{align}
+  \bS^*(\bX)
+  &=\softmax_{\rm row}\!\left[
+    \frac{(\bX\bq^*)(\bX\bq^*)^\top}{d}\right],\\
+  \bA&=\begin{pmatrix}0.6&0.4\\0.4&0.6\end{pmatrix}.
+\end{align}
+For positional mixture $\omega\in[0,1]$, targets are generated from the
+\emph{raw} tokens,
+\begin{equation}
+  \bY(\bX)=\left[(1-\omega)\bS^*(\bX)+\omega\bA\right]\bX.
+  \label{eq:teacher}
+\end{equation}
+The $M0$ student sees shifted tokens and learns a tied rank-$r$ factor
+$\bQ\in\R^{d\times r}$,
+\begin{equation}
+  f_{\bQ}(\widetilde{\bX})=
+  \softmax_{\rm row}\!\left[
+    \frac{(\widetilde{\bX}\bQ)(\widetilde{\bX}\bQ)^\top}{d}\right]
+  \widetilde{\bX}.
+  \label{eq:student}
+\end{equation}
+For $n$ examples, the calibration objective exactly preserves the reference
+normalization,
+\begin{equation}
+  \mathcal L(\bQ)=\frac{1}{2d}\sum_{\mu=1}^{n}
+  \left\|f_{\bQ}(\widetilde{\bX}_\mu)-\bY_\mu\right\|_F^2
+  +\frac{\lambda}{2}\|\bQ\|_F^2,
+  \label{eq:loss}
+\end{equation}
+rather than a framework-default elementwise mean.  This distinction matters:
+dividing by $n$ would change the regularizer's relative strength as
+$n=\alpha d$ is varied.  We reproduce the reference informed semantic and
+positional initializations as well as random initialization.
+
+\subsection{Architecture ladder}
+
+Table~\ref{tab:architecture} defines cumulative stages.  Every stage exposes
+the same output, attention, representation, effective-QK, effective-OV, and
+ablation interface.  $M8$ adds a pointwise autoregressive readout and evaluates
+predictions at positions $1{:}L-1$ against targets $2{:}L$; a causal-invariance
+test ensures that changing future tokens cannot alter earlier outputs.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{@{}clp{8.2cm}@{}}
+\toprule
+Stage & Name & Increment relative to the preceding stage\\
+\midrule
+$M0$ & tied low rank & $Q=K$, rank $r$, identity value/output\\
+$M1$ & untied Q/K & independent low-rank query and key factors\\
+$M2$ & QKVO & trainable full-width single-head projections\\
+$M3$ & multi-head & $H$ heads with instrumented head identity\\
+$M4$ & residual + norm & residual stream and explicit pre/post LayerNorm\\
+$M5$ & MLP & pointwise GELU feed-forward branch\\
+$M6$ & causal + RoPE & causal mask and rotary position encoding\\
+$M7$ & depth & a configurable stack of $K$ blocks\\
+$M8$ & autoregressive & causal shifted prediction and trainable readout\\
+\bottomrule
+\end{tabular}
+\caption{Cumulative architecture ladder.  A stage comparison changes one
+mechanism family and holds the registered scaling path fixed.}
+\label{tab:architecture}
+\end{table}
+
+\subsection{Data ladder}
+
+The teacher task and seed hierarchy remain fixed while the raw-token ensemble
+changes: $D0$ isotropic Gaussian; $D1$ elliptical Gaussian with recorded
+covariance and condition number; $D2$ variance-normalized Student-$t$;
+$D3$ a quenched discrete codebook; $D4$ a latent Markov chain with recorded
+transition and emission matrices; and $D5$ a fixed-length binary probabilistic
+grammar with recorded rule tensor, leaf nonterminals, and emissions.  The
+teacher can be configured to act on raw or shifted tokens, but the exact bridge
+locks both the semantic logits and target values to raw tokens.
+
+\subsection{Thermodynamic scaling paths}
+
+A run records
+\begin{equation}
+  \mathcal P=(d,L,H,d_h,K,r,d_{\rm ff},V,n),\qquad
+  n=\lceil c d^\gamma\rceil .
+\end{equation}
+We separately test $\gamma=1$ and $\gamma=2$; fixed-$d_h$ and fixed-$H$ paths;
+and fixed versus growing depth.  Results from different paths are not pooled
+into one critical exponent.  Parameter count and effective sample ratio are
+saved for every point.
+

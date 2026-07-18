@@ -1,0 +1,55 @@
+schema_version = "1.0"
+
+[policy]
+exploratory_and_confirmatory_manifests_are_distinct = true
+minimum_independent_teachers = 4
+minimum_confirmatory_replicas = 12
+require_artifact_checksums = true
+require_finite_size_evidence_for_transition_language = true
+distribution_shift_peaks_are_candidate_locators_only = true
+
+[[claim]]
+id = "H1"
+statement = "The positional--semantic boundary survives Q/K untieing and full QKVO parameterization."
+manifests = ["01_exact_bridge_calibration.toml", "02_architecture_low.toml"]
+primary_observables = ["functional_m_pos", "functional_m_sem", "test_loss_per_sample"]
+required_controls = ["matched teacher/data seeds", "optimizer robustness", "at least three widths"]
+acceptance = "A boundary is localized independently by functional order and response, with directionally consistent finite-size drift in M0, M1, and M2."
+rejection = "No stable ordered regimes, or the candidate boundary disappears under seed/optimizer controls."
+
+[[claim]]
+id = "H2"
+statement = "Multi-head attention introduces coexistence or sequential head-specialization regimes."
+manifests = ["02_architecture_heads_blocks.toml"]
+primary_observables = ["specialization_strength", "specialization_entropy", "effective_heads", "head_latent_overlap"]
+required_controls = ["permutation-invariant matching", "dead/redundant head accounting", "head-count control"]
+acceptance = "Matched head--latent spectra show a reproducible intermediate coexistence or sequential specialization regime across widths."
+rejection = "Apparent specialization is removed by head permutation, redundancy, or seed averaging."
+
+[[claim]]
+id = "H3"
+statement = "Residual paths and normalization placement alter the character or location of the transition."
+manifests = ["02_architecture_norm.toml"]
+primary_observables = ["functional_m_pos", "functional_m_sem", "binder", "susceptibility", "hysteresis"]
+required_controls = ["pre-norm/post-norm matched seeds", "residual ablation", "optimizer-matched learning-rate scan"]
+acceptance = "Pre/post norm produces a reproducible boundary shift or different finite-size/bimodality signature under matched controls."
+rejection = "Differences vanish after optimization and scale controls."
+
+[[claim]]
+id = "H4"
+statement = "A QK spectral outlier precedes semantic functional order."
+manifests = ["02_architecture_low.toml", "02_architecture_heads_blocks.toml"]
+primary_observables = ["qk_outlier_ratio", "functional_m_sem", "probe_step"]
+required_controls = ["trajectory alignment", "bootstrap uncertainty on onset ordering", "random-matrix baseline"]
+acceptance = "The bootstrapped outlier-onset step is earlier than semantic-onset for a majority of independent teachers with a confidence interval excluding zero lag."
+rejection = "Onsets are simultaneous, reversed, or definition-dependent."
+
+[[claim]]
+id = "H5"
+statement = "Critical sample complexity changes between n proportional to d and n proportional to d squared along the architecture ladder."
+manifests = ["05_sample_complexity_paths.toml"]
+primary_observables = ["functional_m_pos", "functional_m_sem", "test_loss_per_sample"]
+required_controls = ["explicit scaling exponent", "matched parameter count report", "finite-size extrapolation"]
+acceptance = "Model comparison and collapse scores prefer distinct sample exponents for low-rank versus full-width stages with bootstrap separation."
+rejection = "Exponent estimates overlap or depend on the finite width window."
+

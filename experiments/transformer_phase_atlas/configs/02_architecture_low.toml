@@ -1,0 +1,55 @@
+[sweep]
+name = "architecture_low"
+description = "M0--M2: tied/untied low-rank and full QKVO."
+stage = "exploratory-architecture"
+replicas = 6
+root_seed = 314159
+
+[base]
+experiment = "architecture_robustness_low"
+initialization = "random"
+tags = ["exploratory", "architecture-ladder"]
+
+[base.phase]
+architecture = "m0_tied_low_rank"
+data = "d0_gaussian"
+semantic_mixture = 0.7
+input_noise = 0.5
+regularization = 0.0001
+temperature = 1.0
+
+[base.phase.scaling]
+d_model = 64
+sequence_length = 2
+n_heads = 1
+head_dim = 64
+n_layers = 1
+teacher_rank = 1
+sample_coefficient = 1.0
+
+[base.training]
+optimizer = "adamw"
+learning_rate = 0.003
+weight_decay = 0.0001
+max_steps = 2500
+min_steps = 500
+checkpoint_interval = 250
+log_interval = 25
+patience = 500
+precision = "float32"
+
+[base.observables]
+heldout_size = 4096
+trajectory_interval = 25
+spectrum_interval = 250
+intervention_interval = 2500
+
+[base.seeds]
+root = 314159
+
+[grid]
+"phase.architecture" = ["m0_tied_low_rank", "m1_untied_qk", "m2_qkvo"]
+"phase.scaling.d_model" = [64, 128, 256]
+"phase.scaling.sample_coefficient" = [0.5, 1.0, 1.5, 2.0, 3.0]
+"phase.semantic_mixture" = [0.6, 0.7, 0.8]
+

@@ -159,3 +159,9 @@ gpt_run.log
 new_studies.log
 scaling_rerun.log
 statphys_results/
+
+# Local Transformer-atlas runtime and generated Slurm control files
+.atlas-deps/
+atlas_manifests/
+slurm_logs/
+slurm_scripts/

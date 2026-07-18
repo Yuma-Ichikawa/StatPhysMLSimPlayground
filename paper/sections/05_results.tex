@@ -1,0 +1,74 @@
+\section{Registered experiments and results}
+\label{sec:results}
+
+The manuscript never substitutes illustrative numbers for missing runs.  All
+values in this section are TeX macros emitted by the checksum-validating
+aggregator.  The present aggregate contains \NumCompletedRuns{} completed runs
+and has status \emph{\ResultStatus}.
+
+\subsection{Fidelity gate: reproducing the exact bridge}
+
+Before interpreting any extension, we compare $M0/D0$ against the published
+finite-$d$ reference curves under the same $L=2$, $\sigma=0.5$,
+$\lambda=0.01$, summed loss, SGD step size, and informed basins.  The registered
+agreement statistic is \ExactBridgeAgreement.  The gate requires: exact target
+identity in unit tests; matching normalization and initial order parameters;
+and curve agreement within combined finite-seed uncertainty.  Failure of this
+gate blocks all architecture-level claims rather than being absorbed into a
+new hyperparameter choice.
+
+\subsection{Architecture robustness ($H1$--$H3$)}
+
+The primary boundary estimate is \PrimaryBoundary{} with registered interval
+\PrimaryBoundaryCI.  We compare boundary location and transition evidence
+across tied/untied low-rank and QKVO models before adding heads.  For $M3$, the
+phase label is supplemented by permutation-invariant head spectra so that a
+head-index swap cannot masquerade as a discontinuity.  $M4$ pre/post-norm
+experiments use matched seeds and residual interventions.  We report a shift
+only if it survives learning-rate and optimizer controls.
+
+\begin{figure}[t]
+  \centering
+  \IfFileExists{../assets/paper/architecture_ladder.png}{%
+    \includegraphics[width=\linewidth]{../assets/paper/architecture_ladder.png}%
+  }{\placeholderfigure{4.0cm}{Architecture-ladder results generated from the
+  registered aggregate.}}
+  \caption{\textbf{Architecture robustness of functional order.}  Panels share
+  the same probe templates and hierarchical uncertainty.  Head-level panels
+  are permutation invariant; missing state points remain marked rather than
+  interpolated.}
+  \label{fig:architecture-results}
+\end{figure}
+
+\subsection{Spectral chronology ($H4$)}
+
+The registered difference between QK-outlier onset and semantic functional
+onset is \OutlierLead{} optimizer steps, with interval \OutlierLeadCI.  This is
+reported as precedence only if the interval excludes zero under independent
+teacher resampling and remains stable to the predeclared outlier threshold.
+Otherwise the correct conclusion is simultaneous or unresolved onset.
+
+\subsection{Data ensembles and scaling paths ($H5$)}
+
+The $D0$--$D5$ comparison tests whether a boundary is preserved after matching
+second moments and then after deliberately breaking Gaussianity, continuity,
+and token independence.  D4/D5 hidden states permit conditional analyses that
+distinguish genuine semantic recovery from exploiting state persistence.
+
+The preferred finite-size exponent is \FSSExponent{} with interval
+\FSSExponentCI.  We do not combine $n\propto d$ and $n\propto d^2$ runs in one
+collapse.  Competing paths are compared by held-out collapse score and
+bootstrap stability over the same finite-width window.
+
+\begin{figure}[t]
+  \centering
+  \IfFileExists{../assets/paper/fss_collapse.png}{%
+    \includegraphics[width=\linewidth]{../assets/paper/fss_collapse.png}%
+  }{\placeholderfigure{4.0cm}{Finite-size collapse, Binder crossing, and
+  susceptibility panels generated from completed confirmatory runs.}}
+  \caption{\textbf{Finite-size evidence.}  A non-analytic transition claim
+  requires compatible Binder, susceptibility, distributional, and collapse
+  evidence.  Smooth finite-width changes are described as crossovers.}
+  \label{fig:fss-results}
+\end{figure}
+

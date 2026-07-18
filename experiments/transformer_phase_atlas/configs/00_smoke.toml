@@ -1,0 +1,59 @@
+[sweep]
+name = "atlas_smoke"
+description = "End-to-end M0 bridge smoke test across both informed basins."
+stage = "smoke"
+replicas = 2
+root_seed = 1729
+
+[base]
+experiment = "transformer_phase_atlas_smoke"
+initialization = "random"
+tags = ["exploratory", "smoke", "exact-bridge"]
+
+[base.phase]
+architecture = "m0_tied_low_rank"
+data = "d0_gaussian"
+semantic_mixture = 0.7
+input_noise = 0.5
+regularization = 0.01
+temperature = 1.0
+
+[base.phase.scaling]
+d_model = 32
+sequence_length = 2
+n_heads = 1
+head_dim = 1
+n_layers = 1
+teacher_rank = 1
+sample_coefficient = 1.0
+sample_exponent = 1.0
+
+[base.training]
+optimizer = "sgd"
+learning_rate = 0.15
+weight_decay = 0.01
+max_steps = 300
+min_steps = 300
+checkpoint_interval = 300
+log_interval = 10
+patience = 301
+convergence_rtol = 1e-9
+precision = "float32"
+deterministic = true
+
+[base.observables]
+heldout_size = 512
+trajectory_interval = 10
+spectrum_interval = 300
+intervention_interval = 300
+save_predictions = false
+save_attention = false
+
+[base.seeds]
+root = 1729
+
+[grid]
+"phase.scaling.sample_coefficient" = [0.5, 1.0, 2.0]
+"phase.semantic_mixture" = [0.5, 0.7, 0.9]
+"initialization" = ["random", "positional", "semantic"]
+

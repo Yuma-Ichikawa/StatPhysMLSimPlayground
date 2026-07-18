@@ -1,0 +1,61 @@
+\section{Reproducibility contract}
+\label{app:reproducibility}
+
+Each sweep starts from a TOML file and expands to a JSONL manifest whose rows
+are complete \code{RunSpec} objects.  The canonical JSON hash determines a
+16-character run identifier.  Slurm array index is merely a dispatcher and is
+not used as a scientific seed.  Site-specific container locations are supplied
+through an environment variable; source code and experiment definitions
+contain no user-home path.
+
+The artifact tree for one run contains \code{spec.json},
+\code{provenance.json}, \code{status.json}, \code{summary.json}, compressed
+trajectories and diagnostics, and the quenched teacher state.  Atomic rename
+prevents partially written JSON/NPZ files from appearing complete.  Manifest
+events are append-only under a file lock.  Aggregation verifies checksums and
+records missing, failed, preempted, and non-finite runs.
+
+\section{Claim--evidence--defense matrix}
+\label{app:claims}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}p{0.7cm}p{4.0cm}p{4.1cm}p{4.1cm}@{}}
+\toprule
+ID & Claim & Primary evidence & Main defense\\
+\midrule
+H1 & Boundary survives untied/full QKVO & functional order, response, size drift & matched seeds, optimizer control, $\ge3$ widths\\
+H2 & Heads add coexistence/specialization & matched head--latent spectrum & permutation invariance, dead/redundant heads\\
+H3 & Residual/norm changes transition & Binder, susceptibility, hysteresis & pre/post norm and residual ablations\\
+H4 & QK outlier precedes semantics & bootstrapped onset lag & aligned trajectories, threshold sensitivity\\
+H5 & Sample exponent changes by stage & separate $d$/$d^2$ collapse scores & fixed width window, parameter-count report\\
+\bottomrule
+\end{tabular}
+\caption{Human-readable summary of the machine-readable claim registry.}
+\end{table}
+
+\section{Exact fidelity tests}
+
+The bridge test suite checks: (i) positional rows are exactly
+$\pm\bm 1/\sqrt d$; (ii) teacher semantic logits and target values use raw
+tokens; (iii) $\omega=0$ and $1$ recover pure semantic and positional targets;
+(iv) all RNG streams leave global NumPy/PyTorch state unchanged; (v) semantic
+and positional informed factors equal their intended directions; and (vi) the
+summed loss matches a direct implementation.  Architecture tests additionally
+check diagnostic shapes, Q/K tieing, cumulative feature gates, RoPE parity,
+causal invariance, and $M8$ shifted pairs.
+
+\section{Full experiment inventory}
+
+\begin{itemize}[leftmargin=*]
+  \item \code{00\_smoke.toml}: end-to-end artifact and GPU gate.
+  \item \code{01\_exact\_bridge\_calibration.toml}: reference-model fidelity.
+  \item \code{02\_architecture\_*.toml}: $M0$--$M8$, including pre/post norm.
+  \item \code{03\_data\_ladder.toml}: $D0$--$D5$ distribution robustness.
+  \item \code{04\_finite\_size\_confirmatory.toml}: frozen confirmatory grid.
+  \item \code{05\_sample\_complexity\_paths.toml}: $n=cd^\gamma$ comparison.
+\end{itemize}
+
+All numerical tables and figure panels are generated from the aggregate
+artifact; the paper build does not read arbitrary run directories.

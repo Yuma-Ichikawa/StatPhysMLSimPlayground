@@ -1,0 +1,61 @@
+[sweep]
+name = "architecture_deep_ar"
+description = "M7--M8: depth and autoregressive objective."
+stage = "exploratory-architecture"
+replicas = 6
+root_seed = 1618033
+
+[base]
+experiment = "architecture_robustness_deep_ar"
+initialization = "random"
+tags = ["exploratory", "architecture-ladder", "deep", "autoregressive"]
+
+[base.phase]
+architecture = "m7_deep"
+data = "d5_grammar"
+semantic_mixture = 0.7
+input_noise = 0.5
+regularization = 0.0001
+temperature = 1.0
+causal = true
+
+[base.phase.scaling]
+d_model = 64
+sequence_length = 16
+n_heads = 4
+head_dim = 16
+n_layers = 4
+ff_dim = 256
+teacher_rank = 4
+vocabulary_size = 32
+sample_coefficient = 1.0
+
+[base.training]
+optimizer = "adamw"
+learning_rate = 0.001
+weight_decay = 0.0001
+batch_size = 128
+max_steps = 4000
+min_steps = 1000
+checkpoint_interval = 400
+log_interval = 25
+patience = 800
+gradient_clip = 1.0
+precision = "bfloat16"
+
+[base.observables]
+heldout_size = 2048
+trajectory_interval = 25
+spectrum_interval = 400
+intervention_interval = 4000
+
+[base.seeds]
+root = 1618033
+
+[grid]
+"phase.architecture" = ["m7_deep", "m8_autoregressive"]
+"phase.scaling.d_model" = [64, 128]
+"phase.scaling.n_layers" = [2, 4, 8]
+"phase.scaling.sample_coefficient" = [1.0, 2.0, 4.0]
+"phase.semantic_mixture" = [0.6, 0.7, 0.8]
+
