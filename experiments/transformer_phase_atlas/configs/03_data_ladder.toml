@@ -2,7 +2,7 @@
 name = "data_ladder"
 description = "D0--D5 distribution robustness at fixed M3 architecture."
 stage = "exploratory-data"
-replicas = 8
+replicas = 5
 root_seed = 577215
 
 [base]

@@ -1,26 +1,23 @@
 \documentclass[11pt]{article}
-
-\usepackage[letterpaper,margin=1in]{geometry}
-\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
-\usepackage{booktabs,multirow,array}
-\usepackage{graphicx}
+\usepackage[a4paper,margin=24mm]{geometry}
+\usepackage{amsmath,amssymb,bm}
+\IfFileExists{grfext.sty}{\usepackage{graphicx}}{\newcommand{\includegraphics}[2][]{\begingroup\pdfximage width 0.94\linewidth {##2}\pdfrefximage\pdflastximage\endgroup}}
+\usepackage{booktabs,tabularx,array}
 \usepackage{xcolor}
-\usepackage{microtype}
-\usepackage{enumitem}
+\usepackage{hyperref}
 \usepackage[numbers,sort&compress]{natbib}
-\usepackage[colorlinks=true,allcolors=blue!55!black]{hyperref}
-\usepackage[font=small,labelfont=bf]{caption}
-\usepackage{subcaption}
-
+\hypersetup{colorlinks=true,linkcolor=blue!55!black,citecolor=blue!55!black,urlcolor=blue!55!black}
+\setlength{\parindent}{1em}
+\setlength{\parskip}{0.25em}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 \input{macros}
-\IfFileExists{generated/results_macros.tex}{\input{generated/results_macros}}{\input{generated/results_fallback}}
-
-\title{\bf From a Solvable Attention Transition to Transformers:\
-An Empirical Phase Atlas across Architecture, Scale, and Data}
-\author{Yuma Ichikawa\\Fujitsu Limited / RIKEN\\
-\texttt{yuma.ichikawa@a.riken.jp}}
-\date{}
-
+\newif\ifresultsready
+\IfFileExists{generated/results.tex}{\resultsreadytrue\input{generated/results.tex}}{%
+  \resultsreadyfalse\input{generated/results_fallback.tex}}
+\title{Phase Continuation from Solvable Models to Modern Learning Systems:\\
+A Reproducible Numerical Thermodynamics of Transformers, Diffusion, Reinforcement Learning, and Collective Reasoning}
+\author{Yuma Ichikawa}
+\date{\today}
 \begin{document}
 \maketitle
 \input{sections/00_abstract}
@@ -31,10 +28,8 @@ An Empirical Phase Atlas across Architecture, Scale, and Data}
 \input{sections/05_results}
 \input{sections/06_discussion}
 \input{sections/07_conclusion}
-
-\bibliographystyle{unsrtnat}
-\bibliography{references}
-
 \appendix
 \input{sections/appendix}
+\bibliographystyle{plainnat}
+\bibliography{references}
 \end{document}

@@ -1,0 +1,73 @@
+schema_version = "1.0"
+
+[[claims]]
+id = "transformer_positional_semantic_transition"
+requirements = ["T-M0-M8", "T-D0-D5", "T-POSSEM", "P-FSS", "P-HYSTERESIS"]
+minimum_grade = "B"
+falsifier = "No size-dependent susceptibility growth or stable order-parameter competition."
+
+[[claims]]
+id = "head_specialization_transition"
+requirements = ["T-HEADS", "P-FSS"]
+minimum_grade = "B"
+falsifier = "Specialization is unchanged under H/r scaling and head interventions."
+
+[[claims]]
+id = "algorithmic_and_icl_phases"
+requirements = ["T-ATTN-MLP", "T-ICL", "T-COT"]
+minimum_grade = "B"
+falsifier = "Attention/MLP and context interventions do not alter functional overlap."
+
+[[claims]]
+id = "glassy_optimization"
+requirements = ["T-GLASS", "T-OPTIMIZER", "P-FDT"]
+minimum_grade = "B"
+falsifier = "Replica overlap remains unimodal and relaxation does not grow with size."
+
+[[claims]]
+id = "diffusion_speciation"
+requirements = ["D-ANCHOR", "D-GUIDANCE", "D-TRAJECTORY", "D-LOCALITY", "D-MEMORIZATION"]
+minimum_grade = "B"
+falsifier = "Guidance and locality changes produce only smooth finite-size-independent responses."
+
+[[claims]]
+id = "rl_goodhart_transition"
+requirements = ["R-ANCHOR", "R-ENTROPY-FLOW", "R-GOODHART", "R-ROLLOUT"]
+minimum_grade = "B"
+falsifier = "True/proxy return and occupancy overlap remain analytic under pressure scaling."
+
+[[claims]]
+id = "collective_reasoning_transition"
+requirements = ["M-ANCHOR", "M-DEBATE", "M-MINORITY", "M-INFLUENCE", "M-ROLES", "M-SCALING"]
+minimum_grade = "B"
+falsifier = "Matched-compute communication controls explain all collective gains."
+
+[[claims]]
+id = "cross_domain_continuation"
+requirements = ["X-DIFFUSION-LANGUAGE-RL", "X-DIFFUSION-POLICY-RL", "X-MULTIAGENT-RL", "X-MOE-MULTIAGENT", "C-MATCHED-LATENT"]
+minimum_grade = "C"
+falsifier = "Matched latent ensembles show no shared coordinate-level continuation."
+
+[[claims]]
+id = "trainable_neural_bridge"
+requirements = ["T-LEARNED-DECODER", "D-LEARNED-SCORE", "R-LEARNED-POLICY", "M-LEARNED-AGENTS"]
+minimum_grade = "B"
+falsifier = "No Tier B+ trainable endpoint preserves its anchor observables across six sizes."
+
+[[claims]]
+id = "assumption_nonadditivity"
+requirements = ["C-ASSUMPTION-PAIRS", "C-ASSUMPTION-GRAPH"]
+minimum_grade = "B"
+falsifier = "All 15 coordinate-pair deformations are additive within five-seed intervals."
+
+[[claims]]
+id = "renormalized_surrogate_predictivity"
+requirements = ["C-RENORMALIZED-SURROGATE", "C-MATCHED-LATENT"]
+minimum_grade = "B"
+falsifier = "The renormalized surrogate does not reduce held-out bridge or boundary error."
+
+[[claims]]
+id = "continuation_outcome_taxonomy"
+requirements = ["C-CRITICAL-WINDOW", "C-OUTCOME-ATLAS", "C-EVIDENCE-GRADES"]
+minimum_grade = "B"
+falsifier = "Registered response, multimodality, hysteresis, and threshold diagnostics cannot distinguish the seven outcome classes."

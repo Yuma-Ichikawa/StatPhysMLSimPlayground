@@ -1,0 +1,174 @@
+[study]
+name = "non_transformer_phase_continuation"
+description = "Diffusion, reinforcement learning, and multi-agent continuation"
+seeds = [104729, 130363, 155921, 181081, 206369]
+
+[[experiments]]
+domain = "diffusion"
+family = "anchor"
+variants = ["oracle", "topk", "finite_kde"]
+stage = "confirmatory"
+control_name = "forward_noise"
+controls = [0.15, 0.3, 0.5, 0.8, 1.2, 1.8, 2.6]
+sizes = [8, 16, 32, 64, 128, 256]
+parameters = { components = 8, n_probe = 1024, topk = 2 }
+
+[[experiments]]
+domain = "diffusion"
+family = "guidance"
+variants = ["unconditional", "cfg", "guided"]
+stage = "confirmatory"
+control_name = "guidance_scale"
+controls = [0.0, 0.5, 1.0, 2.0, 4.0, 8.0]
+sizes = [8, 16, 32, 64, 128, 256]
+parameters = { components = 8, n_probe = 1024 }
+
+[[experiments]]
+domain = "diffusion"
+family = "trajectory"
+variants = ["ancestral", "ddim", "corrector"]
+stage = "confirmatory"
+control_name = "guidance_scale"
+controls = [0.0, 0.5, 1.0, 2.0, 4.0]
+sizes = [8, 16, 32, 64, 128, 256]
+parameters = { components = 8, n_probe = 512, steps = 64 }
+
+[[experiments]]
+domain = "diffusion"
+family = "locality"
+variants = ["local", "banded", "global"]
+stage = "confirmatory"
+control_name = "range_fraction"
+controls = [0.01, 0.025, 0.05, 0.1, 0.2]
+sizes = [32, 64, 128, 256, 512, 1024]
+parameters = { n_probe = 256 }
+
+[[experiments]]
+domain = "diffusion"
+family = "memorization"
+variants = ["fresh", "mixed", "copied"]
+stage = "confirmatory"
+control_name = "copy_fraction"
+controls = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+sizes = [8, 16, 32, 64, 128, 256]
+parameters = { n_probe = 1024 }
+
+[[experiments]]
+domain = "reinforcement"
+family = "anchor"
+variants = ["oracle", "proxy", "regularized"]
+stage = "confirmatory"
+control_name = "optimization_pressure"
+controls = [0.0, 0.5, 1.0, 2.0, 4.0, 8.0]
+sizes = [8, 16, 32, 64, 128, 256]
+parameters = { actions = 4, action_groups = 2 }
+
+[[experiments]]
+domain = "reinforcement"
+family = "entropy_flow"
+variants = ["maximum_entropy", "annealed", "greedy"]
+stage = "confirmatory"
+control_name = "policy_temperature"
+controls = [0.02, 0.05, 0.1, 0.2, 0.4, 0.8]
+sizes = [8, 16, 32, 64, 128, 256]
+parameters = { actions = 4, worlds = 512 }
+
+[[experiments]]
+domain = "reinforcement"
+family = "goodhart"
+variants = ["proxy", "regularized", "oracle"]
+stage = "confirmatory"
+control_name = "proxy_pressure"
+controls = [0.0, 0.5, 1.0, 2.0, 4.0, 8.0]
+sizes = [8, 16, 32, 64, 128, 256]
+parameters = { actions = 4, worlds = 512 }
+
+[[experiments]]
+domain = "reinforcement"
+family = "rollout"
+variants = ["finite", "tree", "importance"]
+stage = "confirmatory"
+control_name = "rollout_budget_ratio"
+controls = [0.25, 0.5, 1.0, 2.0, 4.0]
+sizes = [8, 16, 32, 64, 128, 256]
+parameters = { actions = 4, worlds = 512, horizon = 64 }
+
+[[experiments]]
+domain = "reinforcement"
+family = "optimizer"
+variants = ["policy_gradient", "q_learning", "actor_critic"]
+stage = "confirmatory"
+control_name = "optimization_time"
+controls = [0.1, 0.25, 0.5, 1.0, 2.0]
+sizes = [8, 16, 32, 64, 128, 256]
+parameters = { actions = 4, worlds = 512 }
+
+[[experiments]]
+domain = "reinforcement"
+family = "preference"
+variants = ["bradley_terry", "dpo", "ppo"]
+stage = "confirmatory"
+control_name = "preference_load"
+controls = [0.25, 0.5, 1.0, 2.0, 4.0]
+sizes = [8, 16, 32, 64, 128, 256]
+parameters = { actions = 4, worlds = 512 }
+
+[[experiments]]
+domain = "multiagent"
+family = "anchor"
+variants = ["mean_field", "small_world", "heterogeneous"]
+stage = "confirmatory"
+control_name = "coupling"
+controls = [0.0, 0.25, 0.5, 0.75, 1.0, 1.5]
+sizes = [16, 32, 64, 128, 256, 512]
+parameters = { worlds = 512, steps = 24, intervention_steps = 8 }
+
+[[experiments]]
+domain = "multiagent"
+family = "debate"
+variants = ["no_communication", "one_way", "debate", "randomized"]
+stage = "confirmatory"
+control_name = "communication_strength"
+controls = [0.0, 0.25, 0.5, 1.0, 2.0]
+sizes = [16, 32, 64, 128, 256, 512]
+parameters = { worlds = 512, steps = 16 }
+
+[[experiments]]
+domain = "multiagent"
+family = "minority"
+variants = ["correct", "incorrect"]
+stage = "confirmatory"
+control_name = "committed_fraction"
+controls = [0.0, 0.02, 0.05, 0.1, 0.2, 0.3]
+sizes = [16, 32, 64, 128, 256, 512]
+parameters = { worlds = 512, steps = 16 }
+
+[[experiments]]
+domain = "multiagent"
+family = "influence"
+variants = ["small_world", "hierarchical", "complete"]
+stage = "confirmatory"
+control_name = "influence_strength"
+controls = [0.0, 0.25, 0.5, 1.0, 2.0]
+sizes = [16, 32, 64, 128, 256, 512]
+parameters = { worlds = 512, steps = 16 }
+
+[[experiments]]
+domain = "multiagent"
+family = "roles"
+variants = ["roles", "leader", "heterogeneous"]
+stage = "confirmatory"
+control_name = "coordination_strength"
+controls = [0.0, 0.25, 0.5, 1.0, 2.0]
+sizes = [16, 32, 64, 128, 256, 512]
+parameters = { worlds = 512, steps = 16 }
+
+[[experiments]]
+domain = "multiagent"
+family = "scaling"
+variants = ["small_world", "hierarchical", "complete"]
+stage = "confirmatory"
+control_name = "coupling"
+controls = [0.0, 0.25, 0.5, 1.0, 2.0]
+sizes = [16, 32, 64, 128, 256, 512]
+parameters = { worlds = 512, steps = 16 }

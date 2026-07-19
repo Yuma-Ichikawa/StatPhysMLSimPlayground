@@ -1,0 +1,474 @@
+schema_version = "1.0"
+source_documents = ["transformer_llm_thermodynamics", "phase_continuation"]
+
+[[requirements]]
+id = "T-M0-M8"
+domain = "transformer"
+family = "architecture"
+runner = "domains.transformer.architecture:run_architecture_ladder"
+metrics = ["teacher_student_overlap", "architecture_stage", "oracle_gap"]
+status = "implemented"
+
+[[requirements]]
+id = "T-D0-D5"
+domain = "transformer"
+family = "architecture"
+runner = "domains.transformer.architecture:run_architecture_ladder"
+metrics = ["generalization_error", "ood_generalization_error"]
+status = "implemented"
+
+[[requirements]]
+id = "T-SCALING"
+domain = "transformer"
+family = "long_context"
+runner = "domains.transformer.algorithms:run_transformer_algorithm"
+metrics = ["correlation_length", "critical_slowing_proxy"]
+status = "implemented"
+
+[[requirements]]
+id = "T-POSSEM"
+domain = "transformer"
+family = "architecture"
+runner = "domains.transformer.architecture:run_architecture_ladder"
+metrics = ["functional_m_pos", "functional_m_sem", "specialization_strength"]
+status = "implemented"
+
+[[requirements]]
+id = "T-HEADS"
+domain = "transformer"
+family = "heads"
+runner = "domains.transformer.algorithms:run_transformer_algorithm"
+metrics = ["head_specialization", "head_redundancy", "effective_heads"]
+status = "implemented"
+
+[[requirements]]
+id = "T-ATTN-MLP"
+domain = "transformer"
+family = "attention_mlp"
+runner = "domains.transformer.algorithms:run_transformer_algorithm"
+metrics = ["attention_success", "mlp_error", "intervention_response"]
+status = "implemented"
+
+[[requirements]]
+id = "T-ICL"
+domain = "transformer"
+family = "icl"
+runner = "domains.transformer.algorithms:run_transformer_algorithm"
+metrics = ["icl_alignment", "context_length", "ridge_error"]
+status = "implemented"
+
+[[requirements]]
+id = "T-LONG-CONTEXT"
+domain = "transformer"
+family = "long_context"
+runner = "domains.transformer.algorithms:run_transformer_algorithm"
+metrics = ["correlation_length", "context_participation_ratio"]
+status = "implemented"
+
+[[requirements]]
+id = "T-LORA"
+domain = "transformer"
+family = "lora"
+runner = "domains.transformer.algorithms:run_transformer_algorithm"
+metrics = ["subspace_recovery", "mean_principal_angle"]
+status = "implemented"
+
+[[requirements]]
+id = "T-GLASS"
+domain = "transformer"
+family = "glass"
+runner = "domains.transformer.algorithms:run_transformer_algorithm"
+metrics = ["replica_overlap", "barrier_proxy", "critical_slowing_proxy"]
+status = "implemented"
+
+[[requirements]]
+id = "T-OPTIMIZER"
+domain = "transformer"
+family = "optimizer"
+runner = "domains.transformer.algorithms:run_transformer_algorithm"
+metrics = ["hessian_condition", "gradient_noise_scale", "effective_temperature"]
+status = "implemented"
+
+[[requirements]]
+id = "T-DATA-BRIDGE"
+domain = "transformer"
+family = "data_bridge"
+runner = "domains.transformer.algorithms:run_transformer_algorithm"
+metrics = ["covariance_anisotropy", "representation_rank"]
+status = "implemented"
+
+[[requirements]]
+id = "T-COT"
+domain = "transformer"
+family = "cot"
+runner = "domains.transformer.algorithms:run_transformer_algorithm"
+metrics = ["state_tracking_accuracy", "scratchpad_gain"]
+status = "implemented"
+
+[[requirements]]
+id = "T-MOE"
+domain = "transformer"
+family = "moe"
+runner = "domains.transformer.systems:run_transformer_system"
+metrics = ["routing_specialization", "load_balance_entropy", "expert_utilization"]
+status = "implemented"
+
+[[requirements]]
+id = "T-RETRIEVAL"
+domain = "transformer"
+family = "retrieval"
+runner = "domains.transformer.systems:run_transformer_system"
+metrics = ["parametric_error", "retrieval_error", "memory_utilization"]
+status = "implemented"
+
+[[requirements]]
+id = "T-MULTIMODAL"
+domain = "transformer"
+family = "multimodal"
+runner = "domains.transformer.systems:run_transformer_system"
+metrics = ["cross_modal_alignment", "modality_collapse"]
+status = "implemented"
+
+[[requirements]]
+id = "T-COMPRESSION"
+domain = "transformer"
+family = "compression"
+runner = "domains.transformer.systems:run_transformer_system"
+metrics = ["compression_ratio", "functional_fidelity"]
+status = "implemented"
+
+[[requirements]]
+id = "T-LIFECYCLE"
+domain = "transformer"
+family = "lifecycle"
+runner = "domains.transformer.systems:run_transformer_system"
+metrics = ["stage_overlap", "preference_drift", "compression_drift"]
+status = "implemented"
+
+[[requirements]]
+id = "T-GENERATION"
+domain = "transformer"
+family = "generation"
+runner = "domains.transformer.algorithms:run_transformer_algorithm"
+metrics = ["generation_entropy", "memorization_fraction", "generation_temperature"]
+status = "implemented"
+
+[[requirements]]
+id = "T-DISCOVERY"
+domain = "transformer"
+family = "discovery"
+runner = "domains.transformer.systems:run_transformer_system"
+metrics = ["adjacent_js_left", "fisher_sensitivity", "change_point_score"]
+status = "implemented"
+
+[[requirements]]
+id = "P-FSS"
+domain = "transformer"
+family = "architecture"
+runner = "analysis.finite_size:susceptibility_peaks"
+metrics = ["susceptibility", "binder_cumulant"]
+status = "implemented"
+
+[[requirements]]
+id = "P-HYSTERESIS"
+domain = "transformer"
+family = "architecture"
+runner = "domains.transformer.architecture:run_architecture_ladder"
+metrics = ["order_parameter", "intervention_response"]
+status = "implemented"
+
+[[requirements]]
+id = "P-RATE-FUNCTION"
+domain = "transformer"
+family = "architecture"
+runner = "analysis.aggregate:aggregate_manifest"
+metrics = ["order_parameter_samples", "macrostate_entropy"]
+status = "implemented"
+
+[[requirements]]
+id = "P-FDT"
+domain = "transformer"
+family = "optimizer"
+runner = "domains.transformer.algorithms:run_transformer_algorithm"
+metrics = ["effective_temperature", "intervention_response"]
+status = "implemented"
+
+[[requirements]]
+id = "P-NESTED-SEEDS"
+domain = "transformer"
+family = "architecture"
+runner = "analysis.nested:nested_variance"
+metrics = ["between_seed_variance", "within_seed_variance"]
+status = "implemented"
+
+[[requirements]]
+id = "D-ANCHOR"
+domain = "diffusion"
+family = "anchor"
+runner = "domains.diffusion.anchor:run_diffusion"
+metrics = ["score_norm", "oracle_gap"]
+status = "implemented"
+
+[[requirements]]
+id = "D-GUIDANCE"
+domain = "diffusion"
+family = "guidance"
+runner = "domains.diffusion.dynamics:run_diffusion_program"
+metrics = ["semantic_speciation", "guidance_susceptibility"]
+status = "implemented"
+
+[[requirements]]
+id = "D-TRAJECTORY"
+domain = "diffusion"
+family = "trajectory"
+runner = "domains.diffusion.dynamics:run_diffusion_program"
+metrics = ["trajectory_commitment_time", "trajectory_replica_overlap"]
+status = "implemented"
+
+[[requirements]]
+id = "D-LOCALITY"
+domain = "diffusion"
+family = "locality"
+runner = "domains.diffusion.dynamics:run_diffusion_program"
+metrics = ["score_nonlocality", "distant_response"]
+status = "implemented"
+
+[[requirements]]
+id = "D-MEMORIZATION"
+domain = "diffusion"
+family = "memorization"
+runner = "domains.diffusion.dynamics:run_diffusion_program"
+metrics = ["memorization_fraction", "novelty_fraction"]
+status = "implemented"
+
+[[requirements]]
+id = "R-ANCHOR"
+domain = "reinforcement"
+family = "anchor"
+runner = "domains.reinforcement.anchor:run_reinforcement"
+metrics = ["true_return", "oracle_gap"]
+status = "implemented"
+
+[[requirements]]
+id = "R-ENTROPY-FLOW"
+domain = "reinforcement"
+family = "entropy_flow"
+runner = "domains.reinforcement.mdp:run_reinforcement_program"
+metrics = ["entropy_rate", "entropy_flow"]
+status = "implemented"
+
+[[requirements]]
+id = "R-GOODHART"
+domain = "reinforcement"
+family = "goodhart"
+runner = "domains.reinforcement.mdp:run_reinforcement_program"
+metrics = ["goodhart_gap", "proxy_return", "true_return"]
+status = "implemented"
+
+[[requirements]]
+id = "R-ROLLOUT"
+domain = "reinforcement"
+family = "rollout"
+runner = "domains.reinforcement.mdp:run_reinforcement_program"
+metrics = ["rollout_multiplicity", "occupancy_overlap"]
+status = "implemented"
+
+[[requirements]]
+id = "R-OPTIMIZER"
+domain = "reinforcement"
+family = "optimizer"
+runner = "domains.reinforcement.mdp:run_reinforcement_program"
+metrics = ["q_value_variance", "oracle_gap"]
+status = "implemented"
+
+[[requirements]]
+id = "R-PREFERENCE"
+domain = "reinforcement"
+family = "preference"
+runner = "domains.reinforcement.mdp:run_reinforcement_program"
+metrics = ["goodhart_gap", "policy_susceptibility"]
+status = "implemented"
+
+[[requirements]]
+id = "M-ANCHOR"
+domain = "multiagent"
+family = "anchor"
+runner = "domains.multiagent.anchor:run_multiagent"
+metrics = ["consensus", "oracle_gap"]
+status = "implemented"
+
+[[requirements]]
+id = "M-DEBATE"
+domain = "multiagent"
+family = "debate"
+runner = "domains.multiagent.programs:run_multiagent_program"
+metrics = ["collective_accuracy", "cooperation_gain"]
+status = "implemented"
+
+[[requirements]]
+id = "M-MINORITY"
+domain = "multiagent"
+family = "minority"
+runner = "domains.multiagent.programs:run_multiagent_program"
+metrics = ["critical_minority_fraction", "consensus"]
+status = "implemented"
+
+[[requirements]]
+id = "M-INFLUENCE"
+domain = "multiagent"
+family = "influence"
+runner = "domains.multiagent.programs:run_multiagent_program"
+metrics = ["influence_concentration", "error_reproduction_number"]
+status = "implemented"
+
+[[requirements]]
+id = "M-ROLES"
+domain = "multiagent"
+family = "roles"
+runner = "domains.multiagent.programs:run_multiagent_program"
+metrics = ["role_specialization", "effective_agents"]
+status = "implemented"
+
+[[requirements]]
+id = "M-SCALING"
+domain = "multiagent"
+family = "scaling"
+runner = "domains.multiagent.programs:run_multiagent_program"
+metrics = ["consensus", "polarization", "susceptibility"]
+status = "implemented"
+
+[[requirements]]
+id = "X-DIFFUSION-LANGUAGE-RL"
+domain = "cross_domain"
+family = "diffusion_language_rl"
+runner = "domains.cross_domain:run_cross_domain"
+metrics = ["matched_latent_recovery", "cross_domain_regret"]
+status = "implemented"
+
+[[requirements]]
+id = "X-DIFFUSION-POLICY-RL"
+domain = "cross_domain"
+family = "diffusion_policy_rl"
+runner = "domains.cross_domain:run_cross_domain"
+metrics = ["matched_latent_recovery", "replica_overlap"]
+status = "implemented"
+
+[[requirements]]
+id = "X-MULTIAGENT-RL"
+domain = "cross_domain"
+family = "multiagent_rl"
+runner = "domains.cross_domain:run_cross_domain"
+metrics = ["matched_latent_recovery", "generalization_response"]
+status = "implemented"
+
+[[requirements]]
+id = "X-MOE-MULTIAGENT"
+domain = "cross_domain"
+family = "moe_multiagent"
+runner = "domains.cross_domain:run_cross_domain"
+metrics = ["effective_multiplicity", "replica_overlap"]
+status = "implemented"
+
+[[requirements]]
+id = "C-COMMON-COORDINATES"
+domain = "cross_domain"
+family = "diffusion_language_rl"
+runner = "domains.common:common_coordinates"
+metrics = ["effective_multiplicity", "interaction_range", "macrostate_entropy"]
+status = "implemented"
+
+[[requirements]]
+id = "C-MATCHED-LATENT"
+domain = "cross_domain"
+family = "diffusion_policy_rl"
+runner = "domains.cross_domain:run_cross_domain"
+metrics = ["matched_latent_recovery", "information_load_ratio"]
+status = "implemented"
+
+[[requirements]]
+id = "C-ASSUMPTION-GRAPH"
+domain = "cross_domain"
+family = "multiagent_rl"
+runner = "analysis.coverage:validate_coverage"
+metrics = ["oracle_gap", "cross_domain_regret"]
+status = "implemented"
+
+[[requirements]]
+id = "C-EVIDENCE-GRADES"
+domain = "cross_domain"
+family = "moe_multiagent"
+runner = "analysis.evidence:grade_transition"
+metrics = ["susceptibility", "binder_cumulant"]
+status = "implemented"
+
+[[requirements]]
+id = "T-LEARNED-DECODER"
+domain = "transformer"
+family = "learned_decoder"
+runner = "domains.transformer.learned:run_learned_transformer"
+metrics = ["token_accuracy", "context_ablation_delta", "perplexity", "oracle_gap"]
+status = "implemented"
+tier = "B+"
+
+[[requirements]]
+id = "D-LEARNED-SCORE"
+domain = "diffusion"
+family = "learned_score"
+runner = "domains.diffusion.learned:run_learned_diffusion"
+metrics = ["semantic_accuracy", "denoising_error", "distant_response", "oracle_gap"]
+status = "implemented"
+tier = "B+"
+
+[[requirements]]
+id = "R-LEARNED-POLICY"
+domain = "reinforcement"
+family = "learned_policy"
+runner = "domains.reinforcement.learned:run_learned_policy"
+metrics = ["true_return", "proxy_return", "goodhart_gap", "policy_entropy"]
+status = "implemented"
+tier = "B+"
+
+[[requirements]]
+id = "M-LEARNED-AGENTS"
+domain = "multiagent"
+family = "learned_agents"
+runner = "domains.multiagent.learned:run_learned_agents"
+metrics = ["collective_accuracy", "consensus", "effective_agents", "global_flip_response"]
+status = "implemented"
+tier = "B+"
+
+[[requirements]]
+id = "C-ASSUMPTION-PAIRS"
+domain = "cross_domain"
+family = "assumption_pairs"
+runner = "domains.continuation:run_continuation_diagnostic"
+metrics = ["pair_interaction_delta", "additive_prediction_error"]
+status = "implemented"
+tier = "B"
+
+[[requirements]]
+id = "C-RENORMALIZED-SURROGATE"
+domain = "cross_domain"
+family = "renormalized_bridge"
+runner = "domains.continuation:run_continuation_diagnostic"
+metrics = ["bridge_error", "boundary_error", "calibration_residual"]
+status = "implemented"
+tier = "B"
+
+[[requirements]]
+id = "C-CRITICAL-WINDOW"
+domain = "cross_domain"
+family = "critical_window"
+runner = "domains.continuation:run_continuation_diagnostic"
+metrics = ["hysteresis_gap", "bimodality_coefficient", "relaxation_time"]
+status = "implemented"
+tier = "B"
+
+[[requirements]]
+id = "C-OUTCOME-ATLAS"
+domain = "cross_domain"
+family = "outcome_atlas"
+runner = "domains.continuation:run_continuation_diagnostic"
+metrics = ["continuation_distance", "mode_count", "threshold_separation"]
+status = "implemented"
+tier = "B"

@@ -1,48 +1,16 @@
-# From a Solvable Attention Transition to Transformers
+# Unified phase-continuation paper
 
-The manuscript is source-only: generated paper PDFs are intentionally not
-tracked.  The previous multi-paradigm draft is preserved at
-`archive/frontier_atlas.tex`.
+Numerical values are generated only from a strict complete aggregate with exactly five
+outer seeds per condition. The aggregate now spans ten suites, at least six sizes per
+confirmatory family, four realism tiers, and the complete assumption/outcome taxonomy.
 
-## Structure
+Generate the aggregate, all eleven error-bar figure files (including the eight registered
+main figures), and TeX macros before compiling:
 
-- `main.tex` — assembly and preamble
-- `macros.tex` — notation only
-- `sections/*.tex` — reorderable manuscript sections
-- `references.bib` — primary-source bibliography
-- `generated/results_fallback.tex` — non-numerical safe defaults
-- `generated/results_macros.tex` — generated only from a verified aggregate
-- `../assets/transformer_phase_atlas_schematic.png` — conceptual Figure 2
+    phase-continuation plot COMPLETE_AGGREGATE --output figures/generated
+    phase-continuation paper COMPLETE_AGGREGATE --output generated/results.tex
+    latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
 
-Figure 1 and all numerical macros are produced from checksum-valid completed
-runs.  The paper deliberately renders a placeholder when registered evidence
-is unavailable; do not hand-enter headline values.
-
-## Reproduce results
-
-From the repository root:
-
-```bash
-PYTHONPATH=src python -m statphys.atlas.cli manifest \
-  --config experiments/transformer_phase_atlas/configs/00_smoke.toml
-
-export STATPHYS_ATLAS_CONTAINER=/path/to/site-rocm-pytorch.sif
-PYTHONPATH=src python -m statphys.atlas.cli submit \
-  --manifest atlas_manifests/atlas_smoke.jsonl \
-  --output-root results/transformer_phase_atlas/smoke \
-  --cluster-config experiments/transformer_phase_atlas/cluster/mi300x.toml
-```
-
-The aggregate/plot commands emit tidy tables, paper figures, and
-`results_macros.tex`.  Site-specific container paths are provided by an
-environment variable and never written into experiment source.
-
-## Build locally
-
-```bash
-cd paper
-latexmk -pdf main.tex
-```
-
-The resulting `main.pdf` is a disposable build artifact and is ignored by
-Git.
+Without 'generated/results.tex', the manuscript deliberately compiles through the
+pending-results branch. Tier C protocols remain labeled incomplete even when every runnable
+Tier A--B+ job is complete.

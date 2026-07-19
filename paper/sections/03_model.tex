@@ -1,103 +1,84 @@
-\section{Controlled teacher--student system}
-\label{sec:model}
+\section{Phase-continuation framework}
 
-\subsection{Exact bridge}
+\subsection{Assumption graph and continuation path}
 
-Let $\bX\in\R^{L\times d}$ contain raw token rows
-$\bx_\ell\sim\mathcal N(0,\sigma^2 I_d)$.  The exact bridge uses $L=2$,
-$\sigma=0.5$, one planted semantic vector $\bq^*\sim\mathcal N(0,I_d)$,
-and antipodal position shifts
-\begin{equation}
-  \bp_1=\frac{\bm 1}{\sqrt d},\qquad
-  \bp_2=-\frac{\bm 1}{\sqrt d},\qquad
-  \widetilde{\bX}=\bX+\bP.
-\end{equation}
-The semantic teacher attention and fixed positional operator are
+A node in the assumption graph is
+\[
+  \mathcal{M}=(\mathcal{A},\mathcal{D},\mathcal{O},\mathcal{Q},\mathcal{U}),
+\]
+where \(\mathcal{A}\) is architecture or algorithm, \(\mathcal{D}\) the quenched
+ensemble, \(\mathcal{O}\) the objective, \(\mathcal{Q}\) the dynamics or inference
+rule, and \(\mathcal{U}\) the observable set. A directed edge changes one registered
+assumption. Continuation is supported when (i) the oracle semantics of \(\mathcal{U}\)
+are retained, (ii) adjacent distributions remain distinguishable but overlapping, and
+(iii) the inferred phase boundary moves continuously within uncertainty. Failure of any
+condition is recorded as a broken edge rather than hidden by redefining the order parameter.
+
+Every domain begins with an exact or finite oracle. Approximation layers are then added:
+finite samples, restricted interactions, learned scores or rewards, stochastic optimization,
+and finally system components. The code records the family and variant in a content-addressed
+\phasecard{} so two temperatures or two disorder ensembles cannot be conflated.
+
+\subsection{Common coordinates}
+
+For signed replica samples \(m_a\), system size \(N\), and macrostate probabilities
+\(p_k\), the core observables are
 \begin{align}
-  \bS^*(\bX)
-  &=\softmax_{\rm row}\!\left[
-    \frac{(\bX\bq^*)(\bX\bq^*)^\top}{d}\right],\\
-  \bA&=\begin{pmatrix}0.6&0.4\\0.4&0.6\end{pmatrix}.
+  \Order &= \mathbb{E}|m_a|, &
+  \Sus &= N\left(\mathbb{E}m_a^2-(\mathbb{E}m_a)^2\right),\\
+  \Binder &= 1-\frac{\mathbb{E}m_a^4}{3(\mathbb{E}m_a^2)^2}, &
+  \Eff &= \exp\left[-\sum_k p_k\log p_k\right].
 \end{align}
-For positional mixture $\omega\in[0,1]$, targets are generated from the
-\emph{raw} tokens,
-\begin{equation}
-  \bY(\bX)=\left[(1-\omega)\bS^*(\bX)+\omega\bA\right]\bX.
-  \label{eq:teacher}
-\end{equation}
-The $M0$ student sees shifted tokens and learns a tied rank-$r$ factor
-$\bQ\in\R^{d\times r}$,
-\begin{equation}
-  f_{\bQ}(\widetilde{\bX})=
-  \softmax_{\rm row}\!\left[
-    \frac{(\widetilde{\bX}\bQ)(\widetilde{\bX}\bQ)^\top}{d}\right]
-  \widetilde{\bX}.
-  \label{eq:student}
-\end{equation}
-For $n$ examples, the calibration objective exactly preserves the reference
-normalization,
-\begin{equation}
-  \mathcal L(\bQ)=\frac{1}{2d}\sum_{\mu=1}^{n}
-  \left\|f_{\bQ}(\widetilde{\bX}_\mu)-\bY_\mu\right\|_F^2
-  +\frac{\lambda}{2}\|\bQ\|_F^2,
-  \label{eq:loss}
-\end{equation}
-rather than a framework-default elementwise mean.  This distinction matters:
-dividing by $n$ would change the regularizer's relative strength as
-$n=\alpha d$ is varied.  We reproduce the reference informed semantic and
-positional initializations as well as random initialization.
+The macrostate entropy is \(S_{\rm macro}=\log \Eff\), while replica overlap is
+\(\Replica_{ab}=N^{-1}\sum_i z_i^{(a)}z_i^{(b)}\). Interaction range is defined
+operationally by a locality or ablation response. Generalization response is a finite
+difference of \(\Gen\) under a registered distribution shift. Information load is the
+number of independent latent constraints divided by the active degrees of freedom. These
+coordinates have domain-specific estimators but common semantics.
 
-\subsection{Architecture ladder}
+A histogram \(P_N(m)\) gives the empirical rate function
+\[
+  \Rate_N(m)=-N^{-1}\log P_N(m)+C_N.
+\]
+We retain the samples required to recompute \(P_N\), multimodality, and barriers rather
+than storing only means.
 
-Table~\ref{tab:architecture} defines cumulative stages.  Every stage exposes
-the same output, attention, representation, effective-QK, effective-OV, and
-ablation interface.  $M8$ adds a pointwise autoregressive readout and evaluates
-predictions at positions $1{:}L-1$ against targets $2{:}L$; a causal-invariance
-test ensures that changing future tokens cannot alter earlier outputs.
+\subsection{Three Transformer thermodynamic levels}
 
-\begin{table}[t]
-\centering
-\small
-\begin{tabular}{@{}clp{8.2cm}@{}}
-\toprule
-Stage & Name & Increment relative to the preceding stage\\
-\midrule
-$M0$ & tied low rank & $Q=K$, rank $r$, identity value/output\\
-$M1$ & untied Q/K & independent low-rank query and key factors\\
-$M2$ & QKVO & trainable full-width single-head projections\\
-$M3$ & multi-head & $H$ heads with instrumented head identity\\
-$M4$ & residual + norm & residual stream and explicit pre/post LayerNorm\\
-$M5$ & MLP & pointwise GELU feed-forward branch\\
-$M6$ & causal + RoPE & causal mask and rotary position encoding\\
-$M7$ & depth & a configurable stack of $K$ blocks\\
-$M8$ & autoregressive & causal shifted prediction and trainable readout\\
-\bottomrule
-\end{tabular}
-\caption{Cumulative architecture ladder.  A stage comparison changes one
-mechanism family and holds the registered scaling path fixed.}
-\label{tab:architecture}
-\end{table}
+We separate:
+\begin{enumerate}
+\item \emph{Training dynamics}: learning rate, gradient noise, Hessian spectrum, relaxation,
+and an effective fluctuation--response temperature.
+\item \emph{Representation and circuits}: attention scale, head and subspace overlaps,
+QK/OV spectra, representation rank, and intervention response.
+\item \emph{Generation}: sampling temperature, entropy, diversity, trajectory commitment,
+and memorization.
+\end{enumerate}
+No numerical axis is called simply temperature in the manifest.
 
-\subsection{Data ladder}
+\subsection{Transformer and data ladders}
 
-The teacher task and seed hierarchy remain fixed while the raw-token ensemble
-changes: $D0$ isotropic Gaussian; $D1$ elliptical Gaussian with recorded
-covariance and condition number; $D2$ variance-normalized Student-$t$;
-$D3$ a quenched discrete codebook; $D4$ a latent Markov chain with recorded
-transition and emission matrices; and $D5$ a fixed-length binary probabilistic
-grammar with recorded rule tensor, leaf nonterminals, and emissions.  The
-teacher can be configured to act on raw or shifted tokens, but the exact bridge
-locks both the semantic logits and target values to raw tokens.
+The architecture ladder is M0 tied rank-one; M1 untied Q/K; M2 QKVO; M3 multi-head; M4
+residual and normalization; M5 MLP; M6 causal masking and rotary position; M7 depth; and M8
+autoregressive generation. M0 forces teacher rank one even when a shared configuration
+contains a higher rank. The data ladder is D0 Gaussian, D1 elliptical, D2 heavy-tailed,
+D3 discrete codebook, D4 hidden Markov, and D5 grammar generated. Sample scaling follows
+\(T=c d^p\), with \(p\in\{1,1.25,1.5,1.75,2\}\), while context, heads, depth,
+vocabulary, rank, optimizer, and compute-fixed paths are separately registered.
 
-\subsection{Thermodynamic scaling paths}
+The principal Transformer orders are teacher--student, functional positional and semantic,
+head specialization, attention geometry, representation rank and anisotropy, algorithmic
+state, in-context task recovery, QK/OV spectral outliers, replica overlap, and lifecycle
+subspace drift.
 
-A run records
-\begin{equation}
-  \mathcal P=(d,L,H,d_h,K,r,d_{\rm ff},V,n),\qquad
-  n=\lceil c d^\gamma\rceil .
-\end{equation}
-We separately test $\gamma=1$ and $\gamma=2$; fixed-$d_h$ and fixed-$H$ paths;
-and fixed versus growing depth.  Results from different paths are not pooled
-into one critical exponent.  Parameter count and effective sample ratio are
-saved for every point.
+\subsection{Domain-specific phase cubes}
 
+For diffusion the axes are score approximation, noise/guidance, locality, sample support,
+and reverse-time algorithm. Orders include semantic speciation, posterior multiplicity,
+score nonlocality, memorization distance, trajectory commitment, and trajectory overlap.
+For RL the axes are oracle versus proxy reward, policy entropy, rollout budget, optimizer,
+and preference load. Orders include true/proxy return, occupancy overlap, entropy rate,
+rollout multiplicity, and Goodhart gap. For multi-agent systems the axes are graph,
+communication protocol, reliability heterogeneity, committed fraction, and population
+size. Orders include consensus, polarization, correctness, influence concentration,
+effective agent count, error reproduction number, and role specialization.

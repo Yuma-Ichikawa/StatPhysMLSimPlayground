@@ -1,55 +1,38 @@
-\section{Related work}
-\label{sec:related}
+\section{Relation to prior work}
 
-\paragraph{High-dimensional learning theory.}
-Teacher--student models, replica calculations, approximate message passing,
-and dynamical mean-field theory reduce high-dimensional learning to a small
-set of overlaps and response functions \citep{gardner1989three,engel2001statistical,zdeborova2016statistical}.
-Finite-size scaling then connects numerical systems to an asymptotic critical
-point \citep{fisher1972scaling,binder1981finite,barber1983finite,privman1984universal}.
-We import this evidentiary standard, but do not assume that a generic
-Transformer has an equilibrium free energy or that every sharp training event
-has a thermodynamic limit.
+\paragraph{Statistical mechanics of learning.}
+Replica, cavity, and state-evolution methods connect generalization to overlaps and free
+energies in high-dimensional inference \citep{mezard1987spin,zdeborova2016statistical}.
+Neural tangent and mean-field limits provide different controlled endpoints
+\citep{jacot2018neural}. Our focus is numerical continuation between endpoints rather than
+a claim that one asymptotic theory describes every model. Binder cumulants and finite-size
+crossings are borrowed from lattice practice \citep{binder1981critical}, but are accompanied
+by correction-to-scaling and crossover checks.
 
-\paragraph{Solvable attention models.}
-The direct foundation is the positional--semantic transition of
-\citet{cui2024phase}, whose released code we use as an independent fidelity
-oracle \citep{cui2024phasecode}.  Deep tied low-rank attention and sequence
-multi-index models exhibit Bayes/AMP thresholds and sequential layer learning
-\citep{troiani2025fundamental}; attention-indexed models extend the
-Bayes-optimal perspective \citep{boncoraglio2025bayes}.  These results concern
-stylized tied or otherwise structured operators.  In particular, the
-attention-indexed result is not a published theory of QK spectral outliers;
-spectral precedence is a hypothesis tested here, not a fact attributed to
-that work.  Recent analyses of multi-head specialization
-\citep{sagitova2026specialization}, LoRA in a solvable attention model
-\citep{duranthon2026lora}, and chain-of-thought state tracking
-\citep{forner2026learning} are informative but, as of this writing, the cited
-versions are preprints and their assumptions delimit our comparisons.
+\paragraph{Scaling and emergence in language models.}
+Empirical scaling laws relate loss to model, data, and compute
+\citep{kaplan2020scaling,hoffmann2022training}. In-context learning has been interpreted
+as implicit regression or optimization \citep{akyurek2023learning,vonoswald2023transformers}.
+Mechanistic work identifies attention heads and circuits with specialized functions
+\citep{elhage2021mathematical}. These results motivate our functional overlaps, head
+symmetry diagnostics, and context-length scaling, but do not by themselves establish a
+thermodynamic transition.
 
-\paragraph{Mechanisms and algorithmic phases.}
-Linear attention admits asymptotic accounts of in-context regression
-\citep{lu2025asymptotic}.  Markov-mixture training supports competing
-retrieval and inference algorithms \citep{park2025competition}, while small
-Transformers can implement distinct counting circuits
-\citep{behrens2025counting}.  Mean-field token dynamics through attention
-depth concerns forward representation evolution rather than learned-weight
-dynamics \citep{rigollet2025meanfield}; we use it to motivate representation
-observables, not as a training theory.
+\paragraph{Modern system ingredients.}
+Low-rank adaptation \citep{hu2022lora}, sparse expert routing
+\citep{shazeer2017outrageously,fedus2022switch}, retrieval augmentation
+\citep{lewis2020retrieval}, and multimodal contrastive learning
+\citep{radford2021learning} introduce new ranks, occupancies, and multiplicities.
+Compression and quantized adaptation can alter those quantities after training
+\citep{dettmers2023qlora}. We treat these as lifecycle deformations of one registered
+order-parameter system.
 
-\paragraph{Optimization, scaling, and candidate transitions.}
-$\mu$P stabilizes many width-dependent hyperparameters and motivates
-declaring a scaling parameterization \citep{yang2021tensorprograms}.
-Blockwise Hessian heterogeneity helps explain why Adam can outperform a single
-global-rate SGD update in Transformers \citep{zhang2024adam}; it does not by
-itself establish optimizer ``thermodynamic non-equivalence.''  We therefore
-treat optimizer dependence as a robustness control.  Neural thermodynamic
-laws have been proposed under a river--valley fast--slow approximation, with
-limited GPT-2-small consistency checks \citep{liu2025neural}; our claims do not
-inherit those assumptions.  Output-distribution distances can locate abrupt
-changes \citep{arnold2024phase}, but a Jensen--Shannon peak is only a
-candidate locator until order parameters and finite-size tests agree.
-Likewise, discontinuous evaluation metrics can manufacture apparent
-emergence \citep{schaeffer2023mirage}; all primary observables here are
-continuous and their raw distributions are retained.
-
+\paragraph{Diffusion, control, and collective reasoning.}
+Denoising diffusion and score-based models define a noise-indexed family of distributions
+\citep{ho2020denoising,song2021score}; classifier-free guidance supplies a response
+intervention \citep{ho2022classifierfree}. Maximum-entropy control and preference-based
+learning provide analogous policy-level controls
+\citep{sutton2018reinforcement,christiano2017deep}. Debate and communication protocols
+motivate controlled multi-agent interventions \citep{irving2018ai}. Our cross-domain tests
+ask whether shared coordinates persist under matched latent ensembles, not whether these
+algorithms are literally the same physical system.

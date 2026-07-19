@@ -1,0 +1,15 @@
+[study]
+name = "learned_transformer_continuation"
+description = "Tier B+ trainable local, attention, and causal decoder bridge"
+seeds = [104729, 130363, 155921, 181081, 206369]
+uncertainty = "two-sided 95% Student-t interval across five full-pipeline seeds"
+
+[[experiments]]
+domain = "transformer"
+family = "learned_decoder"
+variants = ["linear", "attention", "decoder"]
+stage = "confirmatory"
+control_name = "token_corruption"
+controls = [0.0, 0.08, 0.16, 0.24, 0.32, 0.40, 0.48]
+sizes = [16, 24, 32, 48, 64, 96]
+parameters = { fidelity_tier = "B+", vocabulary = 16, sequence_length = 12, train_examples = 256, n_probe = 256, steps = 64, learning_rate = 0.003, ood_shift = 0.15 }

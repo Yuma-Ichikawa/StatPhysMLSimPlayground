@@ -1,0 +1,15 @@
+[slurm]
+partition = ""
+account = ""
+qos = ""
+constraint = ""
+gpus_per_task = 0
+cpus_per_task = 4
+memory = "16G"
+time_limit = "08:00:00"
+max_parallel = 32
+tasks_per_array = 4
+python = "python3"
+modules = []
+setup = []
+extra_sbatch = []

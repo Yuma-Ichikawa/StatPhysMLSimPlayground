@@ -1,26 +1,20 @@
 \begin{abstract}
-A solvable model of dot-product attention exhibits a transition between
-positional and semantic solutions, but it is unknown which parts of this
-phenomenon survive the ingredients that distinguish a Transformer from the
-solvable model.  We turn this gap into a controlled numerical program.  We
-first reproduce the exact two-token, tied low-rank teacher--student bridge,
-then add one ingredient at a time: untied queries and keys, trainable
-QKVO projections, multiple heads, residual paths and normalization, an MLP,
-causality and rotary position embeddings, depth, and an autoregressive
-objective.  Orthogonally, we replace isotropic Gaussian tokens by elliptical,
-heavy-tailed, codebook, hidden-Markov, and grammar-generated sequences.  A
-common instrument panel measures functional positional/semantic order,
-permutation-invariant head specialization, QK/OV spectra, representation
-geometry, interventions, replica overlaps, susceptibilities, Binder
-cumulants, and finite-size collapse.  Every run is an immutable,
-content-addressed unit with independent teacher, data, initialization,
-minibatch, and dropout seeds; exploratory and confirmatory manifests are
-separate.  At manuscript generation time the registered experiment status is
-\emph{\ResultStatus} (\NumCompletedRuns{} completed runs).  This design makes
-three outcomes scientifically useful: a universal boundary would identify a
-robust macroscopic mechanism, systematic drift would delimit the solvable
-theory's domain, and disappearance would locate the architectural ingredient
-that destroys the transition.  We release the complete implementation,
-Slurm workflow, raw-data contract, and claim-level statistical tests.
+We formulate a single numerical research program for the thermodynamics of modern learning
+systems. The organizing principle is \emph{phase continuation}: begin with a model whose
+oracle, symmetry, or state evolution is controlled, then add architectural and algorithmic
+ingredients one at a time while retaining matched latent structure and common observables.
+The program joins a Transformer ladder M0--M8 and data ladder D0--D5 to diffusion models,
+reinforcement learning, multi-agent deliberation, mixture-of-experts routing, retrieval,
+multimodal alignment, and compression. It deliberately distinguishes optimization
+temperature, attention temperature, diffusion noise, policy entropy, and generation
+temperature. Across domains we measure recovery, specialization, effective multiplicity,
+interaction range, macrostate entropy, replica overlap, generalization response, and
+information load. Claims require exactly \NSeeds{} outer seeds, nested quenched/annealed
+uncertainty, six or more sizes, susceptibility and Binder diagnostics, hysteresis controls,
+and explicit finite-size corrections. A machine-readable coverage registry links every
+claim to a runner, configuration, observable, and falsifier. The accompanying implementation
+therefore serves both as a paper and as an auditable protocol: numerical values enter the
+manuscript only after all five replicas are complete. We do not assume that the four domains
+share a universality class; the test is whether phase structure continues under controlled
+deformation, and where that continuation fails.
 \end{abstract}
-

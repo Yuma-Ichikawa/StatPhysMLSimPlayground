@@ -1,0 +1,137 @@
+[study]
+name = "transformer_phase_atlas_full"
+description = "M0-M8, D0-D5, finite-size, symmetry, algorithm, and lifecycle programs"
+seeds = [104729, 130363, 155921, 181081, 206369]
+uncertainty = "outer-seed Student-t interval, df=4"
+
+[[experiments]]
+domain = "transformer"
+family = "architecture"
+variants = ["m0", "m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8"]
+stage = "confirmatory"
+control_name = "sample_exponent"
+controls = [1.0, 1.25, 1.5, 1.75, 2.0]
+sizes = [64, 128, 256, 512, 1024, 2048]
+parameters = { teacher_rank = 4, n_probe = 512, semantic_mixture = 0.5 }
+parameter_grid = { data_stage = ["d0", "d1", "d2", "d3", "d4", "d5"] }
+
+[[experiments]]
+domain = "transformer"
+family = "architecture"
+variants = ["m0", "m3", "m7"]
+stage = "confirmatory"
+control_name = "semantic_mixture"
+controls = [0.0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9]
+sizes = [64, 128, 256, 512, 1024, 2048]
+parameters = { teacher_rank = 4, n_probe = 1024, data_stage = "d0", sample_coefficient = 1.0 }
+
+[[experiments]]
+domain = "transformer"
+family = "architecture"
+variants = ["m3", "m7"]
+stage = "hysteresis"
+control_name = "semantic_mixture"
+controls = [0.25, 0.325, 0.4, 0.475, 0.55, 0.625, 0.7]
+sizes = [64, 128, 256, 512, 1024, 2048]
+parameters = { teacher_rank = 4, n_probe = 1024, data_stage = "d0" }
+parameter_grid = { scan_direction = ["up", "down"] }
+
+[[experiments]]
+domain = "transformer"
+family = "heads"
+variants = ["tied", "untied", "qkvo", "multihead"]
+stage = "confirmatory"
+control_name = "head_rank_ratio"
+controls = [0.25, 0.5, 1.0, 2.0, 4.0]
+sizes = [64, 128, 256, 512, 1024, 2048]
+parameters = { teacher_rank = 4, n_probe = 512 }
+
+[[experiments]]
+domain = "transformer"
+family = "attention_mlp"
+variants = ["attention_only", "mlp_only", "hybrid", "ablated_attention"]
+stage = "confirmatory"
+control_name = "attention_temperature"
+controls = [0.1, 0.2, 0.4, 0.8, 1.6]
+sizes = [32, 64, 128, 256, 512, 1024]
+parameters = { sequence_length = 32, n_probe = 512 }
+
+[[experiments]]
+domain = "transformer"
+family = "icl"
+variants = ["ridge", "finite_pool", "no_context"]
+stage = "confirmatory"
+control_name = "context_ratio"
+controls = [0.25, 0.5, 1.0, 2.0, 4.0]
+sizes = [16, 24, 32, 40, 48, 64]
+parameters = { n_probe = 256, task_pool = 32 }
+
+[[experiments]]
+domain = "transformer"
+family = "long_context"
+variants = ["depth2", "depth4", "depth8", "rope8"]
+stage = "confirmatory"
+control_name = "correlation_fraction"
+controls = [0.01, 0.025, 0.05, 0.1, 0.2]
+sizes = [128, 256, 512, 1024, 2048, 4096]
+parameters = { n_probe = 512 }
+
+[[experiments]]
+domain = "transformer"
+family = "lora"
+variants = ["rank1", "rank2", "rank4", "rank8", "rank16"]
+stage = "confirmatory"
+control_name = "rank_fraction"
+controls = [0.0625, 0.125, 0.25, 0.5, 1.0]
+sizes = [64, 128, 256, 512, 1024, 2048]
+parameters = { teacher_rank = 16, n_probe = 512 }
+
+[[experiments]]
+domain = "transformer"
+family = "glass"
+variants = ["random_init", "warm_start", "annealed"]
+stage = "confirmatory"
+control_name = "inverse_temperature"
+controls = [0.25, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0]
+sizes = [64, 128, 256, 512, 1024, 2048]
+parameters = { replicas = 128 }
+
+[[experiments]]
+domain = "transformer"
+family = "optimizer"
+variants = ["sgd", "momentum", "adam", "adamw"]
+stage = "confirmatory"
+control_name = "learning_rate"
+controls = [0.001, 0.003, 0.01, 0.03, 0.1]
+sizes = [64, 128, 256, 512, 1024, 2048]
+parameters = { steps = 500, gradient_noise = 0.02 }
+
+[[experiments]]
+domain = "transformer"
+family = "data_bridge"
+variants = ["d0", "d1", "d2", "d3", "d4", "d5"]
+stage = "confirmatory"
+control_name = "sample_exponent"
+controls = [1.0, 1.25, 1.5, 1.75, 2.0]
+sizes = [32, 64, 96, 128, 160, 192]
+parameters = { n_probe = 512, max_samples = 4096 }
+
+[[experiments]]
+domain = "transformer"
+family = "cot"
+variants = ["direct", "state_tracking", "scratchpad"]
+stage = "confirmatory"
+control_name = "observation_flip"
+controls = [0.05, 0.1, 0.2, 0.3, 0.4]
+sizes = [8, 16, 32, 64, 128, 256]
+parameters = { worlds = 512 }
+
+[[experiments]]
+domain = "transformer"
+family = "generation"
+variants = ["ancestral", "topk", "nucleus"]
+stage = "confirmatory"
+control_name = "generation_temperature"
+controls = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
+sizes = [128, 256, 512, 1024, 2048, 4096]
+parameters = { n_probe = 2048 }

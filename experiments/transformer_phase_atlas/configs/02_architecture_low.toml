@@ -2,7 +2,7 @@
 name = "architecture_low"
 description = "M0--M2: tied/untied low-rank and full QKVO."
 stage = "exploratory-architecture"
-replicas = 6
+replicas = 5
 root_seed = 314159
 
 [base]

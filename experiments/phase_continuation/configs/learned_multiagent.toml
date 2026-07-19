@@ -1,0 +1,15 @@
+[study]
+name = "learned_multiagent_continuation"
+description = "Tier B+ independent, message-passing, and attention-based neural populations"
+seeds = [104729, 130363, 155921, 181081, 206369]
+uncertainty = "two-sided 95% Student-t interval across five full-pipeline seeds"
+
+[[experiments]]
+domain = "multiagent"
+family = "learned_agents"
+variants = ["independent", "message_passing", "attention_pool"]
+stage = "confirmatory"
+control_name = "communication_dropout"
+controls = [0.00, 0.15, 0.30, 0.45, 0.60, 0.75, 0.90]
+sizes = [8, 16, 24, 32, 48, 64]
+parameters = { fidelity_tier = "B+", model_width = 32, worlds = 256, n_probe = 256, steps = 72, individual_weight = 0.2, learning_rate = 0.003 }

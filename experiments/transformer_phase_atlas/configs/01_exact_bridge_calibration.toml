@@ -2,7 +2,7 @@
 name = "exact_bridge_calibration"
 description = "Faithful finite-d reproduction of the NeurIPS 2024 bridge."
 stage = "calibration"
-replicas = 8
+replicas = 5
 root_seed = 240203902
 
 [base]

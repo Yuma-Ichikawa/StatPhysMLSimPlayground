@@ -1,0 +1,15 @@
+[slurm]
+partition = "spark_1D"
+account = ""
+qos = ""
+constraint = ""
+gpus_per_task = 1
+cpus_per_task = 8
+memory = "64G"
+time_limit = "1-00:00:00"
+max_parallel = 9
+tasks_per_array = 32
+python = "python3"
+modules = []
+setup = []
+extra_sbatch = []

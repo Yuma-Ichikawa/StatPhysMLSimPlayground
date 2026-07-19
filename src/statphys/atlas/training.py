@@ -71,6 +71,8 @@ def build_optimizer(model: Any, spec: TrainingSpec) -> Any:
         return torch.optim.SGD(model.parameters(), **kwargs)
     if spec.optimizer == OptimizerName.MOMENTUM:
         return torch.optim.SGD(model.parameters(), momentum=spec.momentum, **kwargs)
+    if spec.optimizer == OptimizerName.ADAM:
+        return torch.optim.Adam(model.parameters(), **kwargs)
     if spec.optimizer == OptimizerName.ADAMW:
         return torch.optim.AdamW(model.parameters(), **kwargs)
     raise ValueError(f"unsupported optimizer: {spec.optimizer}")

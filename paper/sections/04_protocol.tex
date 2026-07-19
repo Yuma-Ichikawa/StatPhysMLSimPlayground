@@ -1,84 +1,85 @@
-\section{Observables and statistical protocol}
-\label{sec:protocol}
+\section{Numerical and statistical protocol}
 
-\subsection{Functional order parameters}
+\subsection{Seed hierarchy and estimand}
 
-On a held-out probe set, define pure teacher functions
-$F_{\pos}=\bA\bX$ and $F_{\sem}=\bS^*(\bX)\bX$.  After centering and unit-norm
-normalizing the vectorized outputs and templates, we solve
-\begin{equation}
-  \widehat F = \mpos \widehat F_{\pos}
-             + \msem \widehat F_{\sem}+R
-  \label{eq:functional-decomposition}
-\end{equation}
-by least squares.  We report both partial coefficients, marginal overlaps,
-$\|R\|^2$, $R^2$, and the template condition number.  Coefficients are not
-clipped to $[-1,1]$: correlated templates can produce larger partial
-coefficients, in which case the conditioning diagnostic prevents an
-overconfident phase label.  A conservative classifier returns positional,
-semantic, coexistence, disordered/unresolved, or unresolved.
+Every confirmatory condition uses exactly \NSeeds{} distinct outer seeds. An outer seed
+defines quenched disorder. SHA-256 namespaced derivation produces data, initialization,
+minibatch, dropout, and evaluation seeds. Inner stochastic replicates are averaged within
+an outer seed before uncertainty is computed across outer seeds. Thus additional
+checkpoints or minibatches cannot be counted as independent disorder realizations.
 
-\subsection{Mechanistic instrument panel}
+For outer estimates \(x_s\), the plotted interval is
+\[
+ \bar x \pm t_{0.975,4}\frac{s_x}{\sqrt{5}},\qquad t_{0.975,4}=2.776445.
+\]
+The manifest rejects four or six seeds. Aggregation rejects a missing run unless a
+diagnostic command explicitly requests an incomplete report.
 
-For each layer/head, effective QK and OV operators are retained with their
-singular spectra, stable ranks, leading gaps, and planted-subspace principal
-angles.  Head--latent overlap matrices are matched by a maximum-weight
-assignment, with permutation-invariant singular spectra, specialization
-entropy, effective head count, and dead/redundant-head fractions.  Attention
-geometry includes entropy, effective support, span, diagonal, previous-token,
-and sink mass.  Hidden states yield covariance participation ratio, effective
-rank, anisotropy, position correlations, and correlation length.  Removing
-attention or the MLP provides a causal loss delta rather than a purely
-correlational attribution.
+\subsection{Finite-size and critical-window protocol}
 
-To test whether a spectral outlier precedes semantic order, QK diagnostics and
-$(\mpos,\msem)$ are sampled on the same registered trajectory.  Onset rules are
-fixed before confirmatory inspection and uncertainty is bootstrapped over
-teachers, data sets, and optimization replicas.  A lead/lag claim requires a
-confidence interval on the onset difference, not visual ordering of two
-curves.
+Exploratory scans locate candidate windows using adjacent Jensen--Shannon divergence,
+Fisher sensitivity, and change-point scores. Confirmatory controls are fixed before the
+five outer replicas are aggregated. Each transition claim uses at least six sizes and
+reports: order parameter, \(\Sus\), \(\Binder\), \(P_N(m)\), rate function, peak drift,
+and relaxation time. Up/down scans test hysteresis. A leading correction
+\[
+  m(N,t)=N^{-\beta/\nu}
+  \left[f(tN^{1/\nu})+N^{-\omega}g(tN^{1/\nu})\right]
+\]
+is compared with a smooth crossover model. We report both fits and do not infer an
+asymptotic singularity from one crossing.
 
-\subsection{Fluctuations and finite-size evidence}
+\subsection{Response and non-equilibrium diagnostics}
 
-Let $m$ denote a scalar order parameter over independent replicas.  We measure
-\begin{align}
-  \chi_N &= N_{\rm eff}\left(\langle m^2\rangle-\langle m\rangle^2\right),\\
-  U_4 &= 1-\frac{\langle m^4\rangle}{3\langle m^2\rangle^2},\\
-  I_N(m)&=-N_{\rm eff}^{-1}\log P_N(m)+\mathrm{const}.
-\end{align}
-The effective size $N_{\rm eff}$ is specified by the scaling path rather than
-inferred from array length.  We retain $P_N(m)$ to diagnose bimodality and
-barrier growth, use matched forward/backward initialization scans for
-hysteresis, and locate Binder crossings by pairwise interpolation without
-silently discarding multiple crossings.
+Registered interventions include head or MLP ablation, attention-range truncation, guidance
+change, reward/proxy perturbation, communication randomization, and committed-minority
+injection. Response is paired within the same quenched realization. Optimizer runs retain
+loss, overlap, gradient norm, Hessian proxies, and autocorrelation. A fluctuation--response
+ratio is called an effective temperature only when its estimator and timescale are stated.
 
-For a continuous-transition candidate we test
-\begin{equation}
-  m(N,g)=N^{-\beta/\nu}
-  \mathcal F\!\left((g-g_c)N^{1/\nu}\right)
-  \label{eq:fss}
-\end{equation}
-using a declared exponent grid, interpolation-aware collapse score, and
-hierarchical bootstrap.  A distribution-shift peak or maximum slope proposes
-a region for refinement; it never alone upgrades the language from
-``crossover'' to ``transition.''
+\subsection{Evidence grades}
 
-\subsection{Replication, exploration, and artifacts}
+Grade A requires all five outer seeds, at least six sizes, susceptibility growth, compatible
+Binder behavior, a finite-size correction comparison, hysteresis testing, and nested
+uncertainty. Grade B allows one missing asymptotic diagnostic but requires independent
+order and response evidence. Grade C is a reproducible finite-size phenomenology. Anything
+weaker is insufficient, not a transition. Cross-domain similarity does not imply a shared
+universality class; exponents are compared only after separate within-domain grades.
 
-Randomness is split into teacher, quenched data distribution, initialization,
-minibatch order, and dropout streams derived from a root seed.  Estimation is
-nested in that order.  Treating optimization replicas as independent teachers
-would understate uncertainty, so confidence intervals use the same hierarchy.
+\subsection{Programs A--N}
 
-Exploratory manifests localize candidate regions and may propose a new,
-separately saved refinement manifest.  Confirmatory grids are content-addressed
-before their outcomes are aggregated.  Each run directory contains its exact
-specification, Git and accelerator provenance, status/attempt history,
-checksummed trajectories and diagnostics, teacher state, and a compact
-summary.  Missing and failed runs remain visible.  A run is claim-eligible only
-after schema, status, required-artifact, checksum, provenance, and finite-value
-validation.
+\begin{table}[t]
+\centering
+\small
+\begin{tabularx}{\linewidth}{@{}lYY@{}}
+\toprule
+Program & Controlled deformation & Primary diagnostics \\
+\midrule
+A & M0--M8, D0--D5, positional/semantic mixture & \(m_{\rm pos},m_{\rm sem},\Sus,\Binder\) \\
+B & head count to latent rank and tying & specialization, redundancy, effective heads \\
+C & attention--MLP task and ablation ladder & functional error and paired intervention \\
+D & finite/infinite task-pool ICL & context response and ridge oracle gap \\
+E & context length, depth, rotary position & correlation length and slowing \\
+F & LoRA rank continuation & subspace recovery and principal angles \\
+G & random starts and energy landscape & \(P(q)\), barriers, relaxation \\
+H & SGD, momentum, Adam, AdamW & Hessian/noise and effective temperature \\
+I & Gaussian to grammar data & in/OOD error, covariance rank and anisotropy \\
+J & direct answer to state tracking & scratchpad gain and commitment \\
+K & top-k expert routing & load entropy, utilization, routing specialization \\
+L & parametric to retrieval memory & memory load and paired error \\
+M & paired latent modalities & canonical spectrum and collapse \\
+N & quantization, pruning, distillation & functional fidelity and compression pressure \\
+\bottomrule
+\end{tabularx}
+\caption{The unified Transformer program. Each row has a five-seed configuration and a
+machine-readable falsifier.}
+\end{table}
 
-The five headline hypotheses, their observables, controls, and rejection
-conditions are machine-readable in \code{experiments/transformer\_phase\_atlas/claims.toml}.
+\subsection{Matched-latent cross-domain tests}
 
+Four experiments reuse the same latent utility landscape: diffusion proposals followed by
+language/RL selection; diffusion over policy logits followed by RL evaluation; multi-agent
+belief aggregation followed by action selection; and MoE routing interpreted as influence
+allocation among agents. Matching the latent instance permits paired oracle-gap and replica
+overlap comparisons. The purpose is to test continuation coordinates, not to erase
+domain-specific dynamics.

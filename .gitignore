@@ -165,3 +165,6 @@ statphys_results/
 atlas_manifests/
 slurm_logs/
 slurm_scripts/
+
+# Slurm output belongs in the external run directory.
+logs/

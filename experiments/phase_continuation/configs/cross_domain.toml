@@ -1,0 +1,44 @@
+[study]
+name = "matched_latent_cross_domain"
+description = "Matched-latent tests of four cross-domain continuation claims"
+seeds = [104729, 130363, 155921, 181081, 206369]
+
+[[experiments]]
+domain = "cross_domain"
+family = "diffusion_language_rl"
+variants = ["sample_then_select", "joint", "annealed"]
+stage = "confirmatory"
+control_name = "proposal_temperature"
+controls = [0.1, 0.2, 0.4, 0.8, 1.6]
+sizes = [16, 32, 64, 128, 256, 512]
+parameters = { replicas = 1024 }
+
+[[experiments]]
+domain = "cross_domain"
+family = "diffusion_policy_rl"
+variants = ["logit_diffusion", "simplex_diffusion", "regularized"]
+stage = "confirmatory"
+control_name = "policy_noise"
+controls = [0.1, 0.2, 0.4, 0.8, 1.6]
+sizes = [16, 32, 64, 128, 256, 512]
+parameters = { replicas = 1024 }
+
+[[experiments]]
+domain = "cross_domain"
+family = "multiagent_rl"
+variants = ["independent", "debate", "consensus"]
+stage = "confirmatory"
+control_name = "belief_noise"
+controls = [0.1, 0.2, 0.4, 0.8, 1.6]
+sizes = [16, 32, 64, 128, 256, 512]
+parameters = { replicas = 1024, agents = 8 }
+
+[[experiments]]
+domain = "cross_domain"
+family = "moe_multiagent"
+variants = ["routing", "voting", "deliberation"]
+stage = "confirmatory"
+control_name = "expert_noise"
+controls = [0.1, 0.2, 0.4, 0.8, 1.6]
+sizes = [16, 32, 64, 128, 256, 512]
+parameters = { replicas = 1024, experts = 8 }

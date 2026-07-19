@@ -1,0 +1,42 @@
+[study]
+name = "solvable_to_realistic_phase_continuation"
+description = "Preregistered unified paper grid across Transformer, diffusion, RL, and multi-agent systems."
+seeds = [104729, 130363, 155921, 181081, 206369]
+uncertainty = "two-sided 95% Student-t interval over five independent full-pipeline seeds"
+artifact_schema = "statphys.continuation/1.0"
+
+[[experiments]]
+domain = "transformer"
+variants = ["m0", "m3", "m7", "m8"]
+stage = "confirmatory"
+control_name = "positional_mixture"
+controls = [0.0, 0.15, 0.30, 0.45, 0.60, 0.75, 0.90]
+sizes = [16, 24, 32, 48, 64, 96]
+parameters = { sequence_length = 8, teacher_rank = 4, n_heads = 4, n_layers = 2, sample_coefficient = 4.0, steps = 240, n_probe = 512, learning_rate = 0.003, weight_decay = 0.0001, input_noise = 0.5, initialization = "random" }
+
+[[experiments]]
+domain = "diffusion"
+variants = ["oracle", "topk", "finite_kde"]
+stage = "confirmatory"
+control_name = "forward_noise"
+controls = [0.15, 0.30, 0.50, 0.80, 1.20, 1.80, 2.60]
+sizes = [8, 16, 32, 64, 96, 128]
+parameters = { components = 8, separation = 3.0, data_sigma = 0.25, topk = 2, train_centers = 256, bandwidth = 0.25, n_probe = 4096, ood_shift = 0.75 }
+
+[[experiments]]
+domain = "rl"
+variants = ["oracle", "proxy", "kl_regularized"]
+stage = "confirmatory"
+control_name = "optimization_pressure"
+controls = [0.25, 0.50, 1.0, 2.0, 4.0, 8.0, 16.0]
+sizes = [32, 64, 128, 256, 512, 1024]
+parameters = { actions = 16, action_groups = 4, proxy_correlation = 0.75, exploit_bonus = 1.25, kl_coefficient = 0.5, ood_penalty = 1.5 }
+
+[[experiments]]
+domain = "multiagent"
+variants = ["mean_field", "small_world", "heterogeneous"]
+stage = "confirmatory"
+control_name = "coupling"
+controls = [0.25, 0.50, 0.75, 1.0, 1.25, 1.50, 2.0]
+sizes = [32, 64, 128, 256, 512, 1024]
+parameters = { worlds = 256, steps = 240, temperature = 1.0, heterogeneity = 0.35, flip_bias = 0.2, intervention_steps = 80 }

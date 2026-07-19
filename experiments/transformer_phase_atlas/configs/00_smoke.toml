@@ -2,7 +2,7 @@
 name = "atlas_smoke"
 description = "End-to-end M0 bridge smoke test across both informed basins."
 stage = "smoke"
-replicas = 2
+replicas = 5
 root_seed = 1729
 
 [base]

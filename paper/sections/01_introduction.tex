@@ -1,100 +1,55 @@
 \section{Introduction}
-\label{sec:introduction}
 
-Transformer capabilities often change rapidly as data, scale, or training
-time is varied.  Calling every rapid change a phase transition is not useful:
-a genuine statistical-mechanics claim requires an order parameter, a declared
-large-size path, fluctuation measurements, and finite-size evidence.  At the
-other extreme, studying only production-scale language models makes those
-requirements difficult to satisfy because architecture, data, optimization,
-and evaluation all change together.  The productive middle ground is a
-controlled teacher--student system that retains an identifiable Transformer
-mechanism while permitting dense, replicated numerical experiments.
+Large learning systems display abrupt changes in capability, representation, routing,
+generation, and collective behavior. Calling every sharp curve a phase transition is,
+however, scientifically weak. A useful statistical-mechanical claim must identify a
+thermodynamic limit, an order parameter, a source of fluctuations, a control variable,
+finite-size evidence, and a competing crossover explanation. It must also survive the
+difference between quenched randomness in data or tasks and annealed randomness in
+optimization or sampling.
 
-Cui et al. supplied such a starting point by deriving a positional--semantic
-transition in a two-token attention model with a tied low-rank query/key
-operator \citep{cui2024phase}.  The model is small enough for asymptotic
-analysis yet already contains a nontrivial competition: the student can use a
-fixed positional displacement or recover a latent semantic direction.  The
-transition is therefore a rare bridge between an exactly characterized
-attention mechanism and a question that matters for realistic Transformers.
-It is not, however, evidence that the same phase structure holds after Q/K
-untieing, full-width projections, multiple heads, residual streams,
-normalization, MLPs, causality, rotary position encoding, depth, or
-autoregressive training.
-
-We ask a sharply scoped question:
+This paper turns those requirements into a numerical program. Its core question is:
 \begin{quote}
-\emph{Which statistical signatures of the positional--semantic transition
-survive controlled movement from the solvable attention model toward a
-Transformer, and along which thermodynamic scaling path?}
+Can an order parameter and its transition be followed from a solvable anchor to a realistic
+model through a sequence of controlled deformations, without changing the measured object
+midway?
 \end{quote}
-The point is not to declare that ``LLMs are thermodynamic.''  It is to test a
-specific mechanism under a sequence of falsifiable interventions.
+We call this procedure \emph{phase continuation}. It resembles homotopy continuation:
+an exact or oracle endpoint supplies semantics for the order parameter; adjacent models
+relax one assumption; and a claim is weakened or rejected when the observable ceases to
+track the same latent structure.
 
-Our design is a two-dimensional ladder.  The architecture ladder $M0$--$M8$
-adds one family of mechanisms at a time.  The data ladder $D0$--$D5$ holds the
-teacher task fixed while changing the token ensemble from Gaussian to
-correlated, heavy-tailed, discrete, stateful, and grammatical.  Each cell is
-evaluated along explicitly recorded scaling paths such as
-$n=c d^\gamma$, fixed or growing head dimension, fixed or growing number of
-heads, and fixed or growing depth.  We make no universality claim by comparing
-models at a single width.
+The first domain is the Transformer. Attention architectures
+\citep{vaswani2017attention} combine several potentially distinct thermodynamic levels:
+non-equilibrium training, internal representation and circuit organization, and output
+sampling. We therefore use separate symbols and interventions for optimizer noise,
+attention softmax scale, and generation temperature. We construct an architecture ladder
+from tied rank-one attention to autoregressive generation, and a data ladder from Gaussian
+tokens to hidden-state and grammar sources. The ladder supports tests of positional versus
+semantic recovery, head specialization, attention--MLP division of labor, in-context
+learning, long-context propagation, low-rank adaptation, glassy optimization, optimizer
+universality, state tracking, expert routing, retrieval, multimodal alignment, and
+compression.
 
-The central methodological choice is to measure the learned \emph{function},
-not only a weight cosine.  On a shared probe set we regress the student's
-centered output onto pure positional and semantic teacher functions, yielding
-partial functional order parameters $(\mpos,\msem)$ and a residual fraction.
-This remains meaningful when heads can permute and layers can reparameterize
-the same computation.  We complement it with head--latent assignment,
-effective QK/OV spectra, representation participation ratios, causal
-interventions, and the thermodynamic fluctuation statistics needed to
-separate a crossover from a transition candidate.
+The same logic is then applied to three additional domains. For diffusion, a Gaussian
+mixture gives an exact score before locality, finite data, guidance, and reverse-trajectory
+commitment are introduced. For reinforcement learning, a finite MDP gives an exact soft
+policy before proxy rewards, rollout limits, preference estimation, and optimization
+dynamics are introduced. For collective reasoning, mean-field population dynamics give a
+controlled endpoint before sparse networks, heterogeneous influence, debate, committed
+minorities, and role specialization are introduced. Four matched-latent experiments test
+interactions among these domains rather than relying on metaphor.
 
 Our contributions are:
-\begin{enumerate}[leftmargin=*,itemsep=2pt]
-  \item a faithful, tested reproduction layer for the exact
-  positional--semantic bridge, including the original normalization and
-  summed empirical loss;
-  \item orthogonal $M0$--$M8$ architecture and $D0$--$D5$ data ladders behind
-  a common instrumented interface;
-  \item a conservative transition protocol combining hierarchical
-  replication, susceptibilities, Binder crossings, rate functions,
-  hysteresis, and finite-size collapse;
-  \item a portable Slurm implementation in which manifests, seeds,
-  provenance, checksums, failures, and claim eligibility are machine-audited;
-  and
-  \item a claim registry that specifies in advance what would support or
-  falsify each proposed mechanism.
+\begin{enumerate}
+\item A common phase-continuation formalism with an explicit assumption graph and matched
+latent ensembles.
+\item A Transformer M0--M8 and data D0--D5 experiment atlas covering programs A--N in one
+manuscript.
+\item Domain-specific diffusion, RL, and multi-agent phase cubes plus four cross-domain
+continuations.
+\item A strict evidence protocol using \NSeeds{} seeds, nested uncertainty, finite-size
+scaling, rate functions, response, hysteresis, and evidence grades.
+\item A portable implementation whose coverage audit fails when a proposed experiment is
+missing and whose paper cannot silently report incomplete results.
 \end{enumerate}
-
-Figure~\ref{fig:overview} summarizes the program.  In keeping with empirical
-paper-writing best practice, the first figure is reserved for the strongest
-numerical result; the generated schematic appears second and is not presented
-as evidence.
-
-\begin{figure}[t]
-  \centering
-  \IfFileExists{../assets/paper/phase_map.png}{%
-    \includegraphics[width=\linewidth]{../assets/paper/phase_map.png}%
-  }{\placeholderfigure{4.2cm}{Figure 1 is generated only from completed,
-  checksum-verified confirmatory runs.}}
-  \caption{\textbf{Primary registered numerical result.}  The final panel and
-  caption are generated from the aggregate artifact rather than manually
-  entered.  A candidate boundary is called a transition only when functional
-  order, fluctuations, and finite-size diagnostics agree.}
-  \label{fig:primary}
-\end{figure}
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\linewidth]{../assets/transformer_phase_atlas_schematic.png}
-  \caption{\textbf{Controlled bridge-to-atlas program.}  Left: controlled
-  positional and semantic sequence ensembles.  Center: cumulative architecture
-  ladder from tied low-rank attention to deep autoregressive Transformers.
-  Right: the phase map, spectral diagnostics, and finite-size family measured
-  at every registered state point.  This is a conceptual diagram, not an
-  empirical result.}
-  \label{fig:overview}
-\end{figure}
-

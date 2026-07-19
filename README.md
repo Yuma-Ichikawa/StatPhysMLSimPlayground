@@ -351,3 +351,19 @@ If you use this package in your research, please cite:
 This project is an **independent personal project** developed by Yuma Ichikawa.
 It is **not affiliated with, sponsored by, or endorsed by any organization**, including the author's employer.
 All views and opinions expressed in this project are solely those of the author.
+
+## Phase-continuation research program
+
+The unified numerical program is organized by realism tier rather than labeling every proxy
+as a realistic model:
+
+- **Tier A:** exact or oracle anchors.
+- **Tier B:** reduced-order and matched-latent continuations.
+- **Tier B+:** trainable decoder Transformer, MLP/U-Net/DiT denoisers, POMDP policies, and
+  neural agent populations.
+- **Tier C:** natural-language, natural-image, external-RLVR, and LLM-agent protocols. These
+  remain explicitly incomplete until versioned external assets are supplied.
+
+Every confirmatory condition uses exactly five outer seeds and at least six system sizes.
+Run 'phase-continuation coverage' and 'phase-continuation taxonomy' before creating manifests.
+Reusable code and profiles contain no site-specific absolute paths.

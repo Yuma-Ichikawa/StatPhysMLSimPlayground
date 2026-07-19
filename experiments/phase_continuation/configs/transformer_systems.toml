@@ -1,0 +1,63 @@
+[study]
+name = "transformer_systems_full"
+description = "MoE, retrieval, multimodal, compression, lifecycle, and discovery"
+seeds = [104729, 130363, 155921, 181081, 206369]
+
+[[experiments]]
+domain = "transformer"
+family = "moe"
+variants = ["top1", "top2", "top4"]
+stage = "confirmatory"
+control_name = "router_noise"
+controls = [0.1, 0.2, 0.4, 0.8, 1.6]
+sizes = [64, 128, 256, 512, 1024, 2048]
+parameters = { experts = 8, tokens = 2048 }
+
+[[experiments]]
+domain = "transformer"
+family = "retrieval"
+variants = ["parametric", "retrieval", "hybrid"]
+stage = "confirmatory"
+control_name = "retrieval_gate"
+controls = [0.0, 0.25, 0.5, 0.75, 1.0]
+sizes = [64, 128, 256, 512, 1024, 2048]
+parameters = { n_probe = 512 }
+
+[[experiments]]
+domain = "transformer"
+family = "multimodal"
+variants = ["contrastive", "generative", "hybrid"]
+stage = "confirmatory"
+control_name = "cross_modal_correlation"
+controls = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+sizes = [64, 128, 256, 512, 1024, 2048]
+parameters = { latent_rank = 4, width = 32 }
+
+[[experiments]]
+domain = "transformer"
+family = "compression"
+variants = ["quantization", "pruning", "distillation"]
+stage = "confirmatory"
+control_name = "compression_pressure"
+controls = [0.0, 0.25, 0.5, 0.75, 0.9]
+sizes = [64, 128, 256, 512, 1024, 2048]
+parameters = { n_probe = 1024, bits = 4 }
+
+[[experiments]]
+domain = "transformer"
+family = "lifecycle"
+variants = ["standard", "preference_heavy", "compression_heavy"]
+stage = "confirmatory"
+control_name = "post_training_pressure"
+controls = [0.0, 0.25, 0.5, 1.0, 2.0]
+sizes = [64, 128, 256, 512, 1024, 2048]
+
+[[experiments]]
+domain = "transformer"
+family = "discovery"
+variants = ["js_fisher", "change_point"]
+stage = "discovery"
+control_name = "candidate_control"
+controls = [-0.5, -0.25, 0.0, 0.25, 0.5]
+sizes = [64, 128, 256, 512, 1024, 2048]
+parameters = { n_probe = 1024, delta = 0.05 }

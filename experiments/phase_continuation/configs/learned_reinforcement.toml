@@ -1,0 +1,15 @@
+[study]
+name = "learned_reinforcement_continuation"
+description = "Tier B+ linear, MLP, and Transformer policies in a verifier-noisy POMDP"
+seeds = [104729, 130363, 155921, 181081, 206369]
+uncertainty = "two-sided 95% Student-t interval across five full-pipeline seeds"
+
+[[experiments]]
+domain = "reinforcement"
+family = "learned_policy"
+variants = ["linear", "mlp", "transformer"]
+stage = "confirmatory"
+control_name = "verifier_noise"
+controls = [0.00, 0.08, 0.16, 0.24, 0.32, 0.40, 0.48]
+sizes = [8, 16, 24, 32, 48, 64]
+parameters = { fidelity_tier = "B+", horizon = 8, worlds = 512, n_probe = 512, steps = 96, observation_noise = 0.20, entropy_coefficient = 0.01, learning_rate = 0.003 }

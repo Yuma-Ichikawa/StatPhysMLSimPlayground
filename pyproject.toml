@@ -43,6 +43,7 @@ dependencies = [
 
 [project.scripts]
 statphys = "statphys.cli:main"
+phase-continuation = "statphys.continuation.cli:main"
 
 [project.optional-dependencies]
 # Real-data teachers (frontier taxonomy: sklearn digits)

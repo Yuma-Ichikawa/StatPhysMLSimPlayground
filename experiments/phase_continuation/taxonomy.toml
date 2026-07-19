@@ -1,0 +1,119 @@
+schema_version = "2.0"
+coordinates = ["data", "architecture", "objective", "optimizer", "dynamics", "population"]
+outcomes = ["stable", "renormalized", "splitting", "merging", "rounding", "new_phase", "computational_statistical_separation"]
+
+[tier_definitions]
+A = "Exact, oracle, or analytically controlled anchor."
+B = "Mesoscopic reduced-order numerical continuation."
+"B+" = "End-to-end trainable neural bridge on controlled synthetic data."
+C = "Natural-data, environment, checkpoint, or language-agent endpoint."
+
+[program_tiers]
+transformer_anchor = "A"
+transformer_architecture = "B"
+diffusion_anchor = "A"
+reinforcement_anchor = "A"
+multiagent_anchor = "A"
+matched_latent = "B"
+learned_neural_bridges = "B+"
+naturalistic_endpoints = "C"
+
+[[endpoints]]
+id = "T-LEARNED-DECODER"
+domain = "transformer"
+family = "learned_decoder"
+tier = "B+"
+status = "runnable"
+observables = ["token_accuracy", "context_ablation_delta", "perplexity", "oracle_gap"]
+falsifier = "Causal attention and decoder depth do not improve continuation over the local baseline at matched width."
+
+[[endpoints]]
+id = "D-LEARNED-SCORE"
+domain = "diffusion"
+family = "learned_score"
+tier = "B+"
+status = "runnable"
+observables = ["semantic_accuracy", "denoising_error", "distant_response", "oracle_gap"]
+falsifier = "U-Net and DiT denoisers do not preserve the oracle-mixture phase coordinates."
+
+[[endpoints]]
+id = "R-LEARNED-POLICY"
+domain = "rl"
+family = "learned_policy"
+tier = "B+"
+status = "runnable"
+observables = ["true_return", "proxy_return", "goodhart_gap", "policy_entropy"]
+falsifier = "Learned nonlinear and Transformer policies show no verifier-noise-dependent separation."
+
+[[endpoints]]
+id = "M-LEARNED-AGENTS"
+domain = "multiagent"
+family = "learned_agents"
+tier = "B+"
+status = "runnable"
+observables = ["collective_accuracy", "consensus", "effective_agents", "global_flip_response"]
+falsifier = "Learned communication does not alter collective order under matched observations."
+
+[[endpoints]]
+id = "C-ASSUMPTION-PAIRS"
+domain = "cross_domain"
+family = "assumption_pairs"
+tier = "B"
+status = "runnable"
+observables = ["pair_interaction_delta", "additive_prediction_error"]
+falsifier = "Every pair deformation is additive within five-seed uncertainty."
+
+[[endpoints]]
+id = "C-RENORMALIZED-SURROGATE"
+domain = "cross_domain"
+family = "renormalized_bridge"
+tier = "B"
+status = "runnable"
+observables = ["bridge_error", "boundary_error", "calibration_residual"]
+falsifier = "Renormalization does not improve held-out continuation over the bare surrogate."
+
+[[endpoints]]
+id = "C-CRITICAL-WINDOW"
+domain = "cross_domain"
+family = "critical_window"
+tier = "B"
+status = "runnable"
+observables = ["hysteresis_gap", "bimodality_coefficient", "relaxation_time"]
+falsifier = "Continuous, first-order, and crossover controls are not distinguishable by registered diagnostics."
+
+[[endpoints]]
+id = "C-OUTCOME-ATLAS"
+domain = "cross_domain"
+family = "outcome_atlas"
+tier = "B"
+status = "runnable"
+observables = ["continuation_distance", "mode_count", "threshold_separation"]
+falsifier = "The seven continuation outcomes collapse to one response class."
+
+[[endpoints]]
+id = "T-NATURAL-LANGUAGE-ENDPOINT"
+domain = "transformer"
+tier = "C"
+status = "protocol"
+limitation = "Requires a licensed natural-language corpus and a declared pretrained or from-scratch decoder checkpoint; not represented by the synthetic grammar bridge."
+
+[[endpoints]]
+id = "D-NATURAL-IMAGE-ENDPOINT"
+domain = "diffusion"
+tier = "C"
+status = "protocol"
+limitation = "Requires a versioned natural-image dataset and checkpoint-scale U-Net/DiT training; the structured 8x8 ensemble is Tier B+."
+
+[[endpoints]]
+id = "R-EXTERNAL-RLVR-ENDPOINT"
+domain = "rl"
+tier = "C"
+status = "protocol"
+limitation = "Requires a versioned interactive environment and external verifier; the controlled POMDP isolates verifier noise but is not open-ended RLVR."
+
+[[endpoints]]
+id = "M-LLM-AGENT-ENDPOINT"
+domain = "multiagent"
+tier = "C"
+status = "protocol"
+limitation = "Requires fixed language-model checkpoints, prompts, tool APIs, and message transcripts; neural scalar-message agents are not labeled as LLM agents."

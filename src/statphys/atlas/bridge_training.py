@@ -52,6 +52,10 @@ def _reference_optimizer(model: Any, spec: TrainingSpec) -> Any:
             momentum=spec.momentum,
             weight_decay=spec.weight_decay,
         )
+    if spec.optimizer == OptimizerName.ADAM:
+        return torch.optim.Adam(
+            model.parameters(), lr=spec.learning_rate, weight_decay=spec.weight_decay
+        )
     if spec.optimizer == OptimizerName.ADAMW:
         # Kept explicit in provenance: this is a robustness intervention, not
         # the reference paper's torch.optim.Adam control.
@@ -71,6 +75,7 @@ def train_bridge(
     device: str = "auto",
     probe: Probe | None = None,
     checkpoint_dir: str | Path | None = None,
+    pair_transform: Any | None = None,
 ) -> TrainingResult:
     """Run full-batch reference optimisation with a pre-training step zero."""
 
@@ -120,7 +125,10 @@ def train_bridge(
                 prediction = model(inputs)
                 if isinstance(prediction, tuple):
                     prediction = prediction[0]
-                objective = bridge_loss(prediction, targets)
+                loss_targets = targets
+                if pair_transform is not None:
+                    prediction, loss_targets = pair_transform(prediction, targets)
+                objective = bridge_loss(prediction, loss_targets)
             objective.backward()
             gradient_norm = _gradient_norm(model)
             if spec.gradient_clip is not None:
@@ -136,7 +144,10 @@ def train_bridge(
             prediction = model(inputs)
             if isinstance(prediction, tuple):
                 prediction = prediction[0]
-            loss = bridge_loss(prediction, targets)
+            loss_targets = targets
+            if pair_transform is not None:
+                prediction, loss_targets = pair_transform(prediction, targets)
+            loss = bridge_loss(prediction, loss_targets)
         final_loss = float(loss)
         l2 = 0.5 * spec.weight_decay * sum(
             float(parameter.detach().square().sum()) for parameter in model.parameters()

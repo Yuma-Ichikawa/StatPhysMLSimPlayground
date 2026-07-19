@@ -2,7 +2,7 @@
 name = "sample_complexity_paths"
 description = "Explicit n=c*d^gamma comparison for H5."
 stage = "exploratory-scaling-path"
-replicas = 12
+replicas = 5
 root_seed = 1732051
 
 [base]

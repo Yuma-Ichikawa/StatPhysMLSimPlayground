@@ -2,7 +2,7 @@
 name = "architecture_deep_ar"
 description = "M7--M8: depth and autoregressive objective."
 stage = "exploratory-architecture"
-replicas = 6
+replicas = 5
 root_seed = 1618033
 
 [base]

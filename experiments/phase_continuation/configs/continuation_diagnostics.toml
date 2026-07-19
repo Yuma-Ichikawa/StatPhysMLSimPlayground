@@ -1,0 +1,47 @@
+[study]
+name = "continuation_taxonomy_diagnostics"
+description = "Complete pairwise assumption graph, renormalized bridges, critical windows, and seven continuation outcomes"
+seeds = [104729, 130363, 155921, 181081, 206369]
+uncertainty = "two-sided 95% Student-t interval across five full-pipeline seeds"
+
+[[experiments]]
+domain = "cross_domain"
+family = "assumption_pairs"
+variants = ["transformer", "diffusion", "reinforcement", "multiagent"]
+stage = "confirmatory"
+control_name = "deformation_strength"
+controls = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+sizes = [32, 64, 128, 256, 512, 1024]
+parameters = { fidelity_tier = "B", n_probe = 512 }
+parameter_grid = { pair = ["data__architecture", "data__objective", "data__optimizer", "data__dynamics", "data__population", "architecture__objective", "architecture__optimizer", "architecture__dynamics", "architecture__population", "objective__optimizer", "objective__dynamics", "objective__population", "optimizer__dynamics", "optimizer__population", "dynamics__population"] }
+
+[[experiments]]
+domain = "cross_domain"
+family = "renormalized_bridge"
+variants = ["transformer", "diffusion", "reinforcement", "multiagent"]
+stage = "confirmatory"
+control_name = "heldout_control"
+controls = [0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80]
+sizes = [32, 64, 128, 256, 512, 1024]
+parameters = { fidelity_tier = "B", n_probe = 512, ridge = 0.0001 }
+
+[[experiments]]
+domain = "cross_domain"
+family = "critical_window"
+variants = ["transformer", "diffusion", "reinforcement", "multiagent"]
+stage = "confirmatory"
+control_name = "critical_control"
+controls = [0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80]
+sizes = [32, 64, 128, 256, 512, 1024]
+parameters = { fidelity_tier = "B", n_probe = 1024 }
+parameter_grid = { transition_kind = ["continuous", "first_order", "crossover"] }
+
+[[experiments]]
+domain = "cross_domain"
+family = "outcome_atlas"
+variants = ["stable", "renormalized", "splitting", "merging", "rounding", "new_phase", "computational_statistical_separation"]
+stage = "confirmatory"
+control_name = "continuation_coordinate"
+controls = [0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80]
+sizes = [32, 64, 128, 256, 512, 1024]
+parameters = { fidelity_tier = "B", n_probe = 1024 }

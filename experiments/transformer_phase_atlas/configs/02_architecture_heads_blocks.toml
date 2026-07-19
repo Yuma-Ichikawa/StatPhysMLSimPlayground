@@ -2,7 +2,7 @@
 name = "architecture_heads_blocks"
 description = "M3--M6: heads, residual/norm, MLP, causal mask and RoPE."
 stage = "exploratory-architecture"
-replicas = 6
+replicas = 5
 root_seed = 271828
 
 [base]

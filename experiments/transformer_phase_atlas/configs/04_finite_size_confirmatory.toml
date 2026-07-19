@@ -2,7 +2,7 @@
 name = "finite_size_confirmatory"
 description = "Preregistered FSS sweep after exploratory boundary localization."
 stage = "confirmatory"
-replicas = 24
+replicas = 5
 root_seed = 1414213
 
 [base]

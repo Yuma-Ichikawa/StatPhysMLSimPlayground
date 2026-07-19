@@ -1,0 +1,15 @@
+[study]
+name = "learned_diffusion_continuation"
+description = "Tier B+ trainable MLP, U-Net, and DiT score bridge"
+seeds = [104729, 130363, 155921, 181081, 206369]
+uncertainty = "two-sided 95% Student-t interval across five full-pipeline seeds"
+
+[[experiments]]
+domain = "diffusion"
+family = "learned_score"
+variants = ["mlp", "unet", "dit"]
+stage = "confirmatory"
+control_name = "forward_noise"
+controls = [0.10, 0.20, 0.35, 0.50, 0.75, 1.00, 1.40]
+sizes = [16, 24, 32, 48, 64, 96]
+parameters = { fidelity_tier = "B+", image_size = 8, train_examples = 256, n_probe = 256, steps = 64, learning_rate = 0.002 }

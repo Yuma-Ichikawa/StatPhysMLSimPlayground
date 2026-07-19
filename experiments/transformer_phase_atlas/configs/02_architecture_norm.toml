@@ -2,7 +2,7 @@
 name = "architecture_norm"
 description = "Matched pre/post LayerNorm and residual-path comparison for H3."
 stage = "exploratory-architecture"
-replicas = 12
+replicas = 5
 root_seed = 2236067
 
 [base]

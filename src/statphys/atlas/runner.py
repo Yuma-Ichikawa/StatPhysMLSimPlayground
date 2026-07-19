@@ -124,6 +124,13 @@ def _teacher_templates(batch: Any) -> tuple[Any, Any]:
     return positional, semantic
 
 
+def _loss_pairs(model: Any, predictions: Any, targets: Any) -> tuple[Any, Any]:
+    """Apply the M8 causal shift without changing the instrumented model API."""
+    if getattr(model.config, "is_autoregressive", False):
+        return model.shifted_autoregressive_pairs(predictions, targets)
+    return predictions, targets
+
+
 def _functional_probe(model: Any, heldout: Any) -> dict[str, float]:
     import torch
 
@@ -134,11 +141,14 @@ def _functional_probe(model: Any, heldout: Any) -> dict[str, float]:
     positional, semantic = _teacher_templates(batch)
     with torch.no_grad():
         prediction, diagnostics = model(batch.inputs, return_diagnostics=True)
+    prediction, loss_targets = _loss_pairs(model, prediction, batch.targets)
+    positional, _ = _loss_pairs(model, positional, batch.targets)
+    semantic, _ = _loss_pairs(model, semantic, batch.targets)
     decomposition = two_template_decomposition(prediction, positional, semantic)
     attention = diagnostics["attention_maps"].mean(dim=(0, 1, 2))
     semantic_map = batch.semantic_attention.mean(dim=0)
     positional_map = batch.positional_attention.mean(dim=0)
-    sample_loss = float(bridge_loss(prediction, batch.targets) / batch.targets.shape[0])
+    sample_loss = float(bridge_loss(prediction, loss_targets) / batch.targets.shape[0])
     return {
         "test_loss_per_sample": sample_loss,
         "functional_m_pos": float(decomposition["m_pos"]),
@@ -240,6 +250,9 @@ def _final_diagnostics(model: Any, heldout: Any, dataset: Any) -> tuple[dict[str
         prediction, diagnostics = model(batch.inputs, return_diagnostics=True)
         no_attention = model(batch.inputs, ablate_attention=True)
         no_mlp = model(batch.inputs, ablate_mlp=True)
+    prediction, loss_targets = _loss_pairs(model, prediction, batch.targets)
+    no_attention, _ = _loss_pairs(model, no_attention, batch.targets)
+    no_mlp, _ = _loss_pairs(model, no_mlp, batch.targets)
     functional = _functional_probe(model, heldout)
     phase = classify_phase(functional["functional_m_pos"], functional["functional_m_sem"])
     attention = diagnostics["attention_maps"].detach().float().cpu().numpy()
@@ -247,12 +260,12 @@ def _final_diagnostics(model: Any, heldout: Any, dataset: Any) -> tuple[dict[str
     representations = diagnostics["representations"][:, -1].detach().float().cpu().numpy()
     representation = representation_statistics(representations)
     correlations = position_correlation(representations)
-    baseline = float(bridge_loss(prediction, batch.targets) / batch.targets.shape[0])
+    baseline = float(bridge_loss(prediction, loss_targets) / batch.targets.shape[0])
     interventions = intervention_loss_deltas(
         baseline,
         {
-            "remove_attention": float(bridge_loss(no_attention, batch.targets) / batch.targets.shape[0]),
-            "remove_mlp": float(bridge_loss(no_mlp, batch.targets) / batch.targets.shape[0]),
+            "remove_attention": float(bridge_loss(no_attention, loss_targets) / batch.targets.shape[0]),
+            "remove_mlp": float(bridge_loss(no_mlp, loss_targets) / batch.targets.shape[0]),
         },
     )
     weights, weight_arrays = _weight_metrics(model, dataset)
@@ -320,6 +333,9 @@ def run_experiment(
             device=device,
             probe=probe,
             checkpoint_dir=directory / "checkpoints",
+            pair_transform=(
+                model.shifted_autoregressive_pairs if model.config.is_autoregressive else None
+            ),
         )
         diagnostics, arrays = _final_diagnostics(model, heldout, dataset)
         summary = {

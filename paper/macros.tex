@@ -1,27 +1,20 @@
-\newcommand{\R}{\mathbb{R}}
-\newcommand{\E}{\mathbb{E}}
-\newcommand{\Var}{\operatorname{Var}}
-\newcommand{\softmax}{\operatorname{softmax}}
-\newcommand{\tr}{\operatorname{tr}}
-\newcommand{\diag}{\operatorname{diag}}
-\newcommand{\op}{\mathrm{op}}
-\newcommand{\pos}{\mathrm{pos}}
-\newcommand{\sem}{\mathrm{sem}}
-\newcommand{\qk}{\mathrm{QK}}
-\newcommand{\ov}{\mathrm{OV}}
-\newcommand{\dd}{\mathrm{d}}
-\newcommand{\bx}{\bm{x}}
-\newcommand{\bX}{\bm{X}}
-\newcommand{\bQ}{\bm{Q}}
-\newcommand{\bq}{\bm{q}}
-\newcommand{\bA}{\bm{A}}
-\newcommand{\bP}{\bm{P}}
-\newcommand{\bp}{\bm{p}}
-\newcommand{\bS}{\bm{S}}
-\newcommand{\bY}{\bm{Y}}
-\newcommand{\mpos}{m_{\pos}}
-\newcommand{\msem}{m_{\sem}}
-\newcommand{\eg}{\varepsilon_{\mathrm g}}
-\newcommand{\code}[1]{\texttt{#1}}
-\newcommand{\placeholderfigure}[2]{%
-  \fbox{\parbox[c][#1][c]{0.94\linewidth}{\centering #2}}}
+\newcommand{\NSeeds}{5}
+\newcommand{\Order}{m}
+\newcommand{\Sus}{\chi}
+\newcommand{\Binder}{U_4}
+\newcommand{\Eff}{N_{\mathrm{eff}}}
+\newcommand{\Gen}{\mathcal{E}_{\mathrm{gen}}}
+\newcommand{\Replica}{q}
+\newcommand{\Rate}{I}
+\newcommand{\InfoLoad}{\alpha_{\mathrm{info}}}
+\newcommand{\phasecard}{\textsc{PhaseCard}}
+\newcommand{\program}[1]{\textbf{Program #1}}
+\newcommand{\pending}{\textcolor{orange!70!black}{pending confirmatory runs}}
+\newcommand{\resultfigure}[3]{%
+  \begin{figure}[t]
+  \centering
+  \IfFileExists{#1}{\includegraphics[width=0.94\linewidth]{#1}}{%
+    \fbox{\parbox[c][42mm][c]{0.88\linewidth}{\centering\textbf{Registered figure: #2}\\[1ex]#3\\[1ex]
+    The panel is populated only from a complete five-seed aggregate.}}}
+  \caption{#2}
+  \end{figure}}

@@ -1,0 +1,14 @@
+[cluster]
+partition = ""
+gpus = 1
+cpus = 8
+memory = "64G"
+time_limit = "24:00:00"
+max_parallel = 8
+module_init = ""
+modules = []
+container_environment = "STATPHYS_ATLAS_CONTAINER"
+container_runtime = "singularity"
+container_accelerator_flag = "--nv"
+container_workdir = "/workspace"
+python = "python3"

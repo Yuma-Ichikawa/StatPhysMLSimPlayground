@@ -1,61 +1,75 @@
-\section{Reproducibility contract}
-\label{app:reproducibility}
+\section{Reproducibility appendix}
 
-Each sweep starts from a TOML file and expands to a JSONL manifest whose rows
-are complete \code{RunSpec} objects.  The canonical JSON hash determines a
-16-character run identifier.  Slurm array index is merely a dispatcher and is
-not used as a scientific seed.  Site-specific container locations are supplied
-through an environment variable; source code and experiment definitions
-contain no user-home path.
+\subsection{Repository structure}
 
-The artifact tree for one run contains \code{spec.json},
-\code{provenance.json}, \code{status.json}, \code{summary.json}, compressed
-trajectories and diagnostics, and the quenched teacher state.  Atomic rename
-prevents partially written JSON/NPZ files from appearing complete.  Manifest
-events are append-only under a file lock.  Aggregation verifies checksums and
-records missing, failed, preempted, and non-finite runs.
+Reusable code contains no site-specific absolute path. Immutable schemas, seed derivation,
+metrics, and the runner registry live under \texttt{statphys/continuation/core}. Domain
+kernels live under \texttt{domains}; finite-size, nested uncertainty, evidence, discovery,
+and plotting live under \texttt{analysis}; Slurm and execution live under
+\texttt{orchestration}. Root modules are compatibility facades.
 
-\section{Claim--evidence--defense matrix}
-\label{app:claims}
+The ten full configurations are:
+\begin{enumerate}
+\item \texttt{paper.toml}
+\item \texttt{transformer\_atlas.toml}
+\item \texttt{transformer\_systems.toml}
+\item \texttt{domain\_programs.toml}
+\item \texttt{cross\_domain.toml}
+\item \texttt{learned\_transformer.toml}
+\item \texttt{learned\_diffusion.toml}
+\item \texttt{learned\_reinforcement.toml}
+\item \texttt{learned\_multiagent.toml}
+\item \texttt{continuation\_diagnostics.toml}
+\end{enumerate}
+Site-specific commands,
+manifests, job IDs, and outputs are generated in the external works directory.
+
+\subsection{Artifact contract}
+
+Each task stores its complete specification, namespaced seeds, provenance, status, finite
+metric JSON, compressed arrays, elapsed time, device, and checksums. A task ID hashes every
+condition field except the outer seed and appends that seed. Atomic replacement prevents a
+partially written file from appearing complete. Retry manifests contain all five replicas
+of any incomplete condition, preserving the estimand.
+
+\subsection{Coverage and falsification}
+
+The coverage registry contains 58 runnable experiment IDs. Validation checks uniqueness,
+implementation status, a registered family, at least one observable, a runner, a matching
+configuration, and exactly five seeds in every configuration. Claims list their required
+IDs, minimum evidence grade, and a sentence that would falsify the claim.
+
+\subsection{Finite-size tables}
+
+For every candidate boundary the released table contains size, control, five outer-seed
+values, mean, standard deviation, standard error, 95 percent Student-t interval,
+susceptibility, Binder cumulant, histogram, rate function, relaxation proxy, and intervention
+response. Fit tables contain the raw scaling model, correction model, crossover model,
+parameter uncertainty, and residual score. Exponent estimates are omitted when fewer than
+five sizes pass artifact audit.
+
+\subsection{Temperature ledger}
 
 \begin{table}[h]
 \centering
-\small
-\begin{tabular}{@{}p{0.7cm}p{4.0cm}p{4.1cm}p{4.1cm}@{}}
+\begin{tabularx}{\linewidth}{@{}lYY@{}}
 \toprule
-ID & Claim & Primary evidence & Main defense\\
+Quantity & Operational definition & Forbidden conflation \\
 \midrule
-H1 & Boundary survives untied/full QKVO & functional order, response, size drift & matched seeds, optimizer control, $\ge3$ widths\\
-H2 & Heads add coexistence/specialization & matched head--latent spectrum & permutation invariance, dead/redundant heads\\
-H3 & Residual/norm changes transition & Binder, susceptibility, hysteresis & pre/post norm and residual ablations\\
-H4 & QK outlier precedes semantics & bootstrapped onset lag & aligned trajectories, threshold sensitivity\\
-H5 & Sample exponent changes by stage & separate $d$/$d^2$ collapse scores & fixed width window, parameter-count report\\
+Training effective temperature & fluctuation--response ratio at stated timescale & learning rate alone \\
+Attention temperature & divisor of attention logits & generation sampler temperature \\
+Diffusion noise & forward corruption variance or schedule coordinate & policy entropy \\
+Policy temperature & coefficient in entropy-regularized control & reward scale without normalization \\
+Generation temperature & divisor of output logits & any training-dynamics quantity \\
 \bottomrule
-\end{tabular}
-\caption{Human-readable summary of the machine-readable claim registry.}
+\end{tabularx}
 \end{table}
 
-\section{Exact fidelity tests}
+\subsection{Minimal execution sequence}
 
-The bridge test suite checks: (i) positional rows are exactly
-$\pm\bm 1/\sqrt d$; (ii) teacher semantic logits and target values use raw
-tokens; (iii) $\omega=0$ and $1$ recover pure semantic and positional targets;
-(iv) all RNG streams leave global NumPy/PyTorch state unchanged; (v) semantic
-and positional informed factors equal their intended directions; and (vi) the
-summed loss matches a direct implementation.  Architecture tests additionally
-check diagnostic shapes, Q/K tieing, cumulative feature gates, RoPE parity,
-causal invariance, and $M8$ shifted pairs.
-
-\section{Full experiment inventory}
-
-\begin{itemize}[leftmargin=*]
-  \item \code{00\_smoke.toml}: end-to-end artifact and GPU gate.
-  \item \code{01\_exact\_bridge\_calibration.toml}: reference-model fidelity.
-  \item \code{02\_architecture\_*.toml}: $M0$--$M8$, including pre/post norm.
-  \item \code{03\_data\_ladder.toml}: $D0$--$D5$ distribution robustness.
-  \item \code{04\_finite\_size\_confirmatory.toml}: frozen confirmatory grid.
-  \item \code{05\_sample\_complexity\_paths.toml}: $n=cd^\gamma$ comparison.
-\end{itemize}
-
-All numerical tables and figure panels are generated from the aggregate
-artifact; the paper build does not read arbitrary run directories.
+First run the coverage command over all ten configurations. Expand each TOML file into an
+immutable manifest. Render GPU or CPU Slurm arrays from a generic profile and supply
+repository, manifest, output, and Python paths through environment variables. Monitor both
+scheduler state and artifact state. Generate a retry manifest for any incomplete
+condition. Only after strict aggregation should the plotting and paper-macro commands be
+run, followed by the LaTeX build.
