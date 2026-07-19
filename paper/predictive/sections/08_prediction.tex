@@ -1,0 +1,38 @@
+\section{Held-out prediction, breakdown, and intervention}
+
+\ifnum\ResultsReady=1 The base surrogate attains median boundary error
+\BaseMedianError{}, whereas the augmented surrogate attains
+\AugmentedMedianError{}, improving held-out transport by
+\BridgeImprovement{}.  The mean anchor residual is \AnchorMAE{}, and the
+largest registered non-additive shift is \MaxInteraction{}.  These quantities
+come directly from the immutable aggregate. \else This section remains
+non-numerical until every registered task and adaptive boundary seed is
+complete. \fi
+
+\resultfigure{figures/figure7_predictive_bridge.pdf}{Predicted versus observed
+boundaries for the blinded variant.  Marker denotes domain and horizontal
+bars are hierarchical 95\% intervals on the observed boundary.}
+
+Prediction failure is tested rather than explained post hoc: the same holdout
+is scored by base and augmented surrogates.  Critical-window interventions
+allocate the expensive operation only within a fixed interval around the
+predicted boundary and compare against always-on, always-off, random-window,
+and matched-compute controls.  \ifnum\ResultsReady=1 The registered allocation
+removes on average \MeanComputeSaving{} of uniform compute while retaining
+\MeanQualityRetention{} of the always-on quality gain and exceeding a random
+matched-compute window by \MeanRandomGain{}. \fi
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{lrrr}
+\toprule Domain & Base error & Augmented error & Compute saving \\
+\midrule \PredictiveDomainRows
+\bottomrule
+\end{tabular}
+\caption{Automatically generated held-out results.  No saturated legacy order
+parameter enters this table.}
+\end{table}
+
+\resultfigure{figures/figure8_theory_breakdown.pdf}{Held-out error before and
+after the registered macrovariable is added.  Error bars summarize variation
+over size and secondary control, not pooled inner replicates.}

@@ -1,0 +1,31 @@
+schema_version = "1.0"
+
+[axes]
+thermodynamic_level = ["representation", "trajectory", "population"]
+symmetry = ["Z2", "permutation", "none"]
+disorder = ["quenched_outer", "annealed_inner", "endogenous"]
+dynamics = ["equilibrium_like", "driven", "adaptive"]
+system_size_vector = ["state_dimension", "trajectory_horizon", "agent_count"]
+control_variable = ["signal_ratio", "reverse_time", "KL_pressure", "social_coupling"]
+order_family = ["recovery", "speciation", "occupancy", "truth_conditioned_consensus"]
+evidence_class = ["continuous", "first_order_like", "smooth_crossover", "metastable"]
+
+[outcomes]
+classes = [
+  "stable_continuation",
+  "renormalized_continuation",
+  "phase_splitting",
+  "phase_merging",
+  "critical_rounding",
+  "new_phase_insertion",
+  "computational_statistical_separation",
+  "path_dependent_continuation",
+  "semantic_failure",
+]
+
+[estimators]
+semantic_retention = "normalized latent-state recovery on independent probes"
+macrostate_count = "exp(H(Z))"
+correlation_component_fraction = "effective independent components divided by nominal components"
+boundary = "susceptibility maximum on the preregistered confirmatory grid"
+uncertainty = "hierarchical outer-disorder bootstrap with inner variance reported separately"

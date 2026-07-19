@@ -1,0 +1,37 @@
+[study]
+name = "predictive_phase_continuation_v2"
+seeds = [104729, 130363, 155921, 181081, 206369, 231503, 256541, 281549, 306577, 331613, 356651, 381679, 406717, 431729, 456769, 481793]
+adaptive_seeds = [506821, 531823, 556849, 581857, 606863, 631867, 656891, 681883, 706897, 731909, 756913, 781939, 806941, 831941, 856943, 881957]
+inner_replicates = 4
+
+[domains.transformer]
+variants = ["anchor", "single", "augmented", "holdout"]
+holdout_variants = ["holdout"]
+sizes = [16, 24, 32, 48, 64, 96]
+controls = [0.70, 0.82, 0.94, 1.06, 1.18, 1.30, 1.42]
+secondary_controls = [-0.5, 0.0, 0.5]
+parameters = { chains = 512, steps = 160, dt = 0.035 }
+
+[domains.diffusion]
+variants = ["anchor", "single", "augmented", "holdout"]
+holdout_variants = ["holdout"]
+sizes = [16, 24, 32, 48, 64, 96]
+controls = [0.82, 0.94, 1.06, 1.18, 1.30, 1.42, 1.54]
+secondary_controls = [-0.5, 0.0, 0.5]
+parameters = { chains = 512, steps = 160, dt = 0.035 }
+
+[domains.reinforcement]
+variants = ["anchor", "single", "augmented", "holdout"]
+holdout_variants = ["holdout"]
+sizes = [16, 24, 32, 48, 64, 96]
+controls = [0.90, 1.02, 1.14, 1.26, 1.38, 1.50, 1.62]
+secondary_controls = [0.0, 0.25, 0.5]
+parameters = { chains = 512, steps = 160, dt = 0.035 }
+
+[domains.multiagent]
+variants = ["anchor", "single", "augmented", "holdout"]
+holdout_variants = ["holdout"]
+sizes = [16, 24, 32, 48, 64, 96]
+controls = [0.76, 0.88, 1.00, 1.12, 1.24, 1.36, 1.48]
+secondary_controls = [-0.5, 0.0, 0.5]
+parameters = { chains = 512, steps = 160, dt = 0.035, field_sign = 1.0 }

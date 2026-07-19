@@ -1,0 +1,27 @@
+\section{Statistical protocol}
+
+Discovery, confirmation, and holdout are separate datasets.  The largest
+variant is absent from every fit.  The first confirmatory stage uses 16 outer
+disorder seeds and four inner stochastic replicates.  After boundary
+localization, 16 additional outer seeds are added only to the adjacent three
+control values.  Inner replicates never count as independent disorder draws.
+Intervals use a hierarchical bootstrap over outer-seed means, while within-
+disorder variance is reported separately.
+
+For every transition, six system sizes are evaluated.  A continuous width
+$w_N\propto N^{-1/2}$, a first-order-like width $w_N\propto N^{-1}$, and a
+smooth crossover $w_N=w_\infty+aN^{-1/2}$ compete by prediction of the largest
+size.  Exponents are called asymptotic only if window, minimum-size,
+correction-term, held-out-size, and scaling-relation checks all agree;
+otherwise they are finite-size effective exponents.
+
+The vector of system sizes is never collapsed by convention: representation
+dimension, reverse-time resolution, MDP horizon, and agent population have
+domain-specific meanings.  Likewise, Binder ratios are used only where their
+symmetry assumptions are satisfied.  RL uses occupancy and strategy
+participation; multi-agent analysis separates intrinsic field from social
+coupling with a global flip.
+
+All empirical figures display raw outer-seed points beneath means and 95\%
+intervals.  One panel has one physical control.  Cross-domain comparison is
+performed only after domain-specific normalization.

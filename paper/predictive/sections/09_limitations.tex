@@ -1,0 +1,21 @@
+\section{Limitations}
+
+The new experiment is a controlled Tier-B stochastic benchmark.  It does not
+establish natural-language, natural-image, open RLVR, or open-weight LLM-agent
+external validity.  The previous repository contains trainable Tier-B+ smoke
+models, but their saturated primary order failed the present audit and is not
+promoted to evidence.  External endpoints require version-pinned models,
+natural-data holdouts, matched token/FLOP controls, and independent
+implementations.
+
+Our finite sizes can distinguish competing predictive trends but do not by
+themselves prove an asymptotic universality class.  RL and agent systems are
+driven and potentially nonstationary; thermodynamic language is used only for
+operational dynamic regimes.  Critical-window quality is benchmark-specific,
+and compute savings do not transfer automatically to wall-clock savings on a
+different architecture.
+
+Finally, an adaptive design can bias inference if the first-stage boundary is
+used to redefine the estimand.  We avoid this by freezing the original grid,
+adding seeds rather than moving controls, and retaining both stages in the
+manifest.

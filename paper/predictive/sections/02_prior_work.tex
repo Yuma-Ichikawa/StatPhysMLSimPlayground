@@ -1,0 +1,35 @@
+\section{Closest prior work and the unresolved gap}
+
+Solvable attention already predicts a positional--semantic transition in a
+tied low-rank layer~\cite{cui2024phase}, while attention-indexed models extend
+closed-form predictions to full-width matrices~\cite{boncoraglio2026aim}.
+Thus observing a transition or a spectral outlier is not our novelty; the test
+is transport to a hidden deformation.  Diffusion theory separates speciation
+from memorized-point collapse~\cite{biroli2024dynamical}, and recent DiT
+experiments report near-concurrent symmetry breaking and nonlocality
+onset~\cite{zhang2026concurrence}.  We therefore predict relative critical
+times rather than rediscovering these diagnostics.
+
+In RL, policy-entropy collapse has a mechanistic account and targeted controls
+already exist~\cite{cui2025entropy}; proxy optimization can degrade gold
+quality as KL budget grows~\cite{rafailov2024overoptimization}.  Entropy alone
+is consequently not an order parameter.  In multi-agent systems, global-flip
+experiments show that apparent consensus can be field-driven rather than
+interaction-driven~\cite{denobili2026collective}.  Effective-team-size laws
+and matched coordination controls further show that nominal agent count is
+not independent evidence~\cite{bertalanic2026ringelmann,kim2026scalingagents}.
+
+\begin{table}[t]
+\centering\scriptsize\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\linewidth}{lYYY}
+\toprule
+Domain & Known result & Assumption removed here & Hidden prediction \\
+\midrule
+Attention & positional--semantic transition & tied/low-rank surrogate & deformed $\gc$ \\
+Diffusion & speciation and collapse times & oracle/global score & locality-shifted time \\
+RL & entropy and Goodhart dynamics & exact verifier & gold boundary \\
+Agents & field-driven crossover & homogeneous mean field & coupling tipping point \\
+\bottomrule
+\end{tabularx}
+\caption{Existing results are treated as anchors, not rediscovered claims.}
+\end{table}

@@ -1,0 +1,23 @@
+\section{Driven validation: reinforcement and multi-agent systems}
+
+The RL benchmark separates oracle occupancy overlap, strategy entropy, gold
+reward, proxy reward, Goodhart gap, and effective rollout fraction.  The
+control plane is KL pressure versus verifier noise.  Productive exploration,
+specialization, entropy collapse, and reward hacking therefore cannot be
+collapsed into a single entropy curve.
+
+\resultfigure{figures/figure5_reinforcement.pdf}{RL holdout curves with
+hierarchical 95\% intervals.  Gold reward (top) and the proxy--gold Goodhart
+gap (bottom) separate productive scaling from reward overoptimization at
+three verifier-noise levels.}
+
+The multi-agent benchmark uses truth-conditioned consensus and explicitly
+varies intrinsic field $h$ and social coupling $J$.  Positive and negative
+fields implement the global-flip control.  Effective component fraction and
+error reproduction are reported alongside nominal population size, preventing
+shared bias from masquerading as independent consensus.
+
+\resultfigure{figures/figure6_multiagent.pdf}{Multi-agent holdout curves with
+hierarchical 95\% intervals.  Positive and negative intrinsic fields provide
+the global-flip control needed to separate field-driven alignment from
+interaction-driven order.}

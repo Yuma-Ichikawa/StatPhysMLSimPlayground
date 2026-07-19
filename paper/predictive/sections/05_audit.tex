@@ -1,0 +1,21 @@
+\section{Artifact audit and preregistration}
+
+Before designing new experiments, we audited the preceding 49,440-run atlas.
+The audit records metric minima, maxima, rounded unique counts, saturation at
+zero or one, and the fraction of zero-width intervals for each
+domain--family--metric group.  \ifnum\ResultsReady=1 It flags
+\SaturatedLegacyGroups{} groups as dominated by saturation. \fi In particular,
+the former representative table used an order parameter equal to one with
+zero uncertainty in several learned and cross-domain families.  That table is
+removed rather than reinterpreted.  Non-saturated signed order, task error,
+and response diagnostics remain available as supplementary checks.
+
+The new registry contains four primary claims, one primary order per claim,
+explicit nulls, an untouched holdout variant, and a missingness rule that
+forbids incomplete aggregation.  Artifact records retain all inner values,
+outer seeds, device, configuration, and task identifiers.  Cluster-specific
+paths remain outside the repository.
+
+\resultfigure{figures/figure2_anchor_validation.pdf}{Anchor calibration with
+hierarchical 95\% intervals.  The lower panel exposes finite-size and
+disorder residuals rather than hiding them behind a theory line.}

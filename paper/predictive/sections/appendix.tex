@@ -1,0 +1,24 @@
+\section{PhaseCard and reproducibility contract}
+
+Every condition records eight taxonomy axes: thermodynamic level, symmetry,
+disorder, dynamics, system-size vector, control variable, order family, and
+evidence class.  Outcome labels include stable or renormalized continuation,
+splitting, merging, rounding, new-phase insertion,
+computational--statistical separation, path dependence, and semantic failure.
+
+Production uses only a portable Spark profile.  The script rejects any
+partition not beginning with \texttt{spark\_}; repository files contain no
+site path.  A run is immutable after its atomic result write.  Aggregation
+fails on a missing task.  The complete JSON stores all outer means, inner
+variance, bootstrap interval, boundary estimate, competing width fits,
+interaction shifts, and intervention summaries.  Figures are generated only
+from that JSON.  Every figure has physical size 6.4 by 4.8 inches, inward ticks,
+12-point base type, larger axis labels, and preregistered color, line, and
+marker order.
+
+\section{Legacy atlas status}
+
+The 58-family atlas remains a searchable diagnostic benchmark and code-coverage
+target.  It is not evidence for the four claims above.  Programs A--N,
+secondary architectures, and common-coordinate diagnostics move to the
+supplement because they otherwise obscure the held-out prediction experiment.

@@ -1,0 +1,10 @@
+[slurm]
+partition = "spark_1D"
+time = "1-00:00:00"
+gpus = 1
+cpus = 4
+memory = "16G"
+tasks_per_array = 16
+max_parallel = 9
+max_array_size = 1000
+device = "cuda"

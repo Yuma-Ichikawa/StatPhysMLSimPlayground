@@ -1,0 +1,32 @@
+\section{Predictive phase continuation}
+
+Let $\mathcal O_{\rm cal}$ denote registered calibration observables and let
+$\mathcal O_{\rm solv}(\bm\theta)$ be a solvable surrogate.  We estimate
+\begin{equation}
+ \widehat{\bm\theta}_{\rm eff}=\arg\min_{\bm\theta}
+ D\!\left(\mathcal O_{\rm cal}^{\rm target},
+ \mathcal O_{\rm solv}(\bm\theta)\right),
+\end{equation}
+then predict $\gchat$, the order curve, and the response to an intervention.
+The bridge error is evaluated only on withheld quantities,
+\begin{equation}
+ \Ebridge=D\!\left(\mathcal O_{\rm holdout}^{\rm target},
+ \mathcal O_{\rm solv}(\widehat{\bm\theta}_{\rm eff})\right).
+\end{equation}
+For each edge we also record semantic retention
+$S_{\rm sem}=I(m;Z)/H(Z)$ and normalized predictive error
+$|\gc-\gchat|/(\sigma_{\gc}+\epsilon)$.
+
+Two assumptions need not combine additively.  Their interaction is
+\begin{equation}
+ \Delta_{ij}\gc=\gc^{ij}-\gc^i-\gc^j+\gc^0.
+\end{equation}
+The operational outcome vocabulary includes stable and renormalized
+continuation, splitting, merging, rounding, new-phase insertion,
+computational--statistical separation, path dependence, and semantic failure.
+These labels are not inferred from visual smoothness.
+
+We distinguish macrostate perplexity $K_{\rm eff}^{\rm macro}=\exp H(Z)$ from
+correlation-based independent components and spectral effective rank.  Each
+PhaseCard stores estimator, probe distribution, normalization, units,
+finite-size variable, intervention, and null model.
