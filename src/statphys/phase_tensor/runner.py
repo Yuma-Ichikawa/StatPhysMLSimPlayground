@@ -13,15 +13,19 @@ import torch
 
 from statphys.continuation.core.schema import TaskSpec
 
-from .data import VOCABULARY, TokenDataset, build_token_dataset
+from .data import VOCABULARY, TokenDataset, build_token_dataset, token_data_summary
 from .model import PhaseTensorTransformer, TransformerConfig
 from .observables import (
     block_gradient_statistics,
     causal_contributions,
+    gradient_noise_scale,
     intensive_losses,
+    local_mlp_jacobian_participation,
+    mlp_mechanism_statistics,
     normalized_activation_entropy,
     normalized_attention_entropy,
     normalized_participation_ratio,
+    residual_stream_statistics,
     relative_update_statistics,
 )
 from .optimizers import build_optimizer, set_learning_rate
@@ -38,6 +42,8 @@ def _family_configuration(task: TaskSpec) -> dict[str, Any]:
         parameters["objective_lambda"] = float(task.variant.replace("lambda_", ""))
     elif family == "tensor_realdata":
         parameters["data_kind"] = task.variant
+    elif family == "tensor_residual":
+        parameters["normalization"] = task.variant
     elif family == "tensor_scaling":
         parameters["scaling_path"] = task.variant
     else:
@@ -76,12 +82,14 @@ def _evaluate(
     *,
     ablate_attention: bool = False,
     ablate_mlp: bool = False,
+    max_examples: int | None = None,
 ) -> tuple[dict[str, float], dict[str, Any] | None]:
     model.eval()
     with torch.no_grad():
-        inputs = dataset.inputs.to(device)
-        targets = dataset.targets.to(device)
-        mask = dataset.mask.to(device)
+        limit = dataset.size if max_examples is None else min(dataset.size, max_examples)
+        inputs = dataset.inputs[:limit].to(device)
+        targets = dataset.targets[:limit].to(device)
+        mask = dataset.mask[:limit].to(device)
         output = model(
             inputs,
             ablate_attention=ablate_attention,
@@ -181,7 +189,9 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
         else contextlib.nullcontext
     )
     history_step: list[int] = []
-    history_loss: list[float] = []
+    history_train_loss: list[float] = []
+    history_test_loss: list[float] = []
+    history_generalization_gap: list[float] = []
     history_order: list[float] = []
     tokens_seen = 0
     time_to_order = float(steps)
@@ -205,12 +215,17 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
         torch.nn.utils.clip_grad_norm_(model.parameters(), float(parameters.get("gradient_clip", 1.0)))
         optimizer.step()
         tokens_seen += int(mask.sum().item())
-        interval = max(1, steps // 10)
+        interval = int(parameters.get("record_interval", max(1, steps // 10)))
         if step == 0 or (step + 1) % interval == 0 or step + 1 == steps:
+            train_measured, _ = _evaluate(
+                model, train_data, objective_lambda, device, max_examples=heldout_examples
+            )
             measured, _ = _evaluate(model, test_data, objective_lambda, device)
             order = 1.0 - measured["objective"]
             history_step.append(step + 1)
-            history_loss.append(measured["objective"])
+            history_train_loss.append(train_measured["objective"])
+            history_test_loss.append(measured["objective"])
+            history_generalization_gap.append(measured["objective"] - train_measured["objective"])
             history_order.append(order)
             if order >= 0.5 and time_to_order == float(steps):
                 time_to_order = float(step + 1)
@@ -224,9 +239,24 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
     train_probe = intensive_losses(logits, targets, mask, objective_lambda)
     train_probe["objective"].backward()
     gradient_metrics = block_gradient_statistics(model)
+    first_gradient = torch.cat(
+        [parameter.grad.detach().float().reshape(-1) for parameter in model.parameters() if parameter.grad is not None]
+    )
+    second_indices = (torch.arange(batch_size) + batch_size) % train_data.size
+    inputs, targets, mask = _batch(train_data, second_indices, device)
+    optimizer.zero_grad(set_to_none=True)
+    second_logits = model(inputs)
+    intensive_losses(second_logits, targets, mask, objective_lambda)["objective"].backward()
+    second_gradient = torch.cat(
+        [parameter.grad.detach().float().reshape(-1) for parameter in model.parameters() if parameter.grad is not None]
+    )
+    gradient_noise = gradient_noise_scale(first_gradient, second_gradient)
     update_metrics = relative_update_statistics(model, initial)
     model.zero_grad(set_to_none=True)
 
+    train_full, _ = _evaluate(
+        model, train_data, objective_lambda, device, max_examples=heldout_examples
+    )
     full, diagnostics = _evaluate(model, test_data, objective_lambda, device)
     ood, _ = _evaluate(model, ood_data, objective_lambda, device)
     no_attention, _ = _evaluate(
@@ -246,7 +276,16 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
     )
     assert diagnostics is not None
     activation_tensor = diagnostics["mlp_activation"]
+    gate_tensor = diagnostics["mlp_gate"]
     attention_tensor = diagnostics["attention"]
+    mechanism_metrics = mlp_mechanism_statistics(
+        activation_tensor, gate_tensor, gated=activation in {"geglu", "swiglu"}
+    )
+    jacobian_rank = local_mlp_jacobian_participation(
+        model.blocks[0].mlp, diagnostics["mlp_input"][0, 0, 0]
+    )
+    residual_metrics = residual_stream_statistics(diagnostics["layer_representation"])
+    data_metrics = token_data_summary(train_data)
     parameter_count = sum(parameter.numel() for parameter in model.parameters())
     approximate_flops = 6.0 * parameter_count * tokens_seen
     semantic_order = 1.0 - full["objective"]
@@ -269,7 +308,15 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
         "macrostate_entropy": macrostate_entropy,
         "generalization_error": full["objective"],
         "normalized_generalization_error": full["objective"],
-        "generalization_gap": float(full["objective"] - train_probe["objective"].detach().item()),
+        "normalized_train_risk": train_full["objective"],
+        "normalized_test_risk": full["objective"],
+        "normalized_ood_risk": ood["objective"],
+        "train_ce_nats": train_full["ce_nats"],
+        "test_ce_nats": full["ce_nats"],
+        "ood_ce_nats": ood["ce_nats"],
+        "generalization_gap": float(full["objective"] - train_full["objective"]),
+        "normalized_generalization_gap": float(full["objective"] - train_full["objective"]),
+        "ood_generalization_gap": float(ood["objective"] - train_full["objective"]),
         "ood_generalization_error": ood["objective"],
         "normalized_ce": full["ce_normalized"],
         "bits_per_byte": full["bits_per_byte"],
@@ -279,6 +326,7 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
         "effective_multiplicity": normalized_participation_ratio(activation_tensor),
         "mlp_participation_fraction": normalized_participation_ratio(activation_tensor),
         "mlp_activation_entropy": normalized_activation_entropy(activation_tensor),
+        "mlp_jacobian_effective_rank": jacobian_rank,
         "attention_entropy": normalized_attention_entropy(attention_tensor),
         "interaction_range": 1.0 - normalized_attention_entropy(attention_tensor),
         "oracle_gap": full["objective"],
@@ -291,6 +339,7 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
         "gradient_log_cv": gradient_metrics["gradient_log_cv"],
         "gradient_gini": gradient_metrics["gradient_gini"],
         "gradient_block_gini": gradient_metrics["gradient_gini"],
+        "gradient_noise_scale": gradient_noise,
         "update_to_weight_rms": update_metrics["update_to_weight_rms"],
         "update_to_weight_max": update_metrics["update_to_weight_max"],
         "time_to_order": time_to_order,
@@ -308,10 +357,13 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
         "wall_seconds": float(elapsed),
         "tokens_per_second": float(tokens_seen / max(elapsed, 1e-12)),
         "objective_lambda": objective_lambda,
-    }
+    } | mechanism_metrics | residual_metrics | data_metrics
     arrays: dict[str, Any] = {
         "history_step": np.asarray(history_step, dtype=np.int32),
-        "history_generalization_error": np.asarray(history_loss, dtype=np.float32),
+        "history_train_risk": np.asarray(history_train_loss, dtype=np.float32),
+        "history_test_risk": np.asarray(history_test_loss, dtype=np.float32),
+        "history_generalization_gap": np.asarray(history_generalization_gap, dtype=np.float32),
+        "history_generalization_error": np.asarray(history_test_loss, dtype=np.float32),
         "history_semantic_order": np.asarray(history_order, dtype=np.float32),
         "attention_map_mean": attention_tensor.detach().float().mean(dim=(0, 1, 2)).cpu().numpy(),
         "dataset_sample_hash": np.asarray([int(test_data.metadata["sample_sha256"][:15], 16)]),

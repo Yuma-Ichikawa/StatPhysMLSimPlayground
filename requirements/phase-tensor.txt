@@ -1,0 +1,7 @@
+# Fixed runtime environment for the trainable phase-continuation tensor.
+torch==2.13.0
+numpy==2.5.1
+scipy==1.18.0
+matplotlib==3.11.1
+datasets==5.0.0
+pytorch-optimizer==3.10.1

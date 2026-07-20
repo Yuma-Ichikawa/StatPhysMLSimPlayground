@@ -29,6 +29,7 @@ def build_parser() -> argparse.ArgumentParser:
     plot = commands.add_parser("plot")
     plot.add_argument("aggregate")
     plot.add_argument("--output", required=True)
+    plot.add_argument("--taxonomy", help="optional nine-axis coverage TOML")
     paper = commands.add_parser("paper")
     paper.add_argument("aggregate")
     paper.add_argument("--output", required=True)
@@ -48,7 +49,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         output = aggregate_phase_tensor(args.manifest, args.runs, args.output)
         print(json.dumps({"aggregate": str(output)}, indent=2))
     elif args.command == "plot":
-        paths = plot_phase_tensor(args.aggregate, args.output)
+        paths = plot_phase_tensor(args.aggregate, args.output, taxonomy_path=args.taxonomy)
         print(json.dumps({"figures": [str(path) for path in paths]}, indent=2))
     elif args.command == "paper":
         output = write_phase_tensor_results(args.aggregate, args.output)

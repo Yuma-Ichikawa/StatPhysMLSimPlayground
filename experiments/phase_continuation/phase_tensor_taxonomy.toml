@@ -1,0 +1,34 @@
+schema_version = "1.0"
+title = "Theory-experiment coverage of the phase-continuation tensor"
+columns = ["T0", "T1", "N1", "N2", "R1", "R2", "O1"]
+
+[column_labels]
+T0 = "exact theory"
+T1 = "asymptotic theory"
+N1 = "reduced numerics"
+N2 = "trainable synthetic"
+R1 = "semi-natural bridge"
+R2 = "natural data"
+O1 = "open-weight lifecycle"
+
+[axes]
+data = ["T0", "N1", "N2", "R1", "R2"]
+attention = ["T0", "T1", "N1"]
+mlp = ["N2"]
+residual = ["N2"]
+objective = ["N2"]
+optimizer = ["N2"]
+scaling = ["T1", "N2"]
+lifecycle = []
+population = []
+
+[axis_labels]
+data = "data $\\mathcal D$"
+attention = "attention $\\mathcal A$"
+mlp = "MLP $\\mathcal F$"
+residual = "residual/norm $\\mathcal R$"
+objective = "objective $\\mathcal O$"
+optimizer = "optimizer $\\mathcal U$"
+scaling = "scaling $\\mathcal S$"
+lifecycle = "lifecycle $\\mathcal C$"
+population = "population $\\mathcal P$"

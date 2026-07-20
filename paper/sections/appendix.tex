@@ -1,75 +1,24 @@
-\section{Reproducibility appendix}
+\section{PhaseCard and reproducibility contract}
 
-\subsection{Repository structure}
+Every condition records eight taxonomy axes: thermodynamic level, symmetry,
+disorder, dynamics, system-size vector, control variable, order family, and
+evidence class.  Outcome labels include stable or renormalized continuation,
+splitting, merging, rounding, new-phase insertion,
+computational--statistical separation, path dependence, and semantic failure.
 
-Reusable code contains no site-specific absolute path. Immutable schemas, seed derivation,
-metrics, and the runner registry live under \texttt{statphys/continuation/core}. Domain
-kernels live under \texttt{domains}; finite-size, nested uncertainty, evidence, discovery,
-and plotting live under \texttt{analysis}; Slurm and execution live under
-\texttt{orchestration}. Root modules are compatibility facades.
+Production uses only a portable Spark profile.  The script rejects any
+partition not beginning with \texttt{spark\_}; repository files contain no
+site path.  A run is immutable after its atomic result write.  Aggregation
+fails on a missing task.  The complete JSON stores all outer means, inner
+variance, bootstrap interval, boundary estimate, competing width fits,
+interaction shifts, and intervention summaries.  Figures are generated only
+from that JSON.  Every figure has physical size 6.4 by 4.8 inches, inward ticks,
+12-point base type, larger axis labels, and preregistered color, line, and
+marker order.
 
-The ten full configurations are:
-\begin{enumerate}
-\item \texttt{paper.toml}
-\item \texttt{transformer\_atlas.toml}
-\item \texttt{transformer\_systems.toml}
-\item \texttt{domain\_programs.toml}
-\item \texttt{cross\_domain.toml}
-\item \texttt{learned\_transformer.toml}
-\item \texttt{learned\_diffusion.toml}
-\item \texttt{learned\_reinforcement.toml}
-\item \texttt{learned\_multiagent.toml}
-\item \texttt{continuation\_diagnostics.toml}
-\end{enumerate}
-Site-specific commands,
-manifests, job IDs, and outputs are generated in the external works directory.
+\section{Legacy atlas status}
 
-\subsection{Artifact contract}
-
-Each task stores its complete specification, namespaced seeds, provenance, status, finite
-metric JSON, compressed arrays, elapsed time, device, and checksums. A task ID hashes every
-condition field except the outer seed and appends that seed. Atomic replacement prevents a
-partially written file from appearing complete. Retry manifests contain all five replicas
-of any incomplete condition, preserving the estimand.
-
-\subsection{Coverage and falsification}
-
-The coverage registry contains 58 runnable experiment IDs. Validation checks uniqueness,
-implementation status, a registered family, at least one observable, a runner, a matching
-configuration, and exactly five seeds in every configuration. Claims list their required
-IDs, minimum evidence grade, and a sentence that would falsify the claim.
-
-\subsection{Finite-size tables}
-
-For every candidate boundary the released table contains size, control, five outer-seed
-values, mean, standard deviation, standard error, 95 percent Student-t interval,
-susceptibility, Binder cumulant, histogram, rate function, relaxation proxy, and intervention
-response. Fit tables contain the raw scaling model, correction model, crossover model,
-parameter uncertainty, and residual score. Exponent estimates are omitted when fewer than
-five sizes pass artifact audit.
-
-\subsection{Temperature ledger}
-
-\begin{table}[h]
-\centering
-\begin{tabularx}{\linewidth}{@{}lYY@{}}
-\toprule
-Quantity & Operational definition & Forbidden conflation \\
-\midrule
-Training effective temperature & fluctuation--response ratio at stated timescale & learning rate alone \\
-Attention temperature & divisor of attention logits & generation sampler temperature \\
-Diffusion noise & forward corruption variance or schedule coordinate & policy entropy \\
-Policy temperature & coefficient in entropy-regularized control & reward scale without normalization \\
-Generation temperature & divisor of output logits & any training-dynamics quantity \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-\subsection{Minimal execution sequence}
-
-First run the coverage command over all ten configurations. Expand each TOML file into an
-immutable manifest. Render GPU or CPU Slurm arrays from a generic profile and supply
-repository, manifest, output, and Python paths through environment variables. Monitor both
-scheduler state and artifact state. Generate a retry manifest for any incomplete
-condition. Only after strict aggregation should the plotting and paper-macro commands be
-run, followed by the LaTeX build.
+The 58-family atlas remains a searchable diagnostic benchmark and code-coverage
+target.  It is not evidence for the four claims above.  Programs A--N,
+secondary architectures, and common-coordinate diagnostics move to the
+supplement because they otherwise obscure the held-out prediction experiment.

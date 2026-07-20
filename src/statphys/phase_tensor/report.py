@@ -73,6 +73,18 @@ def aggregate_phase_tensor(
         if status.get("state") != "completed":
             return None, task.run_id
         metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+        trajectories: dict[str, np.ndarray] = {}
+        arrays_path = directory / "arrays.npz"
+        if arrays_path.is_file():
+            with np.load(arrays_path) as arrays:
+                for name in (
+                    "history_step",
+                    "history_train_risk",
+                    "history_test_risk",
+                    "history_generalization_gap",
+                ):
+                    if name in arrays:
+                        trajectories[name] = arrays[name]
         return {
             "condition_id": task.condition_id,
             "run_id": task.run_id,
@@ -87,6 +99,7 @@ def aggregate_phase_tensor(
             "seed": task.seed,
             "parameters": dict(task.parameters),
             "metrics": metrics,
+            "trajectories": trajectories,
         }, None
 
     with ThreadPoolExecutor(max_workers=32) as pool:
@@ -118,6 +131,27 @@ def aggregate_phase_tensor(
             key: first[key]
             for key in ("condition_id", "study", "domain", "family", "variant", "stage", "control_name", "control", "size", "parameters")
         } | {"metrics": summaries})
+
+    dynamics: list[dict[str, Any]] = []
+    for condition_id, members in sorted(grouped.items()):
+        required = {"history_step", "history_train_risk", "history_test_risk", "history_generalization_gap"}
+        if not all(required <= set(member["trajectories"]) for member in members):
+            continue
+        reference_steps = members[0]["trajectories"]["history_step"]
+        if not all(np.array_equal(reference_steps, member["trajectories"]["history_step"]) for member in members[1:]):
+            raise RuntimeError(f"condition {condition_id} has incompatible trajectory checkpoints")
+        summaries: dict[str, dict[str, list[float]]] = {}
+        for name in sorted(required - {"history_step"}):
+            stacked = np.stack([member["trajectories"][name] for member in members], axis=0)
+            summaries[name] = {
+                "mean": [float(value) for value in stacked.mean(axis=0)],
+                "ci95": [float(T95_FOUR_DOF * value / math.sqrt(REQUIRED_SEED_COUNT)) for value in stacked.std(axis=0, ddof=1)],
+            }
+        first = members[0]
+        dynamics.append({
+            key: first[key]
+            for key in ("condition_id", "family", "variant", "control", "size", "parameters")
+        } | {"steps": [int(value) for value in reference_steps], "metrics": summaries})
 
     boundary_groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
@@ -153,6 +187,10 @@ def aggregate_phase_tensor(
 
     intensive_metrics = (
         "normalized_generalization_error",
+        "normalized_train_risk",
+        "normalized_test_risk",
+        "normalized_ood_risk",
+        "normalized_generalization_gap",
         "normalized_ce",
         "normalized_brier",
         "attention_entropy",
@@ -200,6 +238,7 @@ def aggregate_phase_tensor(
         "uncertainty": "two-sided 95% Student-t interval across five full-pipeline seeds",
         "tasks": len(rows),
         "conditions": conditions,
+        "dynamics": dynamics,
         "boundaries": boundaries,
         "intensive_scaling_checks": intensive_checks,
     }

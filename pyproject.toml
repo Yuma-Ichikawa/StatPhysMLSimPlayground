@@ -39,6 +39,7 @@ dependencies = [
     "tqdm>=4.65",
     "matplotlib>=3.7",
     "pandas>=2.0",
+    "tomli>=2.0; python_version < '3.11'",
 ]
 
 [project.scripts]

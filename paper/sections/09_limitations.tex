@@ -8,6 +8,13 @@ promoted to evidence.  External endpoints require version-pinned models,
 natural-data holdouts, matched token/FLOP controls, and independent
 implementations.
 
+The current empirical Transformer tensor does not yet cover sparse/MoE MLPs,
+low-rank parameterizations, preference or RL objectives, open checkpoint
+lifecycle trajectories, or agent populations. Those cells are displayed as N0
+in the coverage matrix. The new train/test/OOD and mechanism measurements require
+a fresh five-seed aggregate; legacy artifacts are retained as historical results
+and are never relabeled with statistics they did not record.
+
 Our finite sizes can distinguish competing predictive trends but do not by
 themselves prove an asymptotic universality class.  RL and agent systems are
 driven and potentially nonstationary; thermodynamic language is used only for

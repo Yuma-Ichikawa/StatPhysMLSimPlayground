@@ -17,12 +17,19 @@ as separate coordinates rather than collapsing them into parameter count.
 
 ## Intensive observables
 
-Cross entropy is divided by `log(vocabulary)`, Brier risk by its uniform-reference
-scale, attention entropy by `log(context length)`, MLP participation ratio by MLP
-width, and activation entropy by the logarithm of MLP width.  These quantities
-remain dimensionless and bounded under width, depth, context, and data
-continuations.  Parameter count, token count, FLOPs, and wall time are retained
-as extensive audit coordinates.
+Every condition stores the three intensive risks `R_train`, `R_test`, and `R_ood`,
+together with `e_gen = R_test - R_train` and `e_ood = R_ood - R_train`. Cross entropy
+is divided by `log(vocabulary)`, Brier risk by its uniform-reference scale,
+attention entropy by `log(context length)`, and MLP participation and Jacobian ranks
+by MLP width. The registered trajectory contains five-seed mean and 95% Student-t
+intervals for training risk, test risk, and their gap at every checkpoint.
+Parameter count, token count, FLOPs, and wall time remain extensive audit
+coordinates and are never used as order parameters.
+
+Mechanism cards additionally record MLP activation sparsity, gated-unit saturation,
+local Jacobian effective rank, residual-stream RMS and drift, two-minibatch gradient
+noise scale, update-to-weight scale, and a bounded corpus summary vector. These are
+diagnostics: performance and mechanism claims are always stated separately.
 
 ## Configuration families
 
@@ -33,6 +40,7 @@ as extensive audit coordinates.
 | `tensor_objective.toml` | normalized CE-Brier objective homotopy |
 | `tensor_scaling.toml` | width, depth, context, and data exponent |
 | `tensor_realdata.toml` | injected control, TinyStories, SimpleStories, FineWeb-Edu, and Dolma |
+| `tensor_residual.toml` | no/post/pre LayerNorm and pre-RMSNorm crossed with residual scale |
 
 ## Portable execution
 
@@ -72,10 +80,12 @@ After every run is complete, aggregate and render figures:
 ```bash
 phase-tensor aggregate "$STATPHYS_MANIFEST" \
   --runs "$STATPHYS_OUTPUT" --output aggregate.json
-phase-tensor plot aggregate.json --output paper/predictive/figures
+phase-tensor plot aggregate.json --output paper/figures \
+  --taxonomy experiments/phase_continuation/phase_tensor_taxonomy.toml
 phase-tensor paper aggregate.json \
-  --output paper/predictive/generated/phase_tensor_results.tex
+  --output paper/generated/phase_tensor_results.tex
 ```
 
 The plotting layer fixes every PDF at 6.4 by 4.8 inches, uses a white background,
-and draws uncertainty from the exact five-seed aggregate.
+mathematical axis labels, dashed grids, and uncertainty from the exact five-seed
+aggregate. `phase_tensor_taxonomy.toml` explicitly displays untested cells.

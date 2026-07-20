@@ -60,6 +60,74 @@ def normalized_attention_entropy(attention: torch.Tensor) -> float:
     return float(entropy / max(math.log(max(attention.shape[-1], 2)), 1e-20))
 
 
+def mlp_mechanism_statistics(
+    activations: torch.Tensor,
+    gates: torch.Tensor,
+    *,
+    gated: bool,
+) -> dict[str, float]:
+    """Return bounded MLP occupancy and gate observables from a fixed probe set."""
+    values = activations.detach().float()
+    scale = values.square().mean().sqrt().clamp_min(1e-12)
+    sparsity = (values.abs() <= 0.05 * scale).float().mean()
+    if gated:
+        gate_values = gates.detach().float()
+        gate_scale = gate_values.square().mean().sqrt().clamp_min(1e-12)
+        saturation = (gate_values.abs() >= 2.0 * gate_scale).float().mean()
+    else:
+        saturation = values.new_zeros(())
+    return {
+        "mlp_activation_sparsity": float(sparsity),
+        "mlp_gate_saturation": float(saturation),
+    }
+
+
+def local_mlp_jacobian_participation(mlp: torch.nn.Module, inputs: torch.Tensor) -> float:
+    """Estimate a local MLP Jacobian effective rank from one registered token."""
+    probe = inputs.detach().float().reshape(-1).requires_grad_(True)
+
+    def mapping(vector: torch.Tensor) -> torch.Tensor:
+        output, _, _ = mlp(vector.reshape(1, 1, -1))
+        return output.reshape(-1)
+
+    with torch.enable_grad():
+        jacobian = torch.autograd.functional.jacobian(mapping, probe, vectorize=True)
+    singular = torch.linalg.svdvals(jacobian.detach().float())
+    eigenvalues = singular.square()
+    participation = eigenvalues.sum().square() / eigenvalues.square().sum().clamp_min(1e-20)
+    return float(participation / max(eigenvalues.numel(), 1))
+
+
+def residual_stream_statistics(representations: torch.Tensor) -> dict[str, float]:
+    """Bounded residual-stream scale, drift, and nearest-layer correlation."""
+    values = representations.detach().float()
+    rms = values.square().mean().sqrt()
+    token_drift = values.mean(dim=-1).abs().mean() / rms.clamp_min(1e-12)
+    if values.shape[0] < 2:
+        correlation = values.new_ones(())
+    else:
+        left = values[:-1].reshape(values.shape[0] - 1, -1)
+        right = values[1:].reshape(values.shape[0] - 1, -1)
+        left = left - left.mean(dim=-1, keepdim=True)
+        right = right - right.mean(dim=-1, keepdim=True)
+        correlation = (left * right).sum(dim=-1) / (
+            left.square().sum(dim=-1).sqrt() * right.square().sum(dim=-1).sqrt()
+        ).clamp_min(1e-12)
+        correlation = correlation.mean()
+    return {
+        "residual_stream_rms": float(rms),
+        "residual_token_mean_drift": float(token_drift),
+        "residual_depth_correlation": float(correlation),
+    }
+
+
+def gradient_noise_scale(first: torch.Tensor, second: torch.Tensor) -> float:
+    """Dimensionless two-minibatch gradient-noise estimate."""
+    mean = 0.5 * (first + second)
+    noise = 0.5 * (first - second)
+    return float(noise.square().sum() / mean.square().sum().clamp_min(1e-20))
+
+
 def block_gradient_statistics(model: torch.nn.Module) -> dict[str, float]:
     rms_values = []
     for _, parameter in model.named_parameters():

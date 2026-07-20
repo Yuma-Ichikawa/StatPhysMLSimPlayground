@@ -7,8 +7,8 @@ which choices in a modern Transformer move a boundary.  We therefore factor the
 Transformer study into a phase-continuation tensor
 \begin{equation}
   \mathcal{T}=
-  \mathcal{D}\times\mathcal{A}\times\mathcal{M}\times\mathcal{R}
-  \times\mathcal{L}\times\mathcal{O}\times\mathcal{S}
+  \mathcal{D}\times\mathcal{A}\times\mathcal{F}\times\mathcal{R}
+  \times\mathcal{O}\times\mathcal{U}\times\mathcal{S}
   \times\mathcal{C}\times\mathcal{P},
 \end{equation}
 whose coordinates are data, attention, MLP, residual parameterization,
@@ -19,6 +19,40 @@ which intensive observable, is transported when one coordinate is continued
 while the others are held fixed?''  The distinction is important because width,
 depth, context, and data are inequivalent scaling paths, and optimizer rankings
 can reverse under normalization or learning-rate changes.
+
+\subsection{Coverage is a result, not a footnote}
+
+The tensor is a taxonomy rather than an assertion that every Cartesian-product
+cell has been run. Figure~\ref{fig:tensor-coverage} records the evidence tier
+of each coordinate and leaves untested cells visibly marked as N0. The present
+trainable program covers the MLP, residual/normalization, objective, optimizer,
+and scaling edges on controlled synthetic data; the data edge additionally has
+semi-natural and bounded natural-corpus endpoints. Attention is represented by
+the solvable and reduced numerical anchors developed in the preceding sections,
+whereas lifecycle and population continuations remain protocols rather than
+empirical claims in this Transformer bridge.
+
+\begin{table}[t]
+\centering\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lll}
+\toprule
+Coordinate & Registered primary observable & Current evidence tier \\
+\midrule
+Data $\mathcal D$ & $s(\mathcal D),R_{\rm test},e_{\rm OOD}$ & N2, R1, R2 \\
+Attention $\mathcal A$ & $m_{\rm att}$, head response & T0, T1, N1 \\
+MLP $\mathcal F$ & $\Delta_{\rm MLP}$, $\mathrm{PR}_{\rm MLP}$ & N2 \\
+Residual $\mathcal R$ & stream RMS, depth correlation & N2 \\
+Objective $\mathcal O$ & $\tilde\ell$, Brier, alignment & N2 \\
+Optimizer $\mathcal U$ & $G_{\rm block}$, noise scale & N2 \\
+Scaling $\mathcal S$ & $R_{\rm test}(N_{\rm path})$ & T1, N2 \\
+Lifecycle $\mathcal C$ & drift and transfer response & N0 \\
+Population $\mathcal P$ & effective multiplicity & N0 \\
+\bottomrule
+\end{tabular}
+\caption{Nine-axis coverage matrix. T0/T1 are exact/asymptotic theory,
+N1/N2 reduced/trainable synthetic numerics, R1/R2 semi-natural/natural data,
+and N0 explicitly denotes an untested cell.}
+\end{table}
 
 \subsection{Trainable bridge and dimensionless observables}
 
@@ -32,13 +66,21 @@ SimpleStories, FineWeb-Edu, and Dolma samples test boundary transport to natural
 data.  Natural-corpus comparisons are distributional stress tests rather than
 claims about frontier-scale language modelling.
 
-All reported observables are $O(1)$ under the intended continuation.  For a
-vocabulary of size $V$, cross entropy is $\tilde\ell_{\rm CE}=\ell_{\rm
-CE}/\log V$, the generalization gap is $(\ell_{\rm test}-\ell_{\rm
-train})/\log V$, and Brier risk is divided by its vocabulary-scale reference.
-Attention entropy is divided by $\log L$, MLP participation ratio by the MLP
-width, and activation entropy by the logarithm of that width.  The sample path
-is
+All reported performance observables are $O(1)$ under the intended continuation.
+For a vocabulary of size $V$, we separately report
+\begin{equation}
+R_{\rm train}=\ell_{\rm train}/\log V,\qquad
+R_{\rm test}=\ell_{\rm test}/\log V,\qquad
+R_{\rm OOD}=\ell_{\rm OOD}/\log V,\qquad
+e_{\rm gen}=R_{\rm test}-R_{\rm train}.
+\end{equation}
+Thus a held-out risk is never called a generalization gap. Brier risk is divided
+by its vocabulary-scale reference. Attention entropy is divided by $\log L$,
+MLP participation ratio and local Jacobian participation ratio by MLP width, and
+activation entropy by the logarithm of that width. Activation sparsity, gated-unit
+saturation, residual-stream RMS, token-mean drift, nearest-layer correlation,
+two-minibatch gradient-noise scale, and corpus summary statistics are reported as
+mechanism diagnostics; they do not substitute for a risk metric. The sample path is
 \begin{equation}
   N_{\rm train}=\min\{N_{\rm cap},\lceil\alpha d^{\gamma}\rceil\},
 \end{equation}
@@ -70,9 +112,12 @@ and doubly ablated networks, respectively, we report
   \Delta_{AM} &= R_{-AM}-R_{-A}-R_{-M}+R.
 \end{align}
 These interventions separate functional dependence from attention-map
-appearance.  Gradient-block Gini coefficient, log-scale coefficient of
-variation, update-to-weight RMS, normalized participation ratio, and time to
-cross the semantic-order threshold provide mechanism-resolving diagnostics.
+appearance. Gradient-block Gini coefficient, log-scale coefficient of variation,
+two-minibatch gradient-noise scale, update-to-weight RMS, normalized participation
+ratios, and time to cross the task-order threshold provide mechanism-resolving
+diagnostics. At every registered checkpoint, five-seed train/test trajectories are
+aggregated before plotting; a final-score improvement that does not persist in
+$e_{\rm gen}$ is therefore not interpreted as improved generalization.
 
 Every confirmatory condition uses exactly the same five distinct seeds.  A seed
 controls data generation or corpus windows, initialization, minibatch order,
@@ -85,7 +130,7 @@ pseudoreplication and understated uncertainty near a steep crossover.
 
 \subsection{Orthogonal continuation results}
 
-Figures~\ref{fig:tensor-mlp-phase}--\ref{fig:tensor-compute} are generated only
+Figures~\ref{fig:tensor-mlp-phase}--\ref{fig:tensor-mlp-mechanism} are generated only
 from the immutable five-seed aggregate.  Their roles are deliberately
 non-redundant: MLP family and causal division of labour, optimizer geometry and
 gradient heterogeneity, objective homotopy, inequivalent scaling paths,
@@ -194,7 +239,8 @@ of the measurement protocol, not universality of the numerical boundary.
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.94\linewidth]{figures/figure16_natural_data_generalization.pdf}
-  \caption{Intensive held-out risk across synthetic and natural-data regimes.}
+  \caption{Generalization gap $e_{\rm gen}=R_{\rm test}-R_{\rm train}$ across
+  semi-natural and natural-data regimes.}
   \label{fig:tensor-natural-generalization}
 \end{figure}}{}
 
@@ -205,6 +251,33 @@ of the measurement protocol, not universality of the numerical boundary.
   \caption{Audited compute--error landscape. FLOPs remain an extensive resource
   coordinate; the vertical axis is an intensive risk.}
   \label{fig:tensor-compute}
+\end{figure}}{}
+
+\IfFileExists{figures/figure18_theory_experiment_coverage.pdf}{
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.94\linewidth]{figures/figure18_theory_experiment_coverage.pdf}
+  \caption{Theory--experiment coverage of the nine-axis tensor. Grey N0 cells
+  are declared untested rather than omitted.}
+  \label{fig:tensor-coverage}
+\end{figure}}{}
+
+\IfFileExists{figures/figure19_training_generalization_dynamics.pdf}{
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.94\linewidth]{figures/figure19_training_generalization_dynamics.pdf}
+  \caption{Five-seed training dynamics. Training risk and the generalization gap
+  are separate $O(1)$ observables; shaded bands are 95\% Student-$t$ intervals.}
+  \label{fig:tensor-dynamics}
+\end{figure}}{}
+
+\IfFileExists{figures/figure20_mlp_mechanism_atlas.pdf}{
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.94\linewidth]{figures/figure20_mlp_mechanism_atlas.pdf}
+  \caption{MLP mechanism atlas. Effective rank, occupancy, and gate statistics
+  are reported separately from task performance and causal contribution.}
+  \label{fig:tensor-mlp-mechanism}
 \end{figure}}{}
 
 \clearpage

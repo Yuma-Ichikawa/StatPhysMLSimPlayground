@@ -1,55 +1,29 @@
 \section{Introduction}
 
-Large learning systems display abrupt changes in capability, representation, routing,
-generation, and collective behavior. Calling every sharp curve a phase transition is,
-however, scientifically weak. A useful statistical-mechanical claim must identify a
-thermodynamic limit, an order parameter, a source of fluctuations, a control variable,
-finite-size evidence, and a competing crossover explanation. It must also survive the
-difference between quenched randomness in data or tasks and annealed randomness in
-optimization or sampling.
-
-This paper turns those requirements into a numerical program. Its core question is:
+Solvable learning models increasingly exhibit sharp changes in recovery,
+attention mechanism, memorization, policy support, and collective order.  The
+central unresolved question is not whether such transitions can be drawn, but
+whether a theory calibrated before realism is added predicts an unseen
+boundary afterward.  We ask:
 \begin{quote}
-Can an order parameter and its transition be followed from a solvable anchor to a realistic
-model through a sequence of controlled deformations, without changing the measured object
-midway?
+Can a small set of macroscopic variables calibrated in a solvable model
+predict phase boundaries in a held-out learning system, and can prediction
+failure identify the missing variable?
 \end{quote}
-We call this procedure \emph{phase continuation}. It resembles homotopy continuation:
-an exact or oracle endpoint supplies semantics for the order parameter; adjacent models
-relax one assumption; and a claim is weakened or rejected when the observable ceases to
-track the same latent structure.
 
-The first domain is the Transformer. Attention architectures
-\citep{vaswani2017attention} combine several potentially distinct thermodynamic levels:
-non-equilibrium training, internal representation and circuit organization, and output
-sampling. We therefore use separate symbols and interventions for optimizer noise,
-attention softmax scale, and generation temperature. We construct an architecture ladder
-from tied rank-one attention to autoregressive generation, and a data ladder from Gaussian
-tokens to hidden-state and grammar sources. The ladder supports tests of positional versus
-semantic recovery, head specialization, attention--MLP division of labor, in-context
-learning, long-context propagation, low-rank adaptation, glassy optimization, optimizer
-universality, state tracking, expert routing, retrieval, multimodal alignment, and
-compression.
+This question changes phase continuation from a descriptive atlas into a
+falsifiable transport problem.  For an edge $u\to v$ in an assumption graph,
+we fit effective parameters only at $u$, predict $\widehat g_{{\rm c},v}$, and score the
+prediction against an untouched confirmatory grid at $v$.  A failed bridge is
+scientifically useful only when an augmented observable restores prediction
+on the same holdout.
 
-The same logic is then applied to three additional domains. For diffusion, a Gaussian
-mixture gives an exact score before locality, finite data, guidance, and reverse-trajectory
-commitment are introduced. For reinforcement learning, a finite MDP gives an exact soft
-policy before proxy rewards, rollout limits, preference estimation, and optimization
-dynamics are introduced. For collective reasoning, mean-field population dynamics give a
-controlled endpoint before sparse networks, heterogeneous influence, debate, committed
-minorities, and role specialization are introduced. Four matched-latent experiments test
-interactions among these domains rather than relying on metaphor.
+Our four primary claims are: predictive boundary transport, localization of
+non-additive assumption interactions, recovery by a new macrovariable, and
+compute-efficient intervention inside the predicted critical window.  The
+large experiment registry, immutable artifacts, and plotting grammar are
+supporting infrastructure rather than scientific claims.
 
-Our contributions are:
-\begin{enumerate}
-\item A common phase-continuation formalism with an explicit assumption graph and matched
-latent ensembles.
-\item A Transformer M0--M8 and data D0--D5 experiment atlas covering programs A--N in one
-manuscript.
-\item Domain-specific diffusion, RL, and multi-agent phase cubes plus four cross-domain
-continuations.
-\item A strict evidence protocol using \NSeeds{} seeds, nested uncertainty, finite-size
-scaling, rate functions, response, hysteresis, and evidence grades.
-\item A portable implementation whose coverage audit fails when a proposed experiment is
-missing and whose paper cannot silently report incomplete results.
-\end{enumerate}
+\resultfigure{figures/figure1_protocol.pdf}{Predictive phase continuation.  A
+solvable anchor calibrates effective variables; all boundary and intervention
+scores are evaluated on a blinded node.}

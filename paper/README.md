@@ -1,16 +1,29 @@
-# Unified phase-continuation paper
+# Predictive phase-continuation paper
 
-Numerical values are generated only from a strict complete aggregate with exactly five
-outer seeds per condition. The aggregate now spans ten suites, at least six sizes per
-confirmatory family, four realism tiers, and the complete assumption/outcome taxonomy.
+`main.tex` is the only manuscript entry point. Its `sections/`, `figures/`,
+`generated/`, `references.bib`, and `main.pdf` are all colocated in this directory.
+The repository intentionally contains no second paper tree.
 
-Generate the aggregate, all eleven error-bar figure files (including the eight registered
-main figures), and TeX macros before compiling:
+Numerical values are generated only from a strict complete aggregate with exactly
+five full-pipeline seeds per condition. The O(1) tensor aggregate records separate
+training, IID-test, and OOD risks, their generalization gaps, and mechanism
+diagnostics. A missing or failed seed aborts aggregation.
 
-    phase-continuation plot COMPLETE_AGGREGATE --output figures/generated
-    phase-continuation paper COMPLETE_AGGREGATE --output generated/results.tex
-    latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
+The portable phase-tensor workflow is:
 
-Without 'generated/results.tex', the manuscript deliberately compiles through the
-pending-results branch. Tier C protocols remain labeled incomplete even when every runnable
-Tier A--B+ job is complete.
+```bash
+phase-tensor aggregate "$STATPHYS_MANIFEST" --runs "$STATPHYS_OUTPUT" \
+  --output aggregate.json
+phase-tensor plot aggregate.json --output paper/figures \
+  --taxonomy experiments/phase_continuation/phase_tensor_taxonomy.toml
+phase-tensor paper aggregate.json --output paper/generated/phase_tensor_results.tex
+cd paper
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+bibtex main
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+```
+
+The Spark-only monitor in `works/phase_tensor/monitor-o1-v2.sh` runs this sequence
+only after all submitted arrays have left the queue and verifies that `main.pdf` is
+newer than every required figure and the generated result macros.

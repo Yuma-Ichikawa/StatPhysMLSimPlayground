@@ -23,21 +23,52 @@ DOMAIN_TITLES = {
 }
 COLORS = ("#006D77", "#E76F51", "#264653", "#E9C46A", "#2A9D8F", "#D62828", "#5F6F52", "#B56576")
 MARKERS = ("o", "s", "^", "D", "v", "P", "X", "<")
+METRIC_LABELS = {
+    "order_parameter": r"$m$",
+    "susceptibility": r"$\chi$",
+    "binder_cumulant": r"$U_4$",
+    "generalization_error": r"$e_{\rm gen}$",
+    "effective_multiplicity": r"$K_{\rm eff}$",
+    "interaction_range": r"$\xi$",
+    "oracle_gap": r"$\Delta_{\rm oracle}$",
+    "intervention_response": r"$\Delta_{\rm int}$",
+    "pair_interaction_delta": r"$|\Delta_{ij}g_{\rm c}|$",
+    "bridge_error": r"$\mathcal E_{\rm bridge}$",
+    "response_slope": r"$\partial_g m$",
+    "threshold_separation": r"$\Delta g_{\rm c}$",
+}
+
+
+def _control_label(name: str) -> str:
+    known = {
+        "sample_coefficient": r"$\alpha=N_{\rm train}/d^\gamma$",
+        "noise": r"$\sigma$",
+        "guidance": r"$w_{\rm CFG}$",
+        "verifier_noise": r"$\epsilon_{\rm verifier}$",
+        "coupling": r"$J$",
+    }
+    if name in known:
+        return known[name]
+    return "$" + name.replace("_", r"\_") + "$"
 
 
 def _style() -> None:
     plt.rcParams.update(
         {
-            "font.family": "serif",
-            "font.serif": ["STIX Two Text", "DejaVu Serif"],
+            "font.family": "sans-serif",
+            "font.size": 12,
             "mathtext.fontset": "stix",
-            "axes.spines.top": False,
-            "axes.spines.right": False,
-            "axes.facecolor": "#FAF7F0",
-            "figure.facecolor": "#FAF7F0",
-            "axes.grid": True,
-            "grid.alpha": 0.18,
-            "grid.linewidth": 0.7,
+            "xtick.direction": "in",
+            "ytick.direction": "in",
+            "xtick.major.width": 1.0,
+            "ytick.major.width": 1.0,
+            "axes.linewidth": 1.0,
+            "axes.xmargin": 0.01,
+            "axes.ymargin": 0.01,
+            "axes.facecolor": "white",
+            "figure.facecolor": "white",
+            "savefig.facecolor": "white",
+            "savefig.transparent": False,
             "legend.frameon": False,
         }
     )
@@ -116,14 +147,16 @@ def _errorbar(
         linewidth=1.2,
         capsize=2.2,
     )
+    ax.grid(ls="--", color="0.82", linewidth=0.7, alpha=0.9)
+    ax.tick_params(which="both", top=True, right=True, labelsize=12)
 
 
 def _save(figure: Any, output_dir: str | Path, stem: str) -> Path:
     target = Path(output_dir)
     target.mkdir(parents=True, exist_ok=True)
     path = target / stem
-    figure.savefig(path.with_suffix(".pdf"), bbox_inches="tight")
-    figure.savefig(path.with_suffix(".png"), dpi=220, bbox_inches="tight")
+    figure.savefig(path.with_suffix(".pdf"))
+    figure.savefig(path.with_suffix(".png"), dpi=220)
     plt.close(figure)
     return path.with_suffix(".pdf")
 
@@ -131,14 +164,14 @@ def _save(figure: Any, output_dir: str | Path, stem: str) -> Path:
 def plot_phase_panels(aggregate: dict[str, Any] | str | Path, output_dir: str | Path) -> Path:
     data = read_aggregate(aggregate) if isinstance(aggregate, (str, Path)) else aggregate
     _style()
-    figure, axes = plt.subplots(2, 2, figsize=(10.2, 7.1), constrained_layout=True)
+    figure, axes = plt.subplots(2, 2, figsize=(6.4, 4.8), constrained_layout=True)
     for ax, domain in zip(axes.flat, DOMAIN_ORDER):
         records = [value for value in data["records"] if value["domain"] == domain]
         for index, (label, _, values) in enumerate(_representative_series(records, "order_parameter", 8)):
             _errorbar(ax, values, "order_parameter", label, index)
         ax.set_title(DOMAIN_TITLES[domain], loc="left", fontweight="bold")
-        ax.set_xlabel(records[0]["control_name"].replace("_", " ") if records else "control")
-        ax.set_ylabel("order parameter")
+        ax.set_xlabel(_control_label(records[0]["control_name"]) if records else r"$g$")
+        ax.set_ylabel(r"$m$")
         if records:
             ax.legend(fontsize=5.8)
     return _save(figure, output_dir, "phase_order_parameter")
@@ -155,7 +188,7 @@ def plot_common_coordinates(
         ("oracle_gap", "oracle gap"),
     )
     figure, axes = plt.subplots(
-        len(metrics), len(DOMAIN_ORDER), figsize=(13.0, 7.8), constrained_layout=True, squeeze=False
+        len(metrics), len(DOMAIN_ORDER), figsize=(6.4, 4.8), constrained_layout=True, squeeze=False
     )
     for column, domain in enumerate(DOMAIN_ORDER):
         records = [value for value in data["records"] if value["domain"] == domain]
@@ -166,9 +199,9 @@ def plot_common_coordinates(
             if row == 0:
                 ax.set_title(DOMAIN_TITLES[domain], fontweight="bold")
             if column == 0:
-                ax.set_ylabel(ylabel)
+                ax.set_ylabel(METRIC_LABELS.get(metric, ylabel))
             if row == len(metrics) - 1:
-                ax.set_xlabel("registered control")
+                ax.set_xlabel(r"$g$")
             if row == 0 and records:
                 ax.legend(fontsize=5.2)
     return _save(figure, output_dir, "common_coordinates")
@@ -179,7 +212,7 @@ def plot_finite_size(
 ) -> Path:
     data = read_aggregate(aggregate) if isinstance(aggregate, (str, Path)) else aggregate
     _style()
-    figure, axes = plt.subplots(2, 2, figsize=(10.2, 7.1), constrained_layout=True)
+    figure, axes = plt.subplots(2, 2, figsize=(6.4, 4.8), constrained_layout=True)
     for ax, domain in zip(axes.flat, DOMAIN_ORDER):
         records = [value for value in data["records"] if value["domain"] == domain]
         groups: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
@@ -207,8 +240,9 @@ def plot_finite_size(
             )
         ax.set_xscale("log", base=2)
         ax.set_title(DOMAIN_TITLES[domain], loc="left", fontweight="bold")
-        ax.set_xlabel("system size")
-        ax.set_ylabel("order at susceptibility peak")
+        ax.set_xlabel(r"$N$")
+        ax.set_ylabel(r"$m(g_\chi)$")
+        ax.grid(ls="--", color="0.82", linewidth=0.7, alpha=0.9)
         if items:
             ax.legend(fontsize=5.5)
     return _save(figure, output_dir, "finite_size_peak")
@@ -233,14 +267,14 @@ def _registered_panel(
         if value["domain"] in allowed_domains
         and (allowed_families is None or value.get("family", "anchor") in allowed_families)
     ]
-    figure, axes = plt.subplots(2, 2, figsize=(10.4, 7.2), constrained_layout=True)
+    figure, axes = plt.subplots(2, 2, figsize=(6.4, 4.8), constrained_layout=True)
     figure.suptitle(title, fontweight="bold")
     for ax, (metric, ylabel) in zip(axes.flat, metrics):
         metric_records = [record for record in records if metric in record["metrics"]]
         for index, (label, _, values) in enumerate(_representative_series(metric_records, metric, 10)):
             _errorbar(ax, values, metric, label, index)
-        ax.set_xlabel(metric_records[0]["control_name"].replace("_", " ") if metric_records else "control")
-        ax.set_ylabel(ylabel)
+        ax.set_xlabel(_control_label(metric_records[0]["control_name"]) if metric_records else r"$g$")
+        ax.set_ylabel(METRIC_LABELS.get(metric, ylabel))
         if metric_records:
             ax.legend(fontsize=5.2, ncol=2 if len(metric_records) > 20 else 1)
     return _save(figure, output_dir, stem)

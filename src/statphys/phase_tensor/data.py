@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import sha256
 import json
+import math
 import os
 from pathlib import Path
 from typing import Any
@@ -26,12 +27,20 @@ class CorpusSpec:
 
 
 CORPUS_SPECS = {
-    "tinystories": CorpusSpec("roneneldan/TinyStories", None, "train", "text"),
-    "simplestories": CorpusSpec("SimpleStories/SimpleStories", None, "train", "story"),
-    "fineweb_edu": CorpusSpec("HuggingFaceFW/fineweb-edu", "sample-10BT", "train", "text"),
+    "tinystories": CorpusSpec(
+        "roneneldan/TinyStories", None, "train", "text", "f54c09fd23315a6f9c86f9dc80f725de7d8f9c64"
+    ),
+    "simplestories": CorpusSpec(
+        "SimpleStories/SimpleStories", None, "train", "story", "e63b8adc3b1a1bdc7cac5b500d150b71346b0628"
+    ),
+    "fineweb_edu": CorpusSpec(
+        "HuggingFaceFW/fineweb-edu", "sample-10BT", "train", "text", "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9"
+    ),
     # Parquet conversion of the official v1_6 sample; the upstream repository
     # still depends on dataset scripts removed in datasets 5.
-    "dolma": CorpusSpec("devingulliver/dolma-v1_6-sample", None, "train", "text"),
+    "dolma": CorpusSpec(
+        "devingulliver/dolma-v1_6-sample", None, "train", "text", "6b03e4bbe0d9633c408555a7a8667b944033b46c"
+    ),
 }
 
 
@@ -45,6 +54,38 @@ class TokenDataset:
     @property
     def size(self) -> int:
         return int(self.inputs.shape[0])
+
+
+def token_data_summary(dataset: TokenDataset) -> dict[str, float]:
+    """Compute an O(1) corpus summary vector on the registered training sample."""
+    tokens = dataset.inputs.detach().cpu().numpy().astype(np.int64, copy=False)
+    counts = np.bincount(tokens.reshape(-1), minlength=VOCABULARY).astype(np.float64)
+    mass = counts / max(counts.sum(), 1.0)
+    nonzero = mass[mass > 0.0]
+    entropy = float(-(nonzero * np.log(nonzero)).sum())
+    effective_vocabulary = math.exp(entropy) / VOCABULARY
+    ranks = np.arange(1, nonzero.size + 1, dtype=np.float64)
+    ordered = np.sort(nonzero)[::-1]
+    zipf_exponent = float(-np.polyfit(np.log(ranks), np.log(ordered), deg=1)[0]) if ordered.size >= 3 else 0.0
+    pairs = tokens[:, :-1].reshape(-1) * VOCABULARY + tokens[:, 1:].reshape(-1)
+    pair_mass = np.bincount(pairs, minlength=VOCABULARY * VOCABULARY).reshape(VOCABULARY, VOCABULARY)
+    pair_mass = pair_mass / max(pair_mass.sum(), 1.0)
+    marginal_left = pair_mass.sum(axis=1, keepdims=True)
+    marginal_right = pair_mass.sum(axis=0, keepdims=True)
+    valid = pair_mass > 0.0
+    mutual_information = float(np.sum(pair_mass[valid] * np.log(pair_mass[valid] / (marginal_left * marginal_right)[valid])))
+    sample = tokens[: min(tokens.shape[0], 1024)]
+    duplicate_fraction = 1.0 - np.unique(sample, axis=0).shape[0] / max(sample.shape[0], 1)
+    positive_counts = counts[counts > 0.0]
+    tail_ratio = float(counts.max() / max(float(positive_counts.mean()) if positive_counts.size else 1.0, 1.0))
+    return {
+        "data_effective_vocabulary_fraction": float(effective_vocabulary),
+        "data_zipf_exponent": zipf_exponent,
+        "data_entropy_rate_normalized": float(entropy / math.log(VOCABULARY)),
+        "data_adjacent_mi_normalized": float(mutual_information / math.log(VOCABULARY)),
+        "data_duplicate_fraction": float(duplicate_fraction),
+        "data_frequency_tail_ratio": float(tail_ratio / (1.0 + tail_ratio)),
+    }
 
 
 def _corpus_path(root: str | Path, name: str) -> Path:

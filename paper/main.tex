@@ -1,33 +1,37 @@
 \documentclass[11pt]{article}
-\usepackage[a4paper,margin=24mm]{geometry}
+\usepackage[a4paper,margin=23mm]{geometry}
 \usepackage{amsmath,amssymb,bm}
-\IfFileExists{grfext.sty}{\usepackage{graphicx}}{\newcommand{\includegraphics}[2][]{\begingroup\pdfximage width 0.94\linewidth {##2}\pdfrefximage\pdflastximage\endgroup}}
-\usepackage{booktabs,tabularx,array}
+\IfFileExists{grfext.sty}{\usepackage{graphicx}}{\newcommand{\includegraphics}[2][]{\begingroup\pdfximage width 0.96\linewidth {##2}\pdfrefximage\pdflastximage\endgroup}}
+\usepackage{booktabs,tabularx,array,multirow}
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage[numbers,sort&compress]{natbib}
-\hypersetup{colorlinks=true,linkcolor=blue!55!black,citecolor=blue!55!black,urlcolor=blue!55!black}
+\hypersetup{colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black}
 \setlength{\parindent}{1em}
-\setlength{\parskip}{0.25em}
+\setlength{\parskip}{0.2em}
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
-\input{macros}
-\newif\ifresultsready
-\IfFileExists{generated/results.tex}{\resultsreadytrue\input{generated/results.tex}}{%
-  \resultsreadyfalse\input{generated/results_fallback.tex}}
-\title{Phase Continuation from Solvable Models to Modern Learning Systems:\\
-A Reproducible Numerical Thermodynamics of Transformers, Diffusion, Reinforcement Learning, and Collective Reasoning}
+\newcommand{\gc}{g_{\mathrm c}}
+\newcommand{\gchat}{\widehat g_{\mathrm c}}
+\newcommand{\Ebridge}{\mathcal E_{\mathrm{bridge}}}
+\newcommand{\resultfigure}[2]{\begin{figure}[t]\centering\IfFileExists{#1}{\includegraphics[width=0.96\linewidth]{#1}}{\fbox{\parbox[c][52mm][c]{0.9\linewidth}{\centering Result pending: \texttt{\detokenize{#1}}}}}\caption{#2}\end{figure}}
+\IfFileExists{generated/results.tex}{\input{generated/results.tex}}{\input{generated/results_fallback.tex}}
+\title{Predictive Phase Continuation across Data, Architecture, Objectives, and Optimization\\\large A Numerical Phase Atlas for Transformers with Diffusion, Reinforcement-Learning, and Multi-Agent Validation}
 \author{Yuma Ichikawa}
 \date{\today}
 \begin{document}
 \maketitle
 \input{sections/00_abstract}
 \input{sections/01_introduction}
-\input{sections/02_related_work}
-\input{sections/03_model}
-\input{sections/04_protocol}
-\input{sections/05_results}
-\input{sections/06_discussion}
-\input{sections/07_conclusion}
+\input{sections/02_prior_work}
+\input{sections/03_framework}
+\input{sections/04_statistics}
+\input{sections/05_audit}
+\input{sections/06_transformer_diffusion}
+\input{sections/07_rl_agents}
+\input{sections/08_prediction}
+\input{sections/08b_empirical_tensor}
+\input{sections/09_limitations}
+\input{sections/10_conclusion}
 \appendix
 \input{sections/appendix}
 \bibliographystyle{plainnat}

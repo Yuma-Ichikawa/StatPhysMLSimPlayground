@@ -34,6 +34,7 @@ _RUNNER_PATHS: dict[Domain, dict[str, str]] = {
                 "tensor_objective",
                 "tensor_scaling",
                 "tensor_realdata",
+                "tensor_residual",
             )
         },
     },

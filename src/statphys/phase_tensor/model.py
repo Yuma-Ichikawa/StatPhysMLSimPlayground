@@ -35,11 +35,12 @@ class FeedForward(nn.Module):
         self.up = nn.Linear(width, multiplier * hidden, bias=False)
         self.down = nn.Linear(hidden, width, bias=False)
 
-    def forward(self, inputs: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, inputs: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         if self.up is None or self.down is None:
             empty = inputs.new_zeros((*inputs.shape[:-1], 1))
-            return torch.zeros_like(inputs), empty
+            return torch.zeros_like(inputs), empty, empty
         projected = self.up(inputs)
+        gate = inputs.new_zeros((*inputs.shape[:-1], 1))
         if self.activation == "linear":
             hidden = projected
         elif self.activation == "relu":
@@ -52,7 +53,7 @@ class FeedForward(nn.Module):
             hidden = value * activated
         else:
             raise ValueError(f"unsupported feed-forward activation: {self.activation}")
-        return self.down(hidden), hidden
+        return self.down(hidden), hidden, gate
 
 
 class CausalAttention(nn.Module):
@@ -122,7 +123,7 @@ class TransformerBlock(nn.Module):
         if not self.is_pre_norm and self.normalization != "none":
             hidden = self.norm1(hidden)
         mlp_input = self.norm2(hidden) if self.is_pre_norm else hidden
-        mlp_branch, mlp_activation = self.mlp(mlp_input)
+        mlp_branch, mlp_activation, mlp_gate = self.mlp(mlp_input)
         applied_mlp = torch.zeros_like(mlp_branch) if ablate_mlp else mlp_branch
         output = hidden + self.residual_scale * applied_mlp
         if not self.is_pre_norm and self.normalization != "none":
@@ -132,6 +133,9 @@ class TransformerBlock(nn.Module):
             "attention_branch": attention_branch,
             "mlp_branch": mlp_branch,
             "mlp_activation": mlp_activation,
+            "mlp_gate": mlp_gate,
+            "mlp_input": mlp_input,
+            "output": output,
         }
 
 
@@ -202,5 +206,8 @@ class PhaseTensorTransformer(nn.Module):
             "attention_branch": torch.stack([item["attention_branch"] for item in diagnostics]),
             "mlp_branch": torch.stack([item["mlp_branch"] for item in diagnostics]),
             "mlp_activation": torch.stack([item["mlp_activation"] for item in diagnostics]),
+            "mlp_gate": torch.stack([item["mlp_gate"] for item in diagnostics]),
+            "mlp_input": torch.stack([item["mlp_input"] for item in diagnostics]),
+            "layer_representation": torch.stack([item["output"] for item in diagnostics]),
             "representation": hidden,
         }

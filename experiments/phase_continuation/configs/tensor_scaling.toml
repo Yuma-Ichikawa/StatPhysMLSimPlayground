@@ -43,4 +43,4 @@ control_name = "sample_coefficient"
 controls = [0.5, 1.0, 2.0, 4.0]
 sizes = [32, 48, 64, 96, 128, 192]
 parameters = { fidelity_tier = "B+", data_kind = "synthetic_retrieval", sequence_length = 64, depth = 3, heads = 4, ff_ratio = 4.0, activation = "swiglu", normalization = "pre_rmsnorm", optimizer = "adamw", steps = 320, batch_size = 64, eval_examples = 512, learning_rate = 0.001, weight_decay = 0.01, noise = 0.12, ood_shift = 0.18, train_cap = 32768 }
-parameter_grid = { sample_exponent = [1.0, 1.5, 2.0] }
+parameter_grid = { sample_exponent = [1.0, 1.25, 1.5, 1.75, 2.0] }

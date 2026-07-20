@@ -8,9 +8,6 @@ import json
 from pathlib import Path
 from typing import Sequence
 
-from .aggregate import aggregate_manifest
-from .analysis.coverage import validate_coverage, write_coverage_report
-from .analysis.taxonomy import validate_taxonomy
 from .core.schema import (
     Manifest,
     compose_manifests,
@@ -18,10 +15,6 @@ from .core.schema import (
     read_manifest,
     write_manifest,
 )
-from .paper import write_paper_results
-from .plotting import plot_all
-from .runner import run_manifest_task
-from .slurm import write_array_script
 
 
 def _print(payload) -> None:
@@ -29,6 +22,8 @@ def _print(payload) -> None:
 
 
 def _run_local(args) -> None:
+    from .runner import run_manifest_task
+
     manifest = read_manifest(args.manifest)
     start = max(0, args.start)
     stop = len(manifest.tasks) if args.stop is None else min(args.stop, len(manifest.tasks))
@@ -144,16 +139,26 @@ def main(argv: Sequence[str] | None = None) -> None:
         manifest = compose_manifests(args.manifests, args.study)
         _print({"manifest": str(write_manifest(args.output, manifest)), "tasks": len(manifest.tasks)})
     elif args.command == "run-task":
+        from .runner import run_manifest_task
+
         _print(run_manifest_task(args.manifest, args.index, args.output, device=args.device, overwrite=args.overwrite))
     elif args.command == "run-local":
         _run_local(args)
     elif args.command == "aggregate":
+        from .aggregate import aggregate_manifest
+
         _print(aggregate_manifest(args.manifest, args.runs, args.output, allow_incomplete=args.allow_incomplete))
     elif args.command == "plot":
+        from .plotting import plot_all
+
         _print({"figures": [str(path) for path in plot_all(args.aggregate, args.output)]})
     elif args.command == "paper":
+        from .paper import write_paper_results
+
         _print({"paper_macros": str(write_paper_results(args.aggregate, args.output))})
     elif args.command == "slurm-script":
+        from .slurm import write_array_script
+
         _print({"script": str(write_array_script(args.manifest, args.profile, args.output))})
     elif args.command == "status":
         manifest = read_manifest(args.manifest)
@@ -172,6 +177,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         )
         _print({"manifest": str(write_manifest(args.output, retry_manifest)), "tasks": len(selected)})
     elif args.command == "coverage":
+        from .analysis.coverage import validate_coverage, write_coverage_report
+
         report = validate_coverage(args.registry, args.configs)
         if args.output:
             write_coverage_report(report, args.output)
@@ -179,6 +186,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         if not report["ok"]:
             raise SystemExit(2)
     elif args.command == "taxonomy":
+        from .analysis.taxonomy import validate_taxonomy
+
         report = validate_taxonomy(args.registry, args.configs)
         if args.output:
             destination = Path(args.output)
