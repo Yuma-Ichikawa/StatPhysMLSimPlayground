@@ -73,6 +73,14 @@ def _label(value: str) -> str:
     return _VARIANT_LABELS.get(value, value.replace("_", " "))
 
 
+def _math_label(value: str) -> str:
+    """Wrap taxonomy TeX labels so matplotlib parses them as mathtext."""
+    text = str(value)
+    if "\\" in text and not (text.startswith("$") and text.endswith("$")):
+        return f"${text}$"
+    return text
+
+
 def _series(
     conditions: list[dict[str, Any]],
     family: str,
@@ -229,8 +237,8 @@ def _coverage_figure(taxonomy_path: str | Path, destination: Path) -> Path:
     for row, axis in enumerate(axes):
         for column, status in enumerate(columns):
             ax.text(column, row, status if matrix[row, column] else "N0", ha="center", va="center", fontsize=9)
-    ax.set_xticks(np.arange(len(columns)), [payload["column_labels"][column] for column in columns], rotation=28, ha="right")
-    ax.set_yticks(np.arange(len(axes)), [labels.get(axis, axis) for axis in axes])
+    ax.set_xticks(np.arange(len(columns)), [_math_label(payload["column_labels"][column]) for column in columns], rotation=28, ha="right")
+    ax.set_yticks(np.arange(len(axes)), [_math_label(labels.get(axis, axis)) for axis in axes])
     ax.set_xlabel("theory-to-realism evidence tier")
     ax.set_ylabel("phase-continuation coordinate")
     ax.grid(ls="--", color="white", linewidth=0.9)
