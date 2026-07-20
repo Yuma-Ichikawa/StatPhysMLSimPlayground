@@ -45,3 +45,9 @@ for figure in "${required_figures[@]}"; do
   test main.pdf -nt "figures/$figure"
 done
 test main.pdf -nt generated/phase_tensor_results.tex
+
+if [ -n "${STATPHYS_RENDER_STATUS:-}" ]; then
+  temporary_status="${STATPHYS_RENDER_STATUS}.tmp.$$"
+  printf 'synchronized: aggregate, figures, TeX macros, and main.pdf\n' > "$temporary_status"
+  mv "$temporary_status" "$STATPHYS_RENDER_STATUS"
+fi
