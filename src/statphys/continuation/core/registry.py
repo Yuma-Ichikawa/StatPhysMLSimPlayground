@@ -26,6 +26,16 @@ _RUNNER_PATHS: dict[Domain, dict[str, str]] = {
             for family in ("moe", "retrieval", "multimodal", "compression", "lifecycle", "discovery")
         },
         "learned_decoder": "..domains.transformer.learned:run_learned_transformer",
+        **{
+            family: "statphys.phase_tensor.runner:run_phase_tensor"
+            for family in (
+                "tensor_mlp",
+                "tensor_optimizer",
+                "tensor_objective",
+                "tensor_scaling",
+                "tensor_realdata",
+            )
+        },
     },
     Domain.DIFFUSION: {
         "anchor": "..domains.diffusion.anchor:run_diffusion",

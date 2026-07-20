@@ -1,0 +1,27 @@
+[study]
+name = "tensor_optimizer_geometry"
+description = "Modern optimizer geometry crossed with residual normalization"
+seeds = [104729, 130363, 155921, 181081, 206369]
+uncertainty = "two-sided 95% Student-t interval across five full-pipeline seeds"
+
+[[experiments]]
+domain = "transformer"
+family = "tensor_optimizer"
+variants = ["sgd_m", "adamw", "muon", "soap"]
+stage = "confirmatory"
+control_name = "sample_coefficient"
+controls = [0.5, 1.0, 2.0, 4.0, 8.0]
+sizes = [64, 96, 128]
+parameters = { fidelity_tier = "B+", data_kind = "synthetic_retrieval", sequence_length = 64, depth = 3, heads = 4, ff_ratio = 4.0, activation = "swiglu", steps = 320, batch_size = 64, eval_examples = 512, weight_decay = 0.01, noise = 0.12, ood_shift = 0.18, sample_exponent = 1.0, train_cap = 16384 }
+parameter_grid = { normalization = ["pre_rmsnorm", "pre_layernorm", "post_layernorm"], learning_rate = [0.0003, 0.001, 0.003, 0.01] }
+
+[[experiments]]
+domain = "transformer"
+family = "tensor_optimizer"
+variants = ["lion", "galore"]
+stage = "confirmatory"
+control_name = "sample_coefficient"
+controls = [1.0, 4.0, 8.0]
+sizes = [64, 128]
+parameters = { fidelity_tier = "B+", data_kind = "synthetic_retrieval", sequence_length = 64, depth = 3, heads = 4, ff_ratio = 4.0, activation = "swiglu", steps = 320, batch_size = 64, eval_examples = 512, learning_rate = 0.0003, weight_decay = 0.01, noise = 0.12, ood_shift = 0.18, sample_exponent = 1.0, train_cap = 16384 }
+parameter_grid = { normalization = ["pre_rmsnorm", "post_layernorm"] }

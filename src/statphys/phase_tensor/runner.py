@@ -1,0 +1,319 @@
+"""One-task train/evaluate runner for every phase-tensor Transformer family."""
+
+from __future__ import annotations
+
+import contextlib
+import math
+import os
+import time
+from typing import Any
+
+import numpy as np
+import torch
+
+from statphys.continuation.core.schema import TaskSpec
+
+from .data import VOCABULARY, TokenDataset, build_token_dataset
+from .model import PhaseTensorTransformer, TransformerConfig
+from .observables import (
+    block_gradient_statistics,
+    causal_contributions,
+    intensive_losses,
+    normalized_activation_entropy,
+    normalized_attention_entropy,
+    normalized_participation_ratio,
+    relative_update_statistics,
+)
+from .optimizers import build_optimizer, set_learning_rate
+
+
+def _family_configuration(task: TaskSpec) -> dict[str, Any]:
+    parameters = dict(task.parameters)
+    family = task.family
+    if family == "tensor_mlp":
+        parameters["activation"] = task.variant
+    elif family == "tensor_optimizer":
+        parameters["optimizer"] = task.variant
+    elif family == "tensor_objective":
+        parameters["objective_lambda"] = float(task.variant.replace("lambda_", ""))
+    elif family == "tensor_realdata":
+        parameters["data_kind"] = task.variant
+    elif family == "tensor_scaling":
+        parameters["scaling_path"] = task.variant
+    else:
+        raise ValueError(f"unsupported phase-tensor family: {family}")
+    return parameters
+
+
+def _model_dimensions(task: TaskSpec, parameters: dict[str, Any]) -> tuple[int, int, int]:
+    path = str(parameters.get("scaling_path", "width"))
+    if path == "depth":
+        return int(parameters.get("width", parameters.get("d_model", 64))), int(task.size), int(parameters.get("sequence_length", 64))
+    if path == "context":
+        return int(parameters.get("width", parameters.get("d_model", 64))), int(parameters.get("depth", parameters.get("layers", 2))), int(task.size)
+    return int(task.size), int(parameters.get("depth", parameters.get("layers", 2))), int(parameters.get("sequence_length", 64))
+
+
+def _heads(width: int, requested: int) -> int:
+    candidates = [value for value in range(1, requested + 1) if width % value == 0]
+    return max(candidates, default=1)
+
+
+def _batch(dataset: TokenDataset, indices: torch.Tensor, device: torch.device) -> tuple[torch.Tensor, ...]:
+    cpu_indices = indices.cpu()
+    return (
+        dataset.inputs[cpu_indices].to(device, non_blocking=True),
+        dataset.targets[cpu_indices].to(device, non_blocking=True),
+        dataset.mask[cpu_indices].to(device, non_blocking=True),
+    )
+
+
+def _evaluate(
+    model: PhaseTensorTransformer,
+    dataset: TokenDataset,
+    objective_lambda: float,
+    device: torch.device,
+    *,
+    ablate_attention: bool = False,
+    ablate_mlp: bool = False,
+) -> tuple[dict[str, float], dict[str, Any] | None]:
+    model.eval()
+    with torch.no_grad():
+        inputs = dataset.inputs.to(device)
+        targets = dataset.targets.to(device)
+        mask = dataset.mask.to(device)
+        output = model(
+            inputs,
+            ablate_attention=ablate_attention,
+            ablate_mlp=ablate_mlp,
+            return_diagnostics=not ablate_attention and not ablate_mlp,
+        )
+        if isinstance(output, tuple):
+            logits, diagnostics = output
+        else:
+            logits, diagnostics = output, None
+        losses = intensive_losses(logits, targets, mask, objective_lambda)
+    return {name: float(value) for name, value in losses.items()}, diagnostics
+
+
+def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, float], dict[str, Any]]:
+    parameters = _family_configuration(task)
+    nested = task.nested_seeds
+    torch.manual_seed(nested["initialization"])
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(nested["initialization"])
+    width, layers, sequence_length = _model_dimensions(task, parameters)
+    heads = _heads(width, int(parameters.get("heads", 4)))
+    activation = str(parameters.get("activation", "gelu"))
+    normalization = str(parameters.get("normalization", "pre_rmsnorm"))
+    ff_ratio = float(parameters.get("ff_ratio", 4.0))
+    sample_exponent = float(parameters.get("sample_exponent", 1.0))
+    train_examples = max(
+        32,
+        min(
+            int(parameters.get("train_cap", parameters.get("max_train_examples", 8192))),
+            int(round(float(task.control) * width**sample_exponent)),
+        ),
+    )
+    heldout_examples = int(parameters.get("eval_examples", parameters.get("heldout_examples", 256)))
+    noise = float(parameters.get("noise", parameters.get("data_noise", 0.05)))
+    data_kind = str(parameters.get("data_kind", "synthetic_retrieval"))
+    data_root = os.environ.get("STATPHYS_DATA_ROOT")
+    train_data = build_token_dataset(
+        data_kind,
+        count=train_examples,
+        length=sequence_length,
+        seed=nested["data"],
+        noise=noise,
+        data_root=data_root,
+    )
+    test_data = build_token_dataset(
+        data_kind,
+        count=heldout_examples,
+        length=sequence_length,
+        seed=nested["evaluation"],
+        noise=noise,
+        data_root=data_root,
+    )
+    ood_kind = str(parameters.get("ood_data_kind", data_kind))
+    ood_data = build_token_dataset(
+        ood_kind,
+        count=heldout_examples,
+        length=sequence_length,
+        seed=nested["evaluation"] + 1,
+        noise=min(0.45, noise + float(parameters.get("ood_shift", parameters.get("ood_noise_shift", 0.15)))),
+        data_root=data_root,
+    )
+    model = PhaseTensorTransformer(
+        TransformerConfig(
+            vocabulary=VOCABULARY,
+            width=width,
+            sequence_length=sequence_length,
+            heads=heads,
+            layers=layers,
+            ff_ratio=ff_ratio,
+            activation=activation,
+            normalization=normalization,
+            residual_scale=float(parameters.get("residual_scale", 1.0)),
+            tie_embeddings=bool(parameters.get("tie_embeddings", True)),
+        )
+    ).to(device)
+    initial = {name: parameter.detach().cpu().clone() for name, parameter in model.named_parameters()}
+    optimizer_name = str(parameters.get("optimizer", "adamw"))
+    base_lr = float(parameters.get("learning_rate", 3e-4))
+    optimizer = build_optimizer(
+        optimizer_name,
+        model,
+        learning_rate=base_lr,
+        weight_decay=float(parameters.get("weight_decay", 0.01)),
+        momentum=float(parameters.get("momentum", 0.95)),
+        rank=int(parameters.get("optimizer_rank", 32)),
+    )
+    objective_lambda = float(parameters.get("objective_lambda", 1.0))
+    steps = int(parameters.get("steps", 300))
+    batch_size = min(int(parameters.get("batch_size", 64)), train_data.size)
+    warmup = max(1, int(float(parameters.get("warmup_fraction", 0.05)) * steps))
+    generator = torch.Generator(device="cpu").manual_seed(nested["minibatch"])
+    use_amp = bool(parameters.get("bfloat16", True)) and device.type == "cuda"
+    autocast = (
+        (lambda: torch.autocast(device_type="cuda", dtype=torch.bfloat16))
+        if use_amp
+        else contextlib.nullcontext
+    )
+    history_step: list[int] = []
+    history_loss: list[float] = []
+    history_order: list[float] = []
+    tokens_seen = 0
+    time_to_order = float(steps)
+    started = time.perf_counter()
+    model.train()
+    for step in range(steps):
+        if step < warmup:
+            learning_rate = base_lr * (step + 1) / warmup
+        else:
+            progress = (step - warmup) / max(steps - warmup - 1, 1)
+            learning_rate = 0.1 * base_lr + 0.45 * base_lr * (1.0 + math.cos(math.pi * progress))
+        set_learning_rate(optimizer, learning_rate)
+        indices = torch.randint(train_data.size, (batch_size,), generator=generator)
+        inputs, targets, mask = _batch(train_data, indices, device)
+        optimizer.zero_grad(set_to_none=True)
+        with autocast():
+            logits = model(inputs)
+            losses = intensive_losses(logits, targets, mask, objective_lambda)
+            loss = losses["objective"]
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), float(parameters.get("gradient_clip", 1.0)))
+        optimizer.step()
+        tokens_seen += int(mask.sum().item())
+        interval = max(1, steps // 10)
+        if step == 0 or (step + 1) % interval == 0 or step + 1 == steps:
+            measured, _ = _evaluate(model, test_data, objective_lambda, device)
+            order = 1.0 - measured["objective"]
+            history_step.append(step + 1)
+            history_loss.append(measured["objective"])
+            history_order.append(order)
+            if order >= 0.5 and time_to_order == float(steps):
+                time_to_order = float(step + 1)
+            model.train()
+    elapsed = time.perf_counter() - started
+
+    indices = torch.arange(min(batch_size, train_data.size))
+    inputs, targets, mask = _batch(train_data, indices, device)
+    optimizer.zero_grad(set_to_none=True)
+    logits = model(inputs)
+    train_probe = intensive_losses(logits, targets, mask, objective_lambda)
+    train_probe["objective"].backward()
+    gradient_metrics = block_gradient_statistics(model)
+    update_metrics = relative_update_statistics(model, initial)
+    model.zero_grad(set_to_none=True)
+
+    full, diagnostics = _evaluate(model, test_data, objective_lambda, device)
+    ood, _ = _evaluate(model, ood_data, objective_lambda, device)
+    no_attention, _ = _evaluate(
+        model, test_data, objective_lambda, device, ablate_attention=True
+    )
+    no_mlp, _ = _evaluate(model, test_data, objective_lambda, device, ablate_mlp=True)
+    neither, _ = _evaluate(
+        model,
+        test_data,
+        objective_lambda,
+        device,
+        ablate_attention=True,
+        ablate_mlp=True,
+    )
+    contributions = causal_contributions(
+        full["objective"], no_attention["objective"], no_mlp["objective"], neither["objective"]
+    )
+    assert diagnostics is not None
+    activation_tensor = diagnostics["mlp_activation"]
+    attention_tensor = diagnostics["attention"]
+    parameter_count = sum(parameter.numel() for parameter in model.parameters())
+    approximate_flops = 6.0 * parameter_count * tokens_seen
+    semantic_order = 1.0 - full["objective"]
+    signed_phase_samples = np.clip(2.0 * np.asarray(history_order, dtype=np.float64) - 1.0, -1.0, 1.0)
+    phase_second = float(np.mean(signed_phase_samples**2))
+    phase_fourth = float(np.mean(signed_phase_samples**4))
+    positive_fraction = float(np.mean(signed_phase_samples > 0.0))
+    if positive_fraction <= 0.0 or positive_fraction >= 1.0:
+        macrostate_entropy = 0.0
+    else:
+        macrostate_entropy = float(
+            -(positive_fraction * math.log(positive_fraction) + (1.0 - positive_fraction) * math.log(1.0 - positive_fraction))
+            / math.log(2.0)
+        )
+    effective_ff_width = max(1.0, ff_ratio * width)
+    metrics = {
+        "order_parameter": float(abs(np.mean(signed_phase_samples))),
+        "susceptibility": float(np.var(signed_phase_samples)),
+        "binder_cumulant": float(0.0 if phase_second <= 1e-12 else 1.0 - phase_fourth / (3.0 * phase_second**2)),
+        "macrostate_entropy": macrostate_entropy,
+        "generalization_error": full["objective"],
+        "normalized_generalization_error": full["objective"],
+        "generalization_gap": float(full["objective"] - train_probe["objective"].detach().item()),
+        "ood_generalization_error": ood["objective"],
+        "normalized_ce": full["ce_normalized"],
+        "bits_per_byte": full["bits_per_byte"],
+        "normalized_brier": full["brier_normalized"],
+        "token_accuracy": full["accuracy"],
+        "semantic_order": semantic_order,
+        "effective_multiplicity": normalized_participation_ratio(activation_tensor),
+        "mlp_participation_fraction": normalized_participation_ratio(activation_tensor),
+        "mlp_activation_entropy": normalized_activation_entropy(activation_tensor),
+        "attention_entropy": normalized_attention_entropy(attention_tensor),
+        "interaction_range": 1.0 - normalized_attention_entropy(attention_tensor),
+        "oracle_gap": full["objective"],
+        "intervention_response": contributions["attention_contribution"],
+        "attention_contribution": contributions["attention_contribution"],
+        "mlp_contribution": contributions["mlp_contribution"],
+        "mlp_causal_contribution": contributions["mlp_contribution"],
+        "attention_mlp_synergy": contributions["attention_mlp_synergy"],
+        "gradient_rms": gradient_metrics["gradient_rms"],
+        "gradient_log_cv": gradient_metrics["gradient_log_cv"],
+        "gradient_gini": gradient_metrics["gradient_gini"],
+        "gradient_block_gini": gradient_metrics["gradient_gini"],
+        "update_to_weight_rms": update_metrics["update_to_weight_rms"],
+        "update_to_weight_max": update_metrics["update_to_weight_max"],
+        "time_to_order": time_to_order,
+        "parameter_count": float(parameter_count),
+        "model_width": float(width),
+        "model_depth": float(layers),
+        "context_length": float(sequence_length),
+        "ff_ratio": ff_ratio,
+        "effective_ff_width": effective_ff_width,
+        "sample_coefficient": float(task.control),
+        "sample_exponent": sample_exponent,
+        "train_examples": float(train_examples),
+        "tokens_seen": float(tokens_seen),
+        "training_flops_estimate": float(approximate_flops),
+        "wall_seconds": float(elapsed),
+        "tokens_per_second": float(tokens_seen / max(elapsed, 1e-12)),
+        "objective_lambda": objective_lambda,
+    }
+    arrays: dict[str, Any] = {
+        "history_step": np.asarray(history_step, dtype=np.int32),
+        "history_generalization_error": np.asarray(history_loss, dtype=np.float32),
+        "history_semantic_order": np.asarray(history_order, dtype=np.float32),
+        "attention_map_mean": attention_tensor.detach().float().mean(dim=(0, 1, 2)).cpu().numpy(),
+        "dataset_sample_hash": np.asarray([int(test_data.metadata["sample_sha256"][:15], 16)]),
+    }
+    return metrics, arrays

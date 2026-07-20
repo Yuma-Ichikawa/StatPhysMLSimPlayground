@@ -1,0 +1,46 @@
+[study]
+name = "tensor_scaling_paths"
+description = "Width, depth, context, and data scaling with intensive observables"
+seeds = [104729, 130363, 155921, 181081, 206369]
+uncertainty = "two-sided 95% Student-t interval across five full-pipeline seeds"
+
+[[experiments]]
+domain = "transformer"
+family = "tensor_scaling"
+variants = ["width"]
+stage = "confirmatory"
+control_name = "sample_coefficient"
+controls = [0.5, 1.0, 2.0, 4.0]
+sizes = [32, 48, 64, 96, 128, 192]
+parameters = { fidelity_tier = "B+", data_kind = "synthetic_retrieval", sequence_length = 64, depth = 3, heads = 4, ff_ratio = 4.0, activation = "swiglu", normalization = "pre_rmsnorm", optimizer = "adamw", steps = 320, batch_size = 64, eval_examples = 512, learning_rate = 0.001, weight_decay = 0.01, noise = 0.12, ood_shift = 0.18, sample_exponent = 1.0, train_cap = 32768 }
+
+[[experiments]]
+domain = "transformer"
+family = "tensor_scaling"
+variants = ["depth"]
+stage = "confirmatory"
+control_name = "sample_coefficient"
+controls = [0.5, 1.0, 2.0, 4.0]
+sizes = [1, 2, 3, 4, 6, 8]
+parameters = { fidelity_tier = "B+", data_kind = "synthetic_retrieval", sequence_length = 64, width = 96, heads = 4, ff_ratio = 4.0, activation = "swiglu", normalization = "pre_rmsnorm", optimizer = "adamw", steps = 320, batch_size = 64, eval_examples = 512, learning_rate = 0.001, weight_decay = 0.01, noise = 0.12, ood_shift = 0.18, sample_exponent = 1.0, train_cap = 32768 }
+
+[[experiments]]
+domain = "transformer"
+family = "tensor_scaling"
+variants = ["context"]
+stage = "confirmatory"
+control_name = "sample_coefficient"
+controls = [0.5, 1.0, 2.0, 4.0]
+sizes = [16, 24, 32, 48, 64, 96]
+parameters = { fidelity_tier = "B+", data_kind = "synthetic_retrieval", width = 96, depth = 3, heads = 4, ff_ratio = 4.0, activation = "swiglu", normalization = "pre_rmsnorm", optimizer = "adamw", steps = 320, batch_size = 64, eval_examples = 512, learning_rate = 0.001, weight_decay = 0.01, noise = 0.12, ood_shift = 0.18, sample_exponent = 1.0, train_cap = 32768 }
+
+[[experiments]]
+domain = "transformer"
+family = "tensor_scaling"
+variants = ["data"]
+stage = "confirmatory"
+control_name = "sample_coefficient"
+controls = [0.5, 1.0, 2.0, 4.0]
+sizes = [32, 48, 64, 96, 128, 192]
+parameters = { fidelity_tier = "B+", data_kind = "synthetic_retrieval", sequence_length = 64, depth = 3, heads = 4, ff_ratio = 4.0, activation = "swiglu", normalization = "pre_rmsnorm", optimizer = "adamw", steps = 320, batch_size = 64, eval_examples = 512, learning_rate = 0.001, weight_decay = 0.01, noise = 0.12, ood_shift = 0.18, train_cap = 32768 }
+parameter_grid = { sample_exponent = [1.0, 1.5, 2.0] }

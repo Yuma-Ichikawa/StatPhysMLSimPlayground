@@ -1,0 +1,16 @@
+[study]
+name = "tensor_objective_homotopy"
+description = "Continuous objective interpolation at fixed architecture and data"
+seeds = [104729, 130363, 155921, 181081, 206369]
+uncertainty = "two-sided 95% Student-t interval across five full-pipeline seeds"
+
+[[experiments]]
+domain = "transformer"
+family = "tensor_objective"
+variants = ["lambda_0.0", "lambda_0.5", "lambda_1.0"]
+stage = "confirmatory"
+control_name = "sample_coefficient"
+controls = [0.5, 1.0, 2.0, 4.0, 8.0]
+sizes = [32, 64, 128, 192]
+parameters = { fidelity_tier = "B+", data_kind = "synthetic_hmm", sequence_length = 64, depth = 3, heads = 4, ff_ratio = 4.0, normalization = "pre_rmsnorm", optimizer = "adamw", steps = 320, batch_size = 64, eval_examples = 512, learning_rate = 0.001, weight_decay = 0.01, noise = 0.12, ood_shift = 0.18, sample_exponent = 1.0, train_cap = 16384 }
+parameter_grid = { activation = ["gelu", "swiglu"] }

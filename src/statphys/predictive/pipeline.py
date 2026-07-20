@@ -529,9 +529,14 @@ def plot_results(aggregate_path: str | Path, output: str | Path) -> list[Path]:
 
     def save(figure: Any, name: str) -> None:
         path = root / f"{name}.pdf"
+        figure.set_facecolor("white")
+        for axis in figure.axes:
+            axis.set_facecolor("white")
         figure.tight_layout(pad=1.0)
-        figure.savefig(path)
-        figure.savefig(path.with_suffix(".png"))
+        figure.savefig(path, facecolor="white", transparent=False)
+        figure.savefig(
+            path.with_suffix(".png"), facecolor="white", transparent=False
+        )
         plt.close(figure)
         paths.append(path)
 
