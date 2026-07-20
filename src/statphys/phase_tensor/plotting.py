@@ -76,7 +76,7 @@ def _label(value: str) -> str:
 def _math_label(value: str) -> str:
     """Wrap taxonomy TeX labels so matplotlib parses them as mathtext."""
     text = str(value)
-    if "\\" in text and not (text.startswith("$") and text.endswith("$")):
+    if "\\" in text and "$" not in text:
         return f"${text}$"
     return text
 
