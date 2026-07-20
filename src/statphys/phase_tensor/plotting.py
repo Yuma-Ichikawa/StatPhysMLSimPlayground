@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 import json
 from pathlib import Path
+import re
 from typing import Any, Callable
 
 import matplotlib.pyplot as plt
@@ -75,7 +76,7 @@ def _label(value: str) -> str:
 
 def _math_label(value: str) -> str:
     """Wrap taxonomy TeX labels so matplotlib parses them as mathtext."""
-    text = str(value)
+    text = re.sub(r"\\mathcal\s+([A-Za-z])", r"\\mathcal{\1}", str(value))
     if "\\" in text and "$" not in text:
         return f"${text}$"
     return text
