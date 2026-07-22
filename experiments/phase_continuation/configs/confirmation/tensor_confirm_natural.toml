@@ -1,0 +1,46 @@
+[study]
+name = "tensor_confirm_natural"
+description = "Version-pinned natural corpora with byte-disjoint train, test, and OOD evaluation"
+seeds = [231503, 256541, 281549, 306577, 331613, 356651, 381679, 406717, 431729, 456769, 481793, 506821]
+uncertainty = "two-sided 95% Student-t interval across twelve full-pipeline outer seeds"
+
+[[experiments]]
+domain = "transformer"
+family = "tensor_realdata"
+variants = ["tinystories"]
+stage = "external_confirmation"
+control_name = "sample_coefficient"
+controls = [1.0, 2.0]
+sizes = [96, 128]
+parameters = { evidence_tier = "C", disjoint_corpus_splits = true, ood_data_kind = "simplestories", sequence_length = 96, depth = 4, heads = 4, ff_ratio = 4.0, activation = "swiglu", normalization = "pre_rmsnorm", optimizer = "adamw", steps = 480, batch_size = 48, eval_examples = 512, learning_rate = 0.0006, weight_decay = 0.01, sample_exponent = 1.5, train_cap = 32768 }
+
+[[experiments]]
+domain = "transformer"
+family = "tensor_realdata"
+variants = ["simplestories"]
+stage = "external_confirmation"
+control_name = "sample_coefficient"
+controls = [1.0, 2.0]
+sizes = [96, 128]
+parameters = { evidence_tier = "C", disjoint_corpus_splits = true, ood_data_kind = "tinystories", sequence_length = 96, depth = 4, heads = 4, ff_ratio = 4.0, activation = "swiglu", normalization = "pre_rmsnorm", optimizer = "adamw", steps = 480, batch_size = 48, eval_examples = 512, learning_rate = 0.0006, weight_decay = 0.01, sample_exponent = 1.5, train_cap = 32768 }
+
+[[experiments]]
+domain = "transformer"
+family = "tensor_realdata"
+variants = ["fineweb_edu"]
+stage = "external_confirmation"
+control_name = "sample_coefficient"
+controls = [1.0, 2.0]
+sizes = [96, 128]
+parameters = { evidence_tier = "C", disjoint_corpus_splits = true, ood_data_kind = "dolma", sequence_length = 96, depth = 4, heads = 4, ff_ratio = 4.0, activation = "swiglu", normalization = "pre_rmsnorm", optimizer = "adamw", steps = 480, batch_size = 48, eval_examples = 512, learning_rate = 0.0006, weight_decay = 0.01, sample_exponent = 1.5, train_cap = 32768 }
+
+[[experiments]]
+domain = "transformer"
+family = "tensor_realdata"
+variants = ["dolma"]
+stage = "external_confirmation"
+control_name = "sample_coefficient"
+controls = [1.0, 2.0]
+sizes = [96, 128]
+parameters = { evidence_tier = "C", disjoint_corpus_splits = true, ood_data_kind = "fineweb_edu", sequence_length = 96, depth = 4, heads = 4, ff_ratio = 4.0, activation = "swiglu", normalization = "pre_rmsnorm", optimizer = "adamw", steps = 480, batch_size = 48, eval_examples = 512, learning_rate = 0.0006, weight_decay = 0.01, sample_exponent = 1.5, train_cap = 32768 }
+

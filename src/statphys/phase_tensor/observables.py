@@ -177,9 +177,35 @@ def causal_contributions(
     no_mlp: float,
     neither: float,
 ) -> dict[str, float]:
-    scale = max(1.0 - full, 1e-8)
+    """Return auditable raw ablation risks and bounded signed effects.
+
+    The previous normalization by ``1 - full`` diverged when the full-model
+    risk approached one.  A risk delta is now mapped to ``[-1, 1]`` using
+    ``delta / (abs(delta) + full + eps)`` while retaining every raw quantity.
+    """
+    risks = (float(full), float(no_attention), float(no_mlp), float(neither))
+    if not all(math.isfinite(value) and value >= 0.0 for value in risks):
+        raise ValueError("causal ablation risks must be finite and non-negative")
+    eps = 1e-12
+    attention_delta = no_attention - full
+    mlp_delta = no_mlp - full
+    joint_delta = neither - full
+    synergy_delta = no_attention + no_mlp - neither - full
+
+    def bounded(delta: float) -> float:
+        return float(delta / (abs(delta) + full + eps))
+
     return {
-        "attention_contribution": (no_attention - full) / scale,
-        "mlp_contribution": (no_mlp - full) / scale,
-        "attention_mlp_synergy": (no_attention + no_mlp - neither - full) / scale,
+        "full_risk": float(full),
+        "attention_ablated_risk": float(no_attention),
+        "mlp_ablated_risk": float(no_mlp),
+        "attention_mlp_ablated_risk": float(neither),
+        "attention_risk_delta": float(attention_delta),
+        "mlp_risk_delta": float(mlp_delta),
+        "attention_mlp_risk_delta": float(joint_delta),
+        "attention_mlp_synergy_risk_delta": float(synergy_delta),
+        "attention_causal_effect": bounded(attention_delta),
+        "mlp_causal_effect": bounded(mlp_delta),
+        "attention_mlp_causal_effect": bounded(joint_delta),
+        "attention_mlp_synergy_effect": bounded(synergy_delta),
     }

@@ -1,32 +1,55 @@
 \section{Predictive phase continuation}
+\label{sec:method}
 
-Let $\mathcal O_{\rm cal}$ denote registered calibration observables and let
-$\mathcal O_{\rm solv}(\bm\theta)$ be a solvable surrogate.  We estimate
+Let $\mathcal O_{\rm cal}$ be registered calibration observables and
+$\mathcal O_{\rm solv}(\bm\theta)$ a solvable surrogate. We estimate
 \begin{equation}
- \widehat{\bm\theta}_{\rm eff}=\arg\min_{\bm\theta}
- D\!\left(\mathcal O_{\rm cal}^{\rm target},
- \mathcal O_{\rm solv}(\bm\theta)\right),
+\widehat{\bm\theta}_{\rm eff}
+=\arg\min_{\bm\theta}
+D\!\left(\mathcal O_{\rm cal}^{\rm target},
+\mathcal O_{\rm solv}(\bm\theta)\right),
 \end{equation}
-then predict $\gchat$, the order curve, and the response to an intervention.
-The bridge error is evaluated only on withheld quantities,
+then predict an order curve, a boundary $\gchat$, transition diagnostics, and
+an intervention response. The bridge error is evaluated only on withheld
+quantities,
 \begin{equation}
- \Ebridge=D\!\left(\mathcal O_{\rm holdout}^{\rm target},
- \mathcal O_{\rm solv}(\widehat{\bm\theta}_{\rm eff})\right).
+\Ebridge=
+D\!\left(\mathcal O_{\rm holdout}^{\rm target},
+\mathcal O_{\rm solv}(\widehat{\bm\theta}_{\rm eff})\right).
 \end{equation}
-For each edge we also record semantic retention
-$S_{\rm sem}=I(m;Z)/H(Z)$ and normalized predictive error
-$|\gc-\gchat|/(\sigma_{\gc}+\epsilon)$.
+Semantic retention $S_{\rm sem}=I(m;Z)/H(Z)$ is a separate estimand: a small
+boundary error is meaningless if $m$ no longer tracks the latent variable
+$Z$.
 
-Two assumptions need not combine additively.  Their interaction is
-\begin{equation}
- \Delta_{ij}\gc=\gc^{ij}-\gc^i-\gc^j+\gc^0.
-\end{equation}
-The operational outcome vocabulary includes stable and renormalized
-continuation, splitting, merging, rounding, new-phase insertion,
-computational--statistical separation, path dependence, and semantic failure.
-These labels are not inferred from visual smoothness.
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.96\linewidth]{figures/figure2_anchor_validation.pdf}
+\caption{Anchor calibration before continuation. Observed pseudocritical
+controls are compared with registered latent references, with outer-seed 95\%
+intervals on both axes and a residual panel. This is a calibration diagnostic,
+not held-out evidence for transport.}
+\label{fig:anchor-validation}
+\end{figure}
 
-We distinguish macrostate perplexity $K_{\rm eff}^{\rm macro}=\exp H(Z)$ from
-correlation-based independent components and spectral effective rank.  Each
-PhaseCard stores estimator, probe distribution, normalization, units,
-finite-size variable, intervention, and null model.
+\paragraph{Baselines.}
+Every predictive comparison includes a constant predictor, direct transport of
+the source boundary, a size-only or nearest-calibration predictor, the base
+surrogate, and the registered augmented surrogate. A diagonal plot without
+these controls cannot distinguish physical transport from simulator
+reparameterization.
+
+\paragraph{Breakdown and repair.}
+Two assumptions can interact through
+\begin{equation}
+\Delta_{ij}\gc=\gc^{ij}-\gc^i-\gc^j+\gc^0.
+\end{equation}
+Holdout A is used only to diagnose a missing coordinate. Candidate
+macrovariables and their selection rule are frozen on a calibration split.
+Only Holdout B can support a repair claim. When an augmented surrogate was
+specified before either holdout, we call it a preregistered comparison, not a
+post-hoc repair.
+
+\paragraph{Prediction target.}
+A threshold estimate is recorded as crossed, left-censored, or right-censored.
+Only crossed estimates enter boundary-error summaries. Censored curves remain
+visible because the absence of a crossing is often the scientific result.

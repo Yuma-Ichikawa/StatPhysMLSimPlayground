@@ -7,9 +7,11 @@ as separate coordinates rather than collapsing them into parameter count.
 
 ## Reproducibility contract
 
-- Every confirmatory condition has exactly five distinct full-pipeline seeds.
+- Every condition has its exact registered seed set: five for taxonomy screens
+  and twelve untouched seeds for the frozen confirmation suite.
 - Aggregation stops if any run is absent, failed, non-finite, or duplicated.
-- Error bars are two-sided 95% Student-t intervals with four degrees of freedom.
+- Error bars are two-sided 95% Student-t intervals with degrees of freedom
+  determined by the registered seed count.
 - Phase boundaries are interpolated independently within each seed before aggregation.
 - Corpus caches record source, revision, byte count, document count, and SHA-256.
 - Run directories contain immutable specifications, provenance, metrics, trajectories, and status.

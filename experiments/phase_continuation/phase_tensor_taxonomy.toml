@@ -1,5 +1,5 @@
-schema_version = "1.0"
-title = "Theory-experiment coverage of the phase-continuation tensor"
+schema_version = "1.1"
+title = "Field-frontier and this-paper coverage of the phase-continuation tensor"
 columns = ["T0", "T1", "N1", "N2", "R1", "R2", "O1"]
 
 [column_labels]
@@ -11,14 +11,25 @@ R1 = "semi-natural bridge"
 R2 = "natural data"
 O1 = "open-weight lifecycle"
 
-[axes]
+[coverage.field_frontier]
 data = ["T0", "N1", "N2", "R1", "R2"]
-attention = ["T0", "T1", "N1"]
+attention = ["T0", "T1", "N1", "N2"]
 mlp = ["N2"]
 residual = ["N2"]
 objective = ["N2"]
 optimizer = ["N2"]
 scaling = ["T1", "N2"]
+lifecycle = ["O1"]
+population = ["N1", "R2"]
+
+[coverage.this_paper]
+data = ["N2", "R1", "R2"]
+attention = ["N2"]
+mlp = ["N2"]
+residual = ["N2"]
+objective = ["N2"]
+optimizer = ["N2"]
+scaling = ["N2"]
 lifecycle = []
 population = []
 

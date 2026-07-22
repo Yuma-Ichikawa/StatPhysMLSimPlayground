@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from statphys.continuation.aggregate import T95_DF4, aggregate_manifest
+from statphys.continuation.analysis.aggregate import _interval
 from statphys.continuation.schema import Domain, Manifest, TaskSpec
 
 
@@ -35,6 +36,12 @@ def test_aggregate_requires_all_five_runs(tmp_path: Path) -> None:
 
 def test_student_t_constant_is_df_four() -> None:
     assert T95_DF4 == pytest.approx(2.7764451051977987)
+
+
+def test_student_t_interval_supports_twelve_registered_seeds() -> None:
+    interval = _interval(range(12))
+    assert interval["n"] == 12
+    assert interval["ci95"] > 0.0
 
 
 def test_aggregate_records_family(tmp_path: Path) -> None:

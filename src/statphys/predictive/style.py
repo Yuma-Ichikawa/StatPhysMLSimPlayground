@@ -36,12 +36,12 @@ def apply_style() -> None:
             "xtick.labelsize": 12,
             "ytick.labelsize": 12,
             "legend.fontsize": 10,
-        "figure.figsize": FIGSIZE,
-        "figure.facecolor": "white",
-        "axes.facecolor": "white",
-        "savefig.facecolor": "white",
-        "savefig.transparent": False,
-        "savefig.bbox": None,
+            "figure.figsize": FIGSIZE,
+            "figure.facecolor": "white",
+            "axes.facecolor": "white",
+            "savefig.facecolor": "white",
+            "savefig.transparent": False,
+            "savefig.bbox": None,
             "savefig.dpi": 300,
         }
     )

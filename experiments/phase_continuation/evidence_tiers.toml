@@ -1,0 +1,38 @@
+schema_version = "1.0"
+
+[tiers.A]
+name = "phase confirmation"
+minimum_outer_seeds = 12
+minimum_sizes = 6
+requirements = [
+  "semantic order parameter independent of the optimized loss",
+  "explicit crossing or censored-boundary status",
+  "largest-size model comparison",
+  "raw outer-seed values and uncertainty",
+  "registered alternative hypothesis",
+]
+allowed_claims = ["finite-size phase structure", "boundary transport", "rounding versus sharpening"]
+
+[tiers.B]
+name = "frozen hypothesis comparison"
+minimum_outer_seeds = 5
+minimum_sizes = 3
+requirements = [
+  "frozen hyperparameters or disjoint calibration split",
+  "O(1) primary risk or order",
+  "raw outer-seed values and uncertainty",
+  "matched resource accounting",
+]
+allowed_claims = ["boundary or endpoint shift", "mechanism candidate", "resolved or unresolved contrast"]
+
+[tiers.C]
+name = "external endpoint"
+minimum_outer_seeds = 5
+minimum_sizes = 2
+requirements = [
+  "version-pinned data or model",
+  "disjoint evaluation split",
+  "O(1) risk with raw seed values",
+]
+allowed_claims = ["measurement transport", "external-validity endpoint"]
+

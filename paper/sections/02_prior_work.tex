@@ -1,35 +1,52 @@
-\section{Closest prior work and the unresolved gap}
+\section{Theory frontier and the unresolved gap}
+\label{sec:frontier}
 
-Solvable attention already predicts a positional--semantic transition in a
-tied low-rank layer~\cite{cui2024phase}, while attention-indexed models extend
-closed-form predictions to full-width matrices~\cite{boncoraglio2026aim}.
-Thus observing a transition or a spectral outlier is not our novelty; the test
-is transport to a hidden deformation.  Diffusion theory separates speciation
-from memorized-point collapse~\cite{biroli2024dynamical}, and recent DiT
-experiments report near-concurrent symmetry breaking and nonlocality
-onset~\cite{zhang2026concurrence}.  We therefore predict relative critical
-times rather than rediscovering these diagnostics.
+The taxonomy is our organizational proposal, informed by reproducibility
+frameworks that make model and dataset assumptions explicit
+\cite{mitchell2019modelcards,gebru2021datasheets,pineau2021reproducibility}.
+It is not presented as an established consensus.
 
-In RL, policy-entropy collapse has a mechanistic account and targeted controls
-already exist~\cite{cui2025entropy}; proxy optimization can degrade gold
-quality as KL budget grows~\cite{rafailov2024overoptimization}.  Entropy alone
-is consequently not an order parameter.  In multi-agent systems, global-flip
-experiments show that apparent consensus can be field-driven rather than
-interaction-driven~\cite{denobili2026collective}.  Effective-team-size laws
-and matched coordination controls further show that nominal agent count is
-not independent evidence~\cite{bertalanic2026ringelmann,kim2026scalingagents}.
+For attention, a tied low-rank model exhibits a positional--semantic transition
+\cite{cui2024phase}, and attention-indexed models extend Bayes predictions to
+full-width matrices \cite{boncoraglio2026aim}. The open question is therefore
+not whether simplified attention can transition, but whether its boundary and
+order semantics survive standard blocks, MLPs, normalization, causal
+objectives, optimization, and natural carriers.
+
+Diffusion theory distinguishes speciation from later memorized-point collapse
+\cite{biroli2024dynamical}; DDPM and DiT provide the relevant learned endpoints
+\cite{ho2020ddpm,peebles2023dit}. A recent unreviewed preprint reports nearby
+symmetry-breaking and nonlocality onsets \cite{zhang2026concurrence}, which we
+treat as a hypothesis rather than settled evidence. In RL, proxy optimization
+can reduce gold quality \cite{gao2023reward,rafailov2024overoptimization}, so
+entropy must be read jointly with gold reward and strategy support. Consensus
+dynamics have a classical foundation \cite{degroot1974consensus}; modern MARL
+and LLM debate add nonstationarity and heterogeneous language agents
+\cite{lowe2017maddpg,du2024debate}. The 2026 statistical-physics agent papers
+we cite are explicitly recent preprints, useful for hypotheses but not a mature
+theoretical frontier \cite{denobili2026collective,bertalanic2026ringelmann}.
 
 \begin{table}[t]
-\centering\scriptsize\setlength{\tabcolsep}{3pt}
-\begin{tabularx}{\linewidth}{lYYY}
+\centering\small
+\begin{tabularx}{\linewidth}{@{}p{30mm}YYY@{}}
 \toprule
-Domain & Known result & Assumption removed here & Hidden prediction \\
+Anchor setting & Established result & Restrictive assumption & Deformation
+tested here \\
 \midrule
-Attention & positional--semantic transition & tied/low-rank surrogate & deformed $\gc$ \\
-Diffusion & speciation and collapse times & oracle/global score & locality-shifted time \\
-RL & entropy and Goodhart dynamics & exact verifier & gold boundary \\
-Agents & field-driven crossover & homogeneous mean field & coupling tipping point \\
+Tied attention & positional--semantic boundary & low rank, attention only &
+trainable block and module screens \\
+Attention-indexed model & Bayes boundary & simplified data and loss &
+optimizer, objective, natural carrier \\
+Oracle diffusion score & speciation and collapse regimes & oracle score &
+trajectory and learned-score validation \\
+Proxy-reward model & Goodhart scaling & controlled verifier & KL--noise phase
+map \\
+Mean-field consensus & field/coupling response & homogeneous agents &
+population and field holdouts \\
 \bottomrule
 \end{tabularx}
-\caption{Existing results are treated as anchors, not rediscovered claims.}
+\caption{Theory frontier and the assumption removed by the benchmark. The
+last column states a test, not a guarantee of successful continuation.}
+\label{tab:frontier}
 \end{table}
+

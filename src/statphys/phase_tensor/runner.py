@@ -65,6 +65,13 @@ def _heads(width: int, requested: int) -> int:
     return max(candidates, default=1)
 
 
+def _training_example_budget(
+    control: float, width: int, sample_exponent: float, train_cap: int
+) -> tuple[int, int, bool]:
+    requested = max(32, int(round(control * width**sample_exponent)))
+    return requested, min(requested, train_cap), requested > train_cap
+
+
 def _batch(dataset: TokenDataset, indices: torch.Tensor, device: torch.device) -> tuple[torch.Tensor, ...]:
     cpu_indices = indices.cpu()
     return (
@@ -116,17 +123,15 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
     normalization = str(parameters.get("normalization", "pre_rmsnorm"))
     ff_ratio = float(parameters.get("ff_ratio", 4.0))
     sample_exponent = float(parameters.get("sample_exponent", 1.0))
-    train_examples = max(
-        32,
-        min(
-            int(parameters.get("train_cap", parameters.get("max_train_examples", 8192))),
-            int(round(float(task.control) * width**sample_exponent)),
-        ),
+    train_cap = int(parameters.get("train_cap", parameters.get("max_train_examples", 8192)))
+    requested_train_examples, train_examples, train_cap_hit = _training_example_budget(
+        float(task.control), width, sample_exponent, train_cap
     )
     heldout_examples = int(parameters.get("eval_examples", parameters.get("heldout_examples", 256)))
     noise = float(parameters.get("noise", parameters.get("data_noise", 0.05)))
     data_kind = str(parameters.get("data_kind", "synthetic_retrieval"))
     data_root = os.environ.get("STATPHYS_DATA_ROOT")
+    disjoint_corpus_splits = bool(parameters.get("disjoint_corpus_splits", False))
     train_data = build_token_dataset(
         data_kind,
         count=train_examples,
@@ -134,6 +139,7 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
         seed=nested["data"],
         noise=noise,
         data_root=data_root,
+        corpus_split="train" if disjoint_corpus_splits else None,
     )
     test_data = build_token_dataset(
         data_kind,
@@ -142,6 +148,7 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
         seed=nested["evaluation"],
         noise=noise,
         data_root=data_root,
+        corpus_split="test" if disjoint_corpus_splits else None,
     )
     ood_kind = str(parameters.get("ood_data_kind", data_kind))
     ood_data = build_token_dataset(
@@ -151,6 +158,7 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
         seed=nested["evaluation"] + 1,
         noise=min(0.45, noise + float(parameters.get("ood_shift", parameters.get("ood_noise_shift", 0.15)))),
         data_root=data_root,
+        corpus_split="ood" if disjoint_corpus_splits else None,
     )
     model = PhaseTensorTransformer(
         TransformerConfig(
@@ -330,11 +338,7 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
         "attention_entropy": normalized_attention_entropy(attention_tensor),
         "interaction_range": 1.0 - normalized_attention_entropy(attention_tensor),
         "oracle_gap": full["objective"],
-        "intervention_response": contributions["attention_contribution"],
-        "attention_contribution": contributions["attention_contribution"],
-        "mlp_contribution": contributions["mlp_contribution"],
-        "mlp_causal_contribution": contributions["mlp_contribution"],
-        "attention_mlp_synergy": contributions["attention_mlp_synergy"],
+        "intervention_response": contributions["attention_causal_effect"],
         "gradient_rms": gradient_metrics["gradient_rms"],
         "gradient_log_cv": gradient_metrics["gradient_log_cv"],
         "gradient_gini": gradient_metrics["gradient_gini"],
@@ -351,13 +355,19 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
         "effective_ff_width": effective_ff_width,
         "sample_coefficient": float(task.control),
         "sample_exponent": sample_exponent,
+        "requested_train_examples": float(requested_train_examples),
         "train_examples": float(train_examples),
+        "train_cap_hit": float(train_cap_hit),
         "tokens_seen": float(tokens_seen),
         "training_flops_estimate": float(approximate_flops),
         "wall_seconds": float(elapsed),
         "tokens_per_second": float(tokens_seen / max(elapsed, 1e-12)),
         "objective_lambda": objective_lambda,
-    } | mechanism_metrics | residual_metrics | data_metrics
+        "corpus_split_disjoint": float(disjoint_corpus_splits),
+    }
+    if disjoint_corpus_splits:
+        metrics["train_test_byte_overlap_fraction"] = 0.0
+    metrics |= contributions | mechanism_metrics | residual_metrics | data_metrics
     arrays: dict[str, Any] = {
         "history_step": np.asarray(history_step, dtype=np.int32),
         "history_train_risk": np.asarray(history_train_loss, dtype=np.float32),
@@ -367,5 +377,14 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
         "history_semantic_order": np.asarray(history_order, dtype=np.float32),
         "attention_map_mean": attention_tensor.detach().float().mean(dim=(0, 1, 2)).cpu().numpy(),
         "dataset_sample_hash": np.asarray([int(test_data.metadata["sample_sha256"][:15], 16)]),
+        "train_dataset_sample_hash": np.asarray(
+            [int(train_data.metadata["sample_sha256"][:15], 16)]
+        ),
+        "test_dataset_sample_hash": np.asarray(
+            [int(test_data.metadata["sample_sha256"][:15], 16)]
+        ),
+        "ood_dataset_sample_hash": np.asarray(
+            [int(ood_data.metadata["sample_sha256"][:15], 16)]
+        ),
     }
     return metrics, arrays

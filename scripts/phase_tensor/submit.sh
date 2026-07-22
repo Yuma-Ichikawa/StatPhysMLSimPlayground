@@ -7,6 +7,16 @@ set -euo pipefail
 : "${STATPHYS_DATA_ROOT:?set STATPHYS_DATA_ROOT to the prepared-corpus root}"
 : "${ARRAY_SCRIPT:?set ARRAY_SCRIPT to a site-specific Slurm wrapper}"
 
+partition=$(sed -n 's/^#SBATCH[[:space:]]\+--partition=//p' "$ARRAY_SCRIPT" | sed -n '1p')
+case "$partition" in
+  spark_*) ;;
+  *)
+    printf 'refusing non-Spark array wrapper: partition=%s script=%s\n' \
+      "${partition:-missing}" "$ARRAY_SCRIPT" >&2
+    exit 2
+    ;;
+esac
+
 JOB_IDS_FILE="${JOB_IDS_FILE:-$MANIFEST_ROOT/job_ids.env}"
 TASKS_PER_ARRAY="${TASKS_PER_ARRAY:-32}"
 MAX_PARALLEL="${MAX_PARALLEL:-1}"

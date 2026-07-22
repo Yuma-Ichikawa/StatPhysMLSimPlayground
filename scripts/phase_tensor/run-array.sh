@@ -6,6 +6,16 @@ set -euo pipefail
 : "${STATPHYS_DATA_ROOT:?}"
 : "${REPO_ROOT:?}"
 : "${SLURM_ARRAY_TASK_ID:?}"
+: "${SLURM_JOB_PARTITION:?}"
+
+case "$SLURM_JOB_PARTITION" in
+  spark_*) ;;
+  *)
+    printf 'refusing non-Spark execution: SLURM_JOB_PARTITION=%s\n' \
+      "$SLURM_JOB_PARTITION" >&2
+    exit 2
+    ;;
+esac
 
 export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-1}"

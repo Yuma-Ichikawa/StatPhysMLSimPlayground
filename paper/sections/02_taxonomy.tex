@@ -1,0 +1,105 @@
+\section{A hierarchical taxonomy of theory-to-reality deformations}
+\label{sec:taxonomy}
+
+The design space is a graph rather than a fully observed Cartesian tensor. A
+node is a learning system; an edge removes one registered assumption. Three
+levels prevent axes of different abstraction from being conflated.
+
+\paragraph{Level 0: domain.}
+The domains are Transformer representations, diffusion trajectories, RL
+feedback dynamics, and multi-agent populations.
+
+\paragraph{Level 1: thermodynamic level.}
+The object of interest is respectively learning, representation, trajectory, or
+population order. A system may occupy more than one level, but every PhaseCard
+selects one primary level.
+
+\paragraph{Level 2: six realism axes.}
+Table~\ref{tab:taxonomy} is the central design taxonomy. Architecture
+subcomponents such as attention and MLPs live under model/interaction rather
+than appearing beside data or population as peer axes.
+
+\begin{table}[t]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}p{25mm}YYYY@{}}
+\toprule
+Axis & Transformer & Diffusion & RL / RLVR & Multi-agent \\
+\midrule
+Data / environment & synthetic, grammar, web text & mixture, manifold, image
+data & bandit, MDP, verifier tasks & private evidence, task graph \\
+Model / interaction & QKV, heads, MLP, norm, residual & score model, U-Net,
+DiT, locality & tabular, MLP, Transformer policy & topology, bandwidth,
+memory, roles \\
+Objective / feedback & MSE, CE, causal, SFT, preference & $\epsilon$, $x_0$,
+$v$, flow, guidance & gold, proxy, process reward & individual, team,
+competitive reward \\
+Dynamics / optimizer & SGD-M, AdamW, Muon, SOAP, schedule & optimizer, noise
+schedule, solver & PPO, off-policy reuse, search & response and memory update \\
+Scale / resources & $d,L,T,H,n,C$ & dimension, resolution, NFE & parameters,
+horizon, rollouts & agents, degree, rounds \\
+Lifecycle / population & pretrain, LoRA, pruning, RAG, rollouts &
+distillation, conditioning & SFT--RL, verifier calls & heterogeneous agents,
+dynamic topology \\
+\bottomrule
+\end{tabularx}
+\caption{Hierarchical realism taxonomy. Entries are domain-specific subaxes,
+not claims that every cell is tested in this paper.}
+\label{tab:taxonomy}
+\end{table}
+
+\subsection{What is measured}
+
+An order parameter must retain meaning under deformation. We group observables
+by function rather than by domain (Table~\ref{tab:orders}). In particular,
+$K_{\rm eff}^{\rm macro}=\exp H(Z)$ counts effective macrostates,
+$N_{\rm eff}^{\rm corr}$ discounts correlated components, and
+$r_{\rm eff}^{\rm spec}=(\sum_i\lambda_i)^2/\sum_i\lambda_i^2$ is a
+spectral effective rank. They are not interchangeable effective numbers.
+
+\begin{table}[t]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}p{27mm}YYp{31mm}@{}}
+\toprule
+Family & Meaning & Representative probe & Required null \\
+\midrule
+Recovery & latent truth recovered & counterfactual semantic or oracle probe &
+shuffled latent labels \\
+Specialization & permutation symmetry broken & head, branch, strategy, or role
+assignment & permuted components \\
+Locality & range of causal influence & matched site or message perturbation &
+random-site perturbation \\
+Multiplicity & independent computational units & correlation participation &
+independent-replica null \\
+Entropy / commitment & macrostate selection & strategy or trajectory entropy &
+token-level entropy alone \\
+Replica structure & diversity of solutions & functional overlap distribution &
+seed-matched random solutions \\
+Robustness & quality of the ordered state & OOD risk, gold reward, truth
+consensus & proxy-only performance \\
+Resource response & marginal value of compute & matched FLOP, NFE, rollout, or
+message intervention & equal-resource control \\
+\bottomrule
+\end{tabularx}
+\caption{Order-parameter dictionary. A PhaseCard records the exact estimator,
+probe distribution, normalization, units, and null.}
+\label{tab:orders}
+\end{table}
+
+\subsection{Outcomes and PhaseCards}
+
+An edge can preserve a phase structure, renormalize its coordinate, split or
+merge regimes, round a sharp response, insert a new regime, separate
+information and computation thresholds, become path dependent, or destroy the
+semantics of the order parameter. These outcomes are hypotheses adjudicated by
+registered diagnostics; they are not labels assigned from visual smoothness.
+
+The minimal experimental record is
+\begin{equation}
+\mathcal P=(D,L,A,\delta,\omega,\mathbf N,\mathbf g,\mathbf m,
+\mathbf R,H,E),
+\end{equation}
+where $D$ is domain, $L$ thermodynamic level, $A$ anchor, $\delta$ deformation,
+$\omega$ disorder hierarchy, $\mathbf N$ system-size vector, $\mathbf g$
+controls, $\mathbf m$ primary and secondary orders, $\mathbf R$ resources,
+$H$ holdout rule, and $E$ evidence tier. Full PhaseCards are machine-readable;
+representative cards appear in Section~\ref{sec:protocol}.

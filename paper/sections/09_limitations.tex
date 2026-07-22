@@ -1,28 +1,29 @@
-\section{Limitations}
+\section{Limitations and scope}
 
-The new experiment is a controlled Tier-B stochastic benchmark.  It does not
-establish natural-language, natural-image, open RLVR, or open-weight LLM-agent
-external validity.  The previous repository contains trainable Tier-B+ smoke
-models, but their saturated primary order failed the present audit and is not
-promoted to evidence.  External endpoints require version-pinned models,
-natural-data holdouts, matched token/FLOP controls, and independent
-implementations.
+The strongest evidence is a controlled numerical benchmark, not natural
+language, natural image, open RLVR, or open-weight LLM-agent external validity.
+The Transformer atlas trains small decoder models from scratch. Natural
+corpora test a byte-level measurement protocol on disjoint ranges; they do not
+establish that a synthetic phase boundary transfers to web text.
 
-The current empirical Transformer tensor does not yet cover sparse/MoE MLPs,
-low-rank parameterizations, preference or RL objectives, open checkpoint
-lifecycle trajectories, or agent populations. Those cells are displayed as N0
-in the coverage matrix. The new train/test/OOD and mechanism measurements require
-a fresh five-seed aggregate; legacy artifacts are retained as historical results
-and are never relabeled with statistics they did not record.
+The predictive benchmark is deliberately stylized. Its critical-window
+benefit follows a registered simulator response and is not an observed
+wall-clock training gain. Its augmented surrogate is a prospective comparison
+only where the extra coordinate was frozen before the evaluation split.
 
-Our finite sizes can distinguish competing predictive trends but do not by
-themselves prove an asymptotic universality class.  RL and agent systems are
-driven and potentially nonstationary; thermodynamic language is used only for
-operational dynamic regimes.  Critical-window quality is benchmark-specific,
-and compute savings do not transfer automatically to wall-clock savings on a
-different architecture.
+Most Transformer coordinates are Tier-B screens. Five seeds quantify
+full-pipeline variability but cannot prove an asymptotic universality class.
+Performance-derived $1-R$ is not a semantic order unless a latent task probe
+supports that interpretation. Threshold curves that never cross are censored,
+not converted into endpoint boundaries.
 
-Finally, an adaptive design can bias inference if the first-stage boundary is
-used to redefine the estimand.  We avoid this by freezing the original grid,
-adding seeds rather than moving controls, and retaining both stages in the
-manifest.
+Lifecycle, sparse/MoE feed-forward blocks, low-rank adaptation, preference/RL
+objectives, open checkpoints, and agent populations remain explicit open cells.
+Recent 2026 multi-agent and diffusion references are unreviewed preprints and
+are not used as sole support for a claim.
+
+Finally, the confirmation suite was designed after auditing the broad atlas.
+Its fresh seeds protect the numerical comparison, but the hypotheses are
+second-stage confirmations rather than an independent replication by another
+implementation.
+

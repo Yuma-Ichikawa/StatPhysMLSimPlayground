@@ -24,7 +24,7 @@ scripts/phase_tensor/expand-manifests.sh
 `run-array.sh` creates the fixed dependency environment from
 `requirements/phase-tensor.txt` on the compute node when it is absent. Submit it
 through `submit.sh` with a site-specific `ARRAY_SCRIPT`; the adapter must define
-the allowed Slurm partition and hardware policy. After all five-seed tasks finish,
+the allowed Slurm partition and hardware policy. After all registered-seed tasks finish,
 run `render-paper.sh` with the compute-node Python interpreter to create the strict
 aggregate, paper figures, result macros, and `paper/main.pdf`.
 

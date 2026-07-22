@@ -1,4 +1,4 @@
-"""Strict five-seed aggregation with Student-t uncertainty and evidence grades."""
+"""Strict registered-seed aggregation with Student-t uncertainty and evidence grades."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ import json
 import math
 
 import numpy as np
+from scipy.stats import t as student_t
 
 from ..schema import Manifest, REQUIRED_SEED_COUNT, TaskSpec, read_manifest
 
@@ -39,20 +40,25 @@ def _read_completed(task: TaskSpec, root: Path) -> dict[str, float] | None:
 
 def _interval(values: Iterable[float]) -> dict[str, float | int]:
     array = np.asarray(tuple(values), dtype=np.float64)
-    if array.size != REQUIRED_SEED_COUNT:
-        raise ValueError(f"uncertainty requires exactly {REQUIRED_SEED_COUNT} seeds")
+    if array.size < REQUIRED_SEED_COUNT or not np.isfinite(array).all():
+        raise ValueError(
+            f"uncertainty requires at least {REQUIRED_SEED_COUNT} finite seeds"
+        )
     standard_deviation = float(array.std(ddof=1))
     standard_error = standard_deviation / math.sqrt(array.size)
+    critical = float(student_t.ppf(0.975, df=array.size - 1))
     return {
         "mean": float(array.mean()),
         "sd": standard_deviation,
         "sem": standard_error,
-        "ci95": T95_DF4 * standard_error,
+        "ci95": critical * standard_error,
         "n": int(array.size),
     }
 
 
-def _evidence(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _evidence(
+    records: list[dict[str, Any]], registered_seed_count: int
+) -> list[dict[str, Any]]:
     groups: dict[tuple[str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
     for record in records:
         parameter_key = json.dumps(record["parameters"], sort_keys=True, separators=(",", ":"))
@@ -72,7 +78,7 @@ def _evidence(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
         peak_index = int(np.argmax(susceptibility))
         interior_peak = 0 < peak_index < len(large_records) - 1
         complete = all(
-            int(metric["n"]) == REQUIRED_SEED_COUNT
+            int(metric["n"]) == registered_seed_count
             for value in values
             for metric in value["metrics"].values()
         )
@@ -108,7 +114,8 @@ def _evidence(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "variant": variant,
                 "parameters": json.loads(parameter_key),
                 "grade": grade,
-                "complete_five_seed": complete,
+                "complete_registered_seed": complete,
+                "complete_five_seed": complete and registered_seed_count == REQUIRED_SEED_COUNT,
                 "confirmatory": confirmatory,
                 "n_sizes": len(sizes),
                 "n_controls": len(controls),
@@ -178,12 +185,13 @@ def aggregate_manifest(
         "schema_version": "1.1",
         "study": registered.study,
         "manifest_config_hash": registered.config_hash,
-        "required_seed_count": REQUIRED_SEED_COUNT,
+        "minimum_seed_count": REQUIRED_SEED_COUNT,
+        "required_seed_count": len(registered.seeds),
         "registered_runs": len(registered.tasks),
         "completed_runs": len(registered.tasks) - len(missing),
         "missing_run_ids": missing,
         "records": records,
-        "evidence": _evidence(records) if records else [],
+        "evidence": _evidence(records, len(registered.seeds)) if records else [],
     }
     target = Path(output_dir)
     target.mkdir(parents=True, exist_ok=True)

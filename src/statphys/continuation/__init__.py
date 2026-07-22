@@ -1,6 +1,6 @@
 """Solvable-to-realistic phase-continuation experiments.
 
-Every paper condition is represented by exactly five independent seeds and
+Every paper condition is represented by at least five independent seeds and
 every domain emits the same scalar phase card plus domain-specific arrays.
 """
 

@@ -1,4 +1,4 @@
-"""Immutable, portable experiment manifests with an exact five-seed contract."""
+"""Immutable, portable manifests with a registered, at-least-five-seed contract."""
 
 from __future__ import annotations
 
@@ -65,9 +65,9 @@ def _slug(value: str) -> str:
 
 def validate_seed_set(seeds: Sequence[int]) -> None:
     normalized = tuple(int(seed) for seed in seeds)
-    if len(normalized) != REQUIRED_SEED_COUNT or len(set(normalized)) != REQUIRED_SEED_COUNT:
+    if len(normalized) < REQUIRED_SEED_COUNT or len(set(normalized)) != len(normalized):
         raise ValueError(
-            f"every confirmatory study must use exactly {REQUIRED_SEED_COUNT} distinct seeds"
+            f"every study must use at least {REQUIRED_SEED_COUNT} distinct seeds"
         )
     if any(seed < 0 for seed in normalized):
         raise ValueError("seeds must be non-negative")
@@ -195,7 +195,7 @@ class Manifest:
         expected = set(seeds)
         incomplete = [condition for condition, found in by_condition.items() if found != expected]
         if incomplete:
-            raise ValueError("every condition must contain the exact five-seed set")
+            raise ValueError("every condition must contain the exact registered seed set")
 
     @property
     def n_conditions(self) -> int:

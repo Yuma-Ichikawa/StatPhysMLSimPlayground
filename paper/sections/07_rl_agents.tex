@@ -1,23 +1,55 @@
-\section{Driven validation: reinforcement and multi-agent systems}
+\section{Cross-domain validation}
+\label{sec:crossdomain}
 
-The RL benchmark separates oracle occupancy overlap, strategy entropy, gold
-reward, proxy reward, Goodhart gap, and effective rollout fraction.  The
-control plane is KL pressure versus verifier noise.  Productive exploration,
-specialization, entropy collapse, and reward hacking therefore cannot be
-collapsed into a single entropy curve.
+The following domains are canonical validation cases, not coequal mechanism
+studies and not evidence for shared equilibrium exponents.
 
-\resultfigure{figures/figure5_reinforcement.pdf}{RL holdout curves with
-hierarchical 95\% intervals.  Gold reward (top) and the proxy--gold Goodhart
-gap (bottom) separate productive scaling from reward overoptimization at
-three verifier-noise levels.}
+\subsection{Diffusion trajectories}
 
-The multi-agent benchmark uses truth-conditioned consensus and explicitly
-varies intrinsic field $h$ and social coupling $J$.  Positive and negative
-fields implement the global-flip control.  Effective component fraction and
-error reproduction are reported alongside nominal population size, preventing
-shared bias from masquerading as independent consensus.
+The control is reverse time and the secondary coordinate controls locality.
+We track speciation, nonlocality, trajectory commitment, and proximity to
+memorized samples. The oracle anchor separates speciation from later collapse
+\cite{biroli2024dynamical}; the holdout asks whether their ordering survives a
+deformed score trajectory.
 
-\resultfigure{figures/figure6_multiagent.pdf}{Multi-agent holdout curves with
-hierarchical 95\% intervals.  Positive and negative intrinsic fields provide
-the global-flip control needed to separate field-driven alignment from
-interaction-driven order.}
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.96\linewidth]{figures/figure4_diffusion.pdf}
+\caption{Diffusion finite-size validation. Raw order, response,
+pseudocritical drift, and largest-size predictive checks are shown separately.}
+\label{fig:diffusion}
+\end{figure}
+
+\subsection{Reinforcement learning}
+
+RL is organized by KL pressure $\beta_{\rm KL}$ and verifier noise
+$\epsilon_{\rm ver}$. Gold reward, strategy support, and Goodhart gap are
+joint observables; entropy alone cannot distinguish productive specialization
+from collapse \cite{gao2023reward}. The two-dimensional map tests whether an
+oracle-calibrated critical region predicts the holdout feedback dynamics.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.96\linewidth]{figures/figure5_reinforcement.pdf}
+\caption{RL validation in the $(\beta_{\rm KL},\epsilon_{\rm ver})$ plane.
+Color encodes gold reward; contours and companion diagnostics show strategy
+support and Goodhart behavior with uncertainty inherited from outer seeds.}
+\label{fig:rl}
+\end{figure}
+
+\subsection{Multi-agent populations}
+
+Intrinsic evidence $h$ and social coupling $J$ are separate controls. A global
+flip prevents consensus from being mistaken for truth, and population size
+$A$ remains explicit. The heatmap distinguishes field-driven alignment,
+interaction-driven consensus, fragmentation, and error amplification.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.96\linewidth]{figures/figure6_multiagent.pdf}
+\caption{Multi-agent validation in the $(h,J)$ plane with finite-population
+boundary overlays. The order is truth-conditioned consensus, not agreement
+alone.}
+\label{fig:agents}
+\end{figure}
+

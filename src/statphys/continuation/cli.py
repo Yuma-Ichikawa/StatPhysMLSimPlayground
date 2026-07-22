@@ -64,7 +64,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="phase-continuation")
     commands = parser.add_subparsers(dest="command", required=True)
 
-    expand = commands.add_parser("expand", help="expand TOML into an immutable five-seed manifest")
+    expand = commands.add_parser(
+        "expand", help="expand TOML into an immutable manifest with at least five seeds"
+    )
     expand.add_argument("config")
     expand.add_argument("--manifest", required=True)
 
@@ -88,7 +90,7 @@ def build_parser() -> argparse.ArgumentParser:
     run_local.add_argument("--stop", type=int)
     run_local.add_argument("--overwrite", action="store_true")
 
-    aggregate = commands.add_parser("aggregate", help="strict five-seed aggregation")
+    aggregate = commands.add_parser("aggregate", help="strict registered-seed aggregation")
     aggregate.add_argument("manifest")
     aggregate.add_argument("--runs", required=True)
     aggregate.add_argument("--output", required=True)
@@ -111,7 +113,9 @@ def build_parser() -> argparse.ArgumentParser:
     status.add_argument("manifest")
     status.add_argument("--runs", required=True)
 
-    retry = commands.add_parser("retry-manifest", help="emit all five seeds for incomplete conditions")
+    retry = commands.add_parser(
+        "retry-manifest", help="emit every registered seed for incomplete conditions"
+    )
     retry.add_argument("manifest")
     retry.add_argument("--runs", required=True)
     retry.add_argument("--output", required=True)

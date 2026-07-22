@@ -364,6 +364,7 @@ as a realistic model:
 - **Tier C:** natural-language, natural-image, external-RLVR, and LLM-agent protocols. These
   remain explicitly incomplete until versioned external assets are supplied.
 
-Every confirmatory condition uses exactly five outer seeds and at least six system sizes.
+Every condition uses its exact registered seed set with at least five outer
+seeds; frozen follow-up studies may register stronger replication.
 Run 'phase-continuation coverage' and 'phase-continuation taxonomy' before creating manifests.
 Reusable code and profiles contain no site-specific absolute paths.

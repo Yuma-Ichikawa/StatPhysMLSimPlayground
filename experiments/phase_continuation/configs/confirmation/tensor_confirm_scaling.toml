@@ -1,0 +1,17 @@
+[study]
+name = "tensor_confirm_scaling"
+description = "Uncapped sample-complexity paths on untouched seeds"
+seeds = [231503, 256541, 281549, 306577, 331613, 356651, 381679, 406717, 431729, 456769, 481793, 506821]
+uncertainty = "two-sided 95% Student-t interval across twelve full-pipeline outer seeds"
+
+[[experiments]]
+domain = "transformer"
+family = "tensor_scaling"
+variants = ["data"]
+stage = "heldout_confirmation"
+control_name = "sample_coefficient"
+controls = [0.5, 1.0, 2.0]
+sizes = [32, 64, 96, 128]
+parameters = { evidence_tier = "B", data_kind = "synthetic_retrieval", sequence_length = 64, depth = 3, heads = 4, ff_ratio = 4.0, activation = "swiglu", normalization = "pre_rmsnorm", optimizer = "adamw", steps = 320, batch_size = 64, eval_examples = 512, learning_rate = 0.001, weight_decay = 0.01, noise = 0.12, ood_shift = 0.18, train_cap = 65536, frozen_from = "empirical_phase_tensor_o1_v2" }
+parameter_grid = { sample_exponent = [1.0, 1.5, 2.0] }
+

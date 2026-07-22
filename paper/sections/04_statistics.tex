@@ -1,27 +1,56 @@
-\section{Statistical protocol}
+\section{Experimental and statistical protocol}
+\label{sec:protocol}
 
-Discovery, confirmation, and holdout are separate datasets.  The largest
-variant is absent from every fit.  The first confirmatory stage uses 16 outer
-disorder seeds and four inner stochastic replicates.  After boundary
-localization, 16 additional outer seeds are added only to the adjacent three
-control values.  Inner replicates never count as independent disorder draws.
-Intervals use a hierarchical bootstrap over outer-seed means, while within-
-disorder variance is reported separately.
+Evidence strength follows Table~\ref{tab:evidence}. The controlled predictive
+benchmark uses 16 independent outer-disorder seeds, four inner stochastic
+replicates, and 16 additional outer seeds near the frozen boundary window.
+Inner replicates are never counted as independent disorder. The broad
+Transformer taxonomy uses exactly five full-pipeline seeds per condition and
+Student-$t$ intervals; it is a screen. Frozen confirmation uses twelve fresh
+outer seeds. These designs answer different questions and are never pooled.
 
-For every transition, six system sizes are evaluated.  A continuous width
-$w_N\propto N^{-1/2}$, a first-order-like width $w_N\propto N^{-1}$, and a
-smooth crossover $w_N=w_\infty+aN^{-1/2}$ compete by prediction of the largest
-size.  Exponents are called asymptotic only if window, minimum-size,
-correction-term, held-out-size, and scaling-relation checks all agree;
-otherwise they are finite-size effective exponents.
+\begin{table}[t]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}p{12mm}p{31mm}p{19mm}p{20mm}Y@{}}
+\toprule
+Tier & Purpose & Sizes & Outer seeds & Allowed language \\
+\midrule
+A & finite-size phase or boundary transport & $\geq6$ & $12$--$32$ &
+phase structure, crossing/crossover, predictive boundary \\
+B & frozen mechanism or endpoint comparison & $\geq3$ & $\geq5$ &
+shift, mechanism candidate, resolved/unresolved contrast \\
+C & natural or open endpoint & $\geq2$ & $\geq5$ &
+measurement transport and bounded external validity \\
+\bottomrule
+\end{tabularx}
+\caption{Evidence tiers. More seeds do not upgrade an invalid order parameter
+or a non-independent holdout.}
+\label{tab:evidence}
+\end{table}
 
-The vector of system sizes is never collapsed by convention: representation
-dimension, reverse-time resolution, MDP horizon, and agent population have
-domain-specific meanings.  Likewise, Binder ratios are used only where their
-symmetry assumptions are satisfied.  RL uses occupancy and strategy
-participation; multi-agent analysis separates intrinsic field from social
-coupling with a global flip.
+\paragraph{Finite-size inference.}
+Finite-size scaling is domain specific \cite{fisher1972scaling,binder1981cumulants,
+fisher1982firstorder}. We therefore do not impose $N^{-1/2}$ or $N^{-1}$ on
+width, trajectory resolution, horizon, and population as universal exponents.
+Candidate forms are empirical models whose parameters are fit below the
+largest size and scored prospectively on it. A phase label additionally
+requires order semantics, sharpening or crossing diagnostics, sensitivity to
+the minimum size and fitting window, and a registered alternative.
 
-All empirical figures display raw outer-seed points beneath means and 95\%
-intervals.  One panel has one physical control.  Cross-domain comparison is
-performed only after domain-specific normalization.
+\paragraph{Intensive observables.}
+For a vocabulary of size $V$, cross entropy is reported as
+$R_{\rm CE}=\ell_{\rm CE}/\log V$; the Brier risk is divided by
+$1-1/V$. We report $R_{\rm train}$, $R_{\rm IID}$, $R_{\rm OOD}$, and
+$e_{\rm gen}=R_{\rm IID}-R_{\rm train}$ separately. FLOPs, tokens, wall
+time, width, depth, context, and sample count remain resource coordinates.
+Causal module effects use raw risk differences and a bounded signed
+normalization, never division by a vanishing remaining-accuracy scale.
+
+\paragraph{Accounting and preregistration.}
+A condition is a unique PhaseCard; a trained model is one outer seed; an inner
+replicate is conditional stochasticity; an evaluation is not a new model.
+Configuration hashes, corpus revisions and hashes, seed values, raw seed
+metrics, censor flags, cap-hit flags, tokens, estimated FLOPs, and elapsed time
+are stored before aggregation. Confirmation configurations were frozen after
+the exploratory audit in the machine-readable claim ledger
+\cite{nosek2018preregistration}.

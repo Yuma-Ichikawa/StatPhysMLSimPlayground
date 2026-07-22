@@ -15,6 +15,11 @@ import torch
 
 VOCABULARY = 258
 BOS = 1
+CORPUS_SPLITS = {
+    "train": (0.00, 0.80),
+    "test": (0.80, 0.90),
+    "ood": (0.90, 1.00),
+}
 
 
 @dataclass(frozen=True)
@@ -182,6 +187,26 @@ def _encode_bytes(values: np.ndarray) -> np.ndarray:
     return values.astype(np.int64) + 2
 
 
+def _partition_corpus(corpus: bytes, split: str, minimum_bytes: int) -> tuple[bytes, dict[str, Any]]:
+    """Return a deterministic, byte-disjoint corpus partition."""
+    if split not in CORPUS_SPLITS:
+        raise ValueError(f"unknown corpus split: {split}")
+    low_fraction, high_fraction = CORPUS_SPLITS[split]
+    start = int(math.floor(low_fraction * len(corpus)))
+    stop = int(math.floor(high_fraction * len(corpus)))
+    partition = corpus[start:stop]
+    if len(partition) < minimum_bytes:
+        raise ValueError(
+            f"corpus split {split} has {len(partition)} bytes; need at least {minimum_bytes}"
+        )
+    return partition, {
+        "corpus_split": split,
+        "corpus_byte_start": start,
+        "corpus_byte_stop": stop,
+        "corpus_partition_sha256": sha256(partition).hexdigest(),
+    }
+
+
 def _natural_windows(
     corpus: bytes,
     count: int,
@@ -293,6 +318,7 @@ def build_token_dataset(
     seed: int,
     noise: float = 0.0,
     data_root: str | Path | None = None,
+    corpus_split: str | None = None,
 ) -> TokenDataset:
     rng = np.random.default_rng(seed)
     normalized = kind.lower()
@@ -315,6 +341,13 @@ def build_token_dataset(
         metadata_path = corpus_path.with_suffix(".json")
         if metadata_path.exists():
             metadata.update(json.loads(metadata_path.read_text()))
+        if corpus_split is not None:
+            corpus, split_metadata = _partition_corpus(
+                corpus,
+                corpus_split,
+                minimum_bytes=length + 2,
+            )
+            metadata.update(split_metadata)
         if normalized == "natural_injected":
             inputs, targets, mask = _injected_sequences(corpus, count, length, rng, noise)
         else:

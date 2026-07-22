@@ -1,24 +1,65 @@
-\section{PhaseCard and reproducibility contract}
+\section{Reproducibility contract and representative PhaseCards}
 
-Every condition records eight taxonomy axes: thermodynamic level, symmetry,
-disorder, dynamics, system-size vector, control variable, order family, and
-evidence class.  Outcome labels include stable or renormalized continuation,
-splitting, merging, rounding, new-phase insertion,
-computational--statistical separation, path dependence, and semantic failure.
+Repository code contains no site path. Production adapters provide repository,
+manifest, output, data, and Python locations through environment variables.
+Numerical production is rejected unless the Slurm partition begins with
+\texttt{spark\_}. Each task writes atomically; strict aggregation requires
+the complete manifest seed set, finite required metrics, compatible trajectory
+checkpoints, and recorded censor and cap-hit status.
+The completed taxonomy screen contains \PhaseTensorRuns{} runs over
+\PhaseTensorConditions{} conditions. The frozen follow-up adds
+\PhaseConfirmRuns{} runs over \PhaseConfirmConditions{} conditions with
+\PhaseConfirmSeeds{} untouched seeds per condition.
 
-Production uses only a portable Spark profile.  The script rejects any
-partition not beginning with \texttt{spark\_}; repository files contain no
-site path.  A run is immutable after its atomic result write.  Aggregation
-fails on a missing task.  The complete JSON stores all outer means, inner
-variance, bootstrap interval, boundary estimate, competing width fits,
-interaction shifts, and intervention summaries.  Figures are generated only
-from that JSON.  Every figure has physical size 6.4 by 4.8 inches, inward ticks,
-12-point base type, larger axis labels, and preregistered color, line, and
-marker order.
+\begin{table}[h]
+\centering\scriptsize
+\begin{tabularx}{\linewidth}{@{}p{21mm}YYYY@{}}
+\toprule
+Field & Predictive anchor & MLP confirmation & Optimizer confirmation & Natural
+endpoint \\
+\midrule
+Level & representation & representation & learning dynamics & learning \\
+Deformation & hidden domain rule & activation/gating & update geometry &
+corpus \\
+Outer seeds & 16+16 & 12 fresh & 12 fresh & 12 fresh \\
+Primary order & semantic order & task success & $R_{\rm IID}$ & bits/byte \\
+Alternative & transport baselines & parameter count & LR/update mismatch &
+split overlap \\
+Holdout & hidden variant & matched modules & frozen LR slice & disjoint bytes \\
+Tier & A & B & B & C \\
+\bottomrule
+\end{tabularx}
+\caption{Representative PhaseCards. Full cards and hashes are stored in the
+experiment configurations and manifests.}
+\end{table}
 
-\section{Legacy atlas status}
+Every publication figure is generated from a strict aggregate. Figures use a
+white background, physical size $6.4\times4.8$ inches, 12-point base type,
+larger mathematical axis labels, inward ticks, dashed grids, and fixed line,
+marker, and color order. PDF generation checks that every required figure and
+result-macro file is older than the compiled manuscript PDF.
 
-The 58-family atlas remains a searchable diagnostic benchmark and code-coverage
-target.  It is not evidence for the four claims above.  Programs A--N,
-secondary architectures, and common-coordinate diagnostics move to the
-supplement because they otherwise obscure the held-out prediction experiment.
+\section{Negative-result taxonomy}
+
+\begin{table}[h]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}p{29mm}YY@{}}
+\toprule
+Outcome & Operational evidence & Allowed interpretation \\
+\midrule
+No crossing & order remains on one side of threshold & censored threshold, not
+a boundary \\
+Rounding & response width fails to sharpen prospectively & crossover on tested
+sizes \\
+Semantic failure & probe loses mutual information with latent truth &
+abandon or replace the order \\
+Optimization failure & information/order exists but training does not reach it
+& computational--statistical separation candidate \\
+Unresolved contrast & interval and matched controls do not separate methods &
+no ranking \\
+Cap limited & requested sample path hits storage/training cap & exclude from
+scaling fit \\
+\bottomrule
+\end{tabularx}
+\caption{Negative results are recorded outcomes, not omitted cells.}
+\end{table}

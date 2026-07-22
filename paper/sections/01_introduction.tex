@@ -1,29 +1,50 @@
 \section{Introduction}
 
-Solvable learning models increasingly exhibit sharp changes in recovery,
-attention mechanism, memorization, policy support, and collective order.  The
-central unresolved question is not whether such transitions can be drawn, but
-whether a theory calibrated before realism is added predicts an unseen
-boundary afterward.  We ask:
+Statistical mechanics is most useful for machine learning when it predicts what
+happens after a simplifying assumption is removed. A phase diagram drawn after
+the fact can summarize a simulator, but it does not establish that a solvable
+theory retains explanatory power for a trained system. We therefore study one
+question:
 \begin{quote}
-Can a small set of macroscopic variables calibrated in a solvable model
-predict phase boundaries in a held-out learning system, and can prediction
-failure identify the missing variable?
+Which phase structures and order parameters survive along controlled paths from
+solvable models to realistic learning systems?
 \end{quote}
 
-This question changes phase continuation from a descriptive atlas into a
-falsifiable transport problem.  For an edge $u\to v$ in an assumption graph,
-we fit effective parameters only at $u$, predict $\widehat g_{{\rm c},v}$, and score the
-prediction against an untouched confirmatory grid at $v$.  A failed bridge is
-scientifically useful only when an augmented observable restores prediction
-on the same holdout.
+Our answer has three layers. First, a \emph{hierarchical realism taxonomy}
+states what is changed: data or environment, model or interaction, objective or
+feedback, optimization dynamics, scale or resources, and lifecycle or
+population. Second, \emph{predictive phase continuation} states how a change
+is judged: calibrate at an anchor, predict an untouched deformation, diagnose
+breakdown, and test a preregistered repair on independent evidence. Third,
+domain experiments state what was learned. Transformers receive the deepest
+mechanistic treatment; diffusion, reinforcement learning (RL), and multi-agent
+systems test external validity of the experimental grammar.
 
-Our four primary claims are: predictive boundary transport, localization of
-non-additive assumption interactions, recovery by a new macrovariable, and
-compute-efficient intervention inside the predicted critical window.  The
-large experiment registry, immutable artifacts, and plotting grammar are
-supporting infrastructure rather than scientific claims.
+This asymmetry is deliberate. The paper does not propose one universality class
+for four unrelated dynamical systems. It proposes one evidence protocol for
+asking whether an order parameter, boundary, or intervention remains
+predictive. The protocol separates a genuine crossing from a censored
+threshold, an $O(1)$ risk from an extensive resource, and a five-seed taxonomy
+screen from a finite-size phase claim.
 
-\resultfigure{figures/figure1_protocol.pdf}{Predictive phase continuation.  A
-solvable anchor calibrates effective variables; all boundary and intervention
-scores are evaluated on a blinded node.}
+The contributions are:
+\begin{enumerate}
+  \item a factorized design space, an order-parameter dictionary, an outcome
+  vocabulary, and a PhaseCard that make theory-to-reality deformations
+  comparable without erasing domain-specific physics;
+  \item a held-out prediction test with nontrivial baselines, nested disorder,
+  explicit censoring, and evidence tiers that bound the language allowed for
+  each result;
+  \item a Transformer flagship study that distinguishes broad exploratory
+  coverage from frozen confirmation of module, optimizer, scaling, and data
+  hypotheses; and
+  \item canonical diffusion, RL, and multi-agent validations, plus a complete
+  claim-to-artifact ledger and portable Spark-only reproduction workflow.
+\end{enumerate}
+
+\resultfigure{figures/figure1_protocol.pdf}{The paper in one figure. A
+hierarchical realism axis selects a deformation; effective variables are
+calibrated at an anchor, scored on an untouched holdout, and assigned an outcome
+class. The diagram separates taxonomy (what changes), prediction (what must be
+forecast), and evidence (what can be claimed).}
+

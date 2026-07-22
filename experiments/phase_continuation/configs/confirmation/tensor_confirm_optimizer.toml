@@ -1,0 +1,27 @@
+[study]
+name = "tensor_confirm_optimizer"
+description = "Optimizer confirmation with learning rates frozen on a disjoint calibration slice"
+seeds = [231503, 256541, 281549, 306577, 331613, 356651, 381679, 406717, 431729, 456769, 481793, 506821]
+uncertainty = "two-sided 95% Student-t interval across twelve full-pipeline outer seeds"
+
+[[experiments]]
+domain = "transformer"
+family = "tensor_optimizer"
+variants = ["sgd_m"]
+stage = "heldout_confirmation"
+control_name = "sample_coefficient"
+controls = [4.0, 8.0]
+sizes = [64, 96, 128]
+parameters = { evidence_tier = "B", data_kind = "synthetic_retrieval", sequence_length = 64, depth = 3, heads = 4, ff_ratio = 4.0, activation = "swiglu", steps = 320, batch_size = 64, eval_examples = 512, learning_rate = 0.01, weight_decay = 0.01, noise = 0.12, ood_shift = 0.18, sample_exponent = 1.0, train_cap = 16384, frozen_from = "o1_v2_size_le_96_alpha_le_2" }
+parameter_grid = { normalization = ["pre_rmsnorm", "post_layernorm"] }
+
+[[experiments]]
+domain = "transformer"
+family = "tensor_optimizer"
+variants = ["adamw", "muon", "soap"]
+stage = "heldout_confirmation"
+control_name = "sample_coefficient"
+controls = [4.0, 8.0]
+sizes = [64, 96, 128]
+parameters = { evidence_tier = "B", data_kind = "synthetic_retrieval", sequence_length = 64, depth = 3, heads = 4, ff_ratio = 4.0, activation = "swiglu", steps = 320, batch_size = 64, eval_examples = 512, learning_rate = 0.0003, weight_decay = 0.01, noise = 0.12, ood_shift = 0.18, sample_exponent = 1.0, train_cap = 16384, frozen_from = "o1_v2_size_le_96_alpha_le_2" }
+parameter_grid = { normalization = ["pre_rmsnorm", "post_layernorm"] }

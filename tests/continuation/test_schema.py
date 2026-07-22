@@ -22,7 +22,7 @@ parameters = {{ n_probe = 16 }}
 """
 
 
-def test_expansion_has_exactly_five_seeds_per_condition(tmp_path: Path) -> None:
+def test_expansion_has_registered_seed_set_per_condition(tmp_path: Path) -> None:
     path = tmp_path / "study.toml"
     path.write_text(_config("11, 13, 17, 19, 23"))
     manifest = expand_config(path)
@@ -34,10 +34,19 @@ def test_expansion_has_exactly_five_seeds_per_condition(tmp_path: Path) -> None:
         } == set(manifest.seeds)
 
 
-def test_expansion_rejects_non_five_seed_study(tmp_path: Path) -> None:
+def test_expansion_accepts_stronger_replication(tmp_path: Path) -> None:
+    path = tmp_path / "study.toml"
+    seeds = ", ".join(str(seed) for seed in range(12))
+    path.write_text(_config(seeds))
+    manifest = expand_config(path)
+    assert len(manifest.seeds) == 12
+    assert len(manifest.tasks) == 2 * 2 * 2 * 12
+
+
+def test_expansion_rejects_fewer_than_five_seeds(tmp_path: Path) -> None:
     path = tmp_path / "study.toml"
     path.write_text(_config("11, 13, 17, 19"))
-    with pytest.raises(ValueError, match="exactly 5"):
+    with pytest.raises(ValueError, match="at least 5"):
         expand_config(path)
 
 

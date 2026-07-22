@@ -45,6 +45,9 @@ for figure in "${required_figures[@]}"; do
   test main.pdf -nt "figures/$figure"
 done
 test main.pdf -nt generated/phase_tensor_results.tex
+if [ -f generated/phase_tensor_confirmation_results.tex ]; then
+  test main.pdf -nt generated/phase_tensor_confirmation_results.tex
+fi
 
 if [ -n "${STATPHYS_RENDER_STATUS:-}" ]; then
   temporary_status="${STATPHYS_RENDER_STATUS}.tmp.$$"
