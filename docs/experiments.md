@@ -278,7 +278,7 @@ res = exp.run_order_parameters(alphas=[1, 2, 4, 8], n_replicas=4)
 ```
 
 Any object exposing `.sample(n) -> (X, y)`, `.sample_inputs(n) -> X`,
-and `.get_config() -> dict` works here; see §7 of
+and `.get_config() -> dict` works here; see §8 of
 [order_parameters.md](order_parameters.md).
 
 ## Architecture zoo

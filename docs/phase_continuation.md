@@ -17,7 +17,9 @@ Root-level modules are compatibility facades.
 
 ## Suites
 
-- transformer_atlas.toml: M0-M8, D0-D5, A-J, finite-size and hysteresis scans.
+- transformer_atlas.toml: architecture sweeps M0-M8/D0-D5, plus heads, attention_mlp, icl,
+  long_context, lora, glass, optimizer, data_bridge, cot, and generation families, with
+  finite-size and hysteresis scans.
 - transformer_systems.toml: MoE, retrieval, multimodal, compression, lifecycle, discovery.
 - domain_programs.toml: diffusion, RL, and multi-agent programs.
 - cross_domain.toml: four matched-latent cross-domain experiments.

@@ -6,12 +6,30 @@ This directory contains the test suite for `statphys-ml`.
 
 ```
 tests/
-├── conftest.py          # Pytest fixtures and configuration
-├── test_dataset.py      # Dataset generation tests
-├── test_loss.py         # Loss function tests
-├── test_model.py        # Model architecture tests
-├── test_simulation.py   # Simulation runner tests
-└── test_theory.py       # Theory solver tests
+├── conftest.py                    # Pytest fixtures and configuration
+├── test_dataset.py                # Dataset generation tests
+├── test_loss.py                   # Loss function tests
+├── test_model.py                  # Model architecture tests
+├── test_simulation.py             # Simulation runner tests
+├── test_theory.py                 # Theory solver tests
+├── test_experiment.py             # Theory-free teacher-student experiment tests
+├── test_observables.py            # Function-space order parameter tests
+├── test_order_params.py           # Automatic order-parameter extraction tests
+├── test_online_committee.py       # Exact online committee-machine dynamics tests
+├── test_frontier.py               # SFT/RLHF/weak-to-strong/collapse/ICL paradigm tests
+├── test_animation.py              # GIF/MP4 animation tests
+├── test_cli_dynamics.py           # `statphys` CLI subcommand tests
+├── test_zoo_slurm.py              # Architecture zoo + Slurm utility tests
+├── test_realistic.py              # Multi-index/mixture/lazy-rich/LoRA setting tests
+├── test_realistic_extensions.py   # Extended realistic-setting checks
+├── test_paper_contract.py         # Manuscript figure/macro contract tests
+├── test_phase_tensor_data.py      # phase_tensor data-pipeline tests
+├── test_phase_tensor_reporting.py # phase_tensor reporting/paper tests
+├── test_audit_regressions.py      # Regression tests for audited fixes
+├── test_fixes.py                  # Regression tests for earlier correctness fixes
+├── atlas/                         # Tests for src/statphys/atlas (audited scientific atlas)
+├── continuation/                  # Tests for src/statphys/continuation (phase-continuation)
+└── predictive/                    # Tests for src/statphys/predictive (predictive pipeline)
 ```
 
 ## Running Tests
@@ -68,6 +86,14 @@ pytest tests/ -k "replica"
 | `test_loss` | Loss functions | MSE, Ridge, LASSO, Hinge, Logistic |
 | `test_theory` | Theory solvers | Saddle-point convergence, ODE integration |
 | `test_simulation` | Simulation runners | Replica & online simulation execution |
+| `test_experiment` | Theory-free teacher-student experiments | Presets, sweeps, architecture zoo |
+| `test_observables`, `test_order_params` | Function-space order parameters | Magnetization, overlap, susceptibility, Binder, auto-extraction |
+| `test_online_committee` | Online committee-machine dynamics | Exact Saad-Solla ODEs, plateau escape time |
+| `test_frontier` | Modern paradigms as physics | SFT, RLHF, weak-to-strong, collapse, ICL |
+| `test_cli_dynamics` | `statphys` CLI | Guided workflow subcommands end to end |
+| `test_zoo_slurm` | Architecture zoo + Slurm | Job/array rendering, no hardcoded paths |
+| `test_realistic`, `test_realistic_extensions` | Modern realistic settings | Multi-index, mixture, lazy/rich, LoRA |
+| `atlas/`, `continuation/`, `predictive/` | Atlas / phase-continuation / predictive pipelines | Schemas, orchestration, aggregation, reproducibility contract |
 
 ## Fixtures
 

@@ -72,12 +72,12 @@ Loss functions use different scaling conventions for replica and online simulati
 | Simulation | Loss Formula | Scaling |
 |------------|--------------|---------|
 | **Replica** | $\mathcal{L} = \sum_{i=1}^{n} \ell(y_i, \hat{y}_i) + \lambda \|\mathbf{w}\|^2$ | $O(d)$ |
-| **Online** | $\mathcal{L} = \frac{1}{d}\ell(y, \hat{y}) + \frac{\lambda}{d}\|\mathbf{w}\|^2$ | $O(1)$ |
+| **Online** | $\mathcal{L} = c\,\ell(y, \hat{y}) + \frac{\lambda}{2}\frac{\|\mathbf{w}\|^2}{d}$ ($c$ = `online_scale`, e.g. 0.5 for MSE) | $O(1)$ |
 
 **Why this matters:**
 
 - **Replica** ($n = O(d)$): the data term sums over $n$ samples → $O(d)$, and $\lambda\|\mathbf{w}\|^2 = \lambda d q$ is also $O(d)$, so both terms compete at the same order.
-- **Online**: the single-sample loss scaled by $1/d$ makes gradient components $O(1/\sqrt{d})$, matching the ODE derivation.
+- **Online**: the model's own $1/\sqrt{d}$ input scaling ($\hat{y} = \mathbf{w}^\top\mathbf{x}/\sqrt{d}$) already makes gradient components $O(1/\sqrt{d})$; the loss itself only rescales the regularizer by $1/d$ (so $\lambda\|\mathbf{w}\|^2/d = \lambda q$), not the data term, matching the ODE derivation.
 
 The simulations select the right convention automatically:
 

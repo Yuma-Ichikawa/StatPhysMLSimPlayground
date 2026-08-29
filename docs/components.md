@@ -58,6 +58,10 @@ Full listing of the building blocks. Every component follows the same pattern: p
 | | `LinearRNN` | Linear recurrent neural network |
 | **Energy-Based** | `ModernHopfieldNetwork` | Modern Hopfield network (attention ≈ energy min) |
 
+> **Note:** the four **Sequence Models**/**Energy-Based** classes above are importable
+> directly from `statphys.model` but are not registered in `ModelRegistry` — construct
+> them directly (`LinearSelfAttention(...)`) rather than through `get_model("...")`.
+
 <p align="center">
   <img src="../assets/model_diagram.png" alt="Model Architectures" width="800">
 </p>

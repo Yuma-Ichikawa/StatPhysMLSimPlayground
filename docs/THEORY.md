@@ -17,24 +17,23 @@ For derivations, see `docs/replica_note.md` and `docs/online_sgd_learning_note.m
 
 | Scenario class | Setting | Literature | Status |
 |---|---|---|---|
-| `GaussianLinearRidgeEquations` | Ridge regression, Gaussian design | Krogh & Hertz (1992); Advani & Ganguli (2016) | Exact RS saddle point |
-| `GaussianLinearMseEquations` | Unregularized MSE | idem | Exact RS |
+| `GaussianLinearRidgeEquations` | Ridge regression, Gaussian design (unregularized MSE via `reg_param → 0`; no separate replica scenario class for that limit) | Krogh & Hertz (1992); Advani & Ganguli (2016) | Exact RS saddle point |
 | `GaussianLinearLassoEquations` | LASSO / sparse recovery | Bayati & Montanari (2011); Thrampoulidis et al. (2018) CGMT | Exact effective-noise fixed point |
 | `GaussianLinearLogisticEquations` | Logistic regression | Salehi, Abbasi, Hassibi (2019); Aubin et al. (2020) | **Heuristic gradient-flow relaxation** (see docstring warning) |
 | `GaussianLinearProbitEquations` | Probit teacher/loss | Opper & Kinzel (1996) | **Heuristic gradient-flow relaxation** |
 | `GaussianLinearHingeEquations` | Perceptron/SVM, Gardner capacity | Gardner (1988); Dietrich, Opper, Sompolinsky (1999) | **Heuristic**; `critical_capacity()` returns the Gardner bound α_c = 2 at κ = 0 |
 | `GaussianCommitteeMseEquations` | Soft committee machine | Schwarze & Hertz (1993); Aubin et al. (2018) "The committee machine" | **Heuristic symmetric-ansatz relaxation** |
 
-Shared machinery: the heuristic scenarios derive from `GradientFlowEquations` (`theory/replica/scenario/gradient_flow.py`), which centralizes the joint teacher/student field integrals and the damped relaxation step. Numerical constants (integration bounds, clipping) live in `statphys/utils/constants.py`.
+Shared machinery: the logistic, probit, and hinge scenarios derive from `GradientFlowEquations` (`theory/replica/scenario/gradient_flow.py`), which centralizes the joint teacher/student field integrals and the damped relaxation step; the committee-machine scenario (`GaussianCommitteeMseEquations`) implements an analogous heuristic relaxation directly on `ReplicaEquations` (sharing damping constants from `utils/constants.py` but not the class hierarchy).
 
-**Known exact alternatives** (roadmap): the logistic/probit/hinge scenarios admit exact RS saddle-point equations via proximal operators (Moreau envelopes), cf. Salehi et al. (2019) and Loureiro et al. (2021) "Learning curves of generic features maps for realistic datasets" — `utils.special_functions.moreau_envelope` and `proximal_operator` are already available as building blocks.
+**Known exact alternatives** (roadmap): the logistic/probit/hinge scenarios admit exact RS saddle-point equations via proximal operators (Moreau envelopes), cf. Salehi et al. (2019) and Loureiro et al. (2021) "Learning curves of generic features maps for realistic datasets" — `utils.integration.moreau_envelope` and `proximal_operator` are already available as building blocks (re-exported from `statphys.theory.replica`).
 
 ## 3. Online-learning module (`statphys/theory/online`)
 
 | Scenario class | Setting | Literature | Status |
 |---|---|---|---|
-| `GaussianLinearMseEquations` | Online SGD, linear regression | Biehl & Schwarze (1995) | Exact ODEs |
-| `GaussianLinearPerceptronEquations` | Online perceptron | Kinzel & Opper (1991); Biehl & Riegler (1994) | Exact closed form |
+| `GaussianLinearMseEquations` | Online SGD, linear regression | Werfel, Xie & Seung (2005); Engel & Van den Broeck (2001) Ch. 5 | Exact ODEs |
+| `GaussianLinearPerceptronEquations` | Online perceptron | Kinzel & Opper (1991); Opper (1996); Saad & Solla (1995) | Exact closed form |
 | `GaussianLinearHingeEquations` | Online SVM/hinge | Dietrich et al. (1999) | Exact up to 1D quadrature |
 | `GaussianLinearLogisticEquations` | Online logistic | — | Quadrature-based |
 | `GaussianCommitteeMseEquations` | Soft committee (erf) | Saad & Solla (1995), *Phys. Rev. E* 52, 4225 | Exact Saad-Solla `I3`/`I4` closed forms |

@@ -16,6 +16,7 @@ Example scripts and notebooks demonstrating `statphys-ml` usage.
 | `replica_ridge_regression.py` | Ridge regression with replica theory |
 | `online_sgd_learning.py` | Online SGD learning dynamics |
 | `committee_machine.py` | Soft committee machine analysis |
+| `general_teacher_student.py` | Theory-free teacher-student experiments (sparse recovery, attention teacher, custom setups) |
 
 ## Quick Start
 

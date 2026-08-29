@@ -12,7 +12,7 @@ cfg = SlurmConfig(
     partition="debug",          # your cluster's partition
     gpus=1,                     # --gres=gpu:N (0 = CPU only)
     cpus_per_task=4,
-    memory="16G",
+    mem="16G",
     time_limit="01:00:00",
     setup_lines=[               # run before the payload, e.g. venv/modules
         "source .venv/bin/activate",
@@ -60,7 +60,7 @@ python scripts/verify_architectures.py --submit-slurm \
     --output-dir verification_results
 ```
 
-Each task writes `verification_results/<arch>.json` (metrics, pass/fail) and `<arch>.png` (learning curves). A run passes when test error decreases sufficiently as α grows — i.e., the student demonstrably learns from the teacher.
+Each task writes `verification_results/<arch>_result.json` (metrics incl. a `learns` boolean) and `<arch>_sample_complexity.png` (learning curves), plus `<arch>_online.png` when run with `--online`, and an aggregate `summary.json`. A run passes when test error decreases sufficiently as α grows — i.e., the student demonstrably learns from the teacher.
 
 ## Tips
 

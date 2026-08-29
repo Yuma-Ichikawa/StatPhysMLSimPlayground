@@ -143,6 +143,7 @@ level before computation, and produces a self-contained HTML evidence report:
 statphys catalog
 statphys new --kind order_parameters --output study.toml
 statphys validate study.toml
+statphys preview study.toml
 statphys run study.toml --output results
 statphys inspect results/result.json
 statphys report results/result.json --output results/report.html
@@ -150,8 +151,9 @@ statphys report results/result.json --output results/report.html
 
 The report includes an uncertainty-aware phase explorer and an evidence panel
 that records the available seed count, theory status, and permitted strength of
-wording. `statphys resume results` reuses the immutable `study.toml`; `compare`
-compares condition-level results; and `doctor` checks optional dependencies.
+wording. `statphys resume results` reuses the immutable `study.toml`; `status`
+and `retry` inspect and restart an execution attempt; `compare` compares
+condition-level results; and `doctor` checks optional dependencies.
 All paths stored in an artifact are relative names, and reports require no
 local server. See [the guided workflow](docs/guided_workflow.md) for details.
 

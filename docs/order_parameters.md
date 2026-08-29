@@ -353,7 +353,7 @@ $\epsilon_g = \Phi(0) = 1/2$, as expected.
 Bayes-consistent rule), and registers `cluster_overlap` $= \cos\theta$
 as a custom metric, so that `run_order_parameters` can be used exactly
 as in the discriminative settings (`TeacherStudentExperiment(...,
-dataset=...)`, §7). `study_mixture` overlays the *measured* test error
+dataset=...)`, §8). `study_mixture` overlays the *measured* test error
 against $\Phi(-\mu\cos\theta)$ evaluated at the *measured* overlap, and
 `tests/test_realistic_extensions.py::TestGaussianMixtureBayesError`
 verifies (5.2) numerically (both at $w=v$ and at a random $w$) to

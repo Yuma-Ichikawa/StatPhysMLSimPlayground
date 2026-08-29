@@ -21,12 +21,12 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 1. Fork the repository on GitHub
 2. Clone your fork locally:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/statphys-ml.git
-   cd statphys-ml
+   git clone https://github.com/YOUR_USERNAME/StatPhysMLSimPlayground.git
+   cd StatPhysMLSimPlayground
    ```
 3. Add the upstream repository:
    ```bash
-   git remote add upstream https://github.com/yuma-ichikawa/statphys-ml.git
+   git remote add upstream https://github.com/Yuma-Ichikawa/StatPhysMLSimPlayground.git
    ```
 
 ## Development Setup

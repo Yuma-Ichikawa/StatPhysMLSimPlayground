@@ -42,12 +42,15 @@ way it is.
 
 1. [getting_started.md](getting_started.md) — install and run your first
    experiment.
-2. This glossary, alongside [concepts.md](concepts.md) — the vocabulary
+2. [guided_workflow.md](guided_workflow.md) — the CLI-driven workflow
+   (catalog → new → validate → run → inspect) for running your first
+   study without writing Python.
+3. This glossary, alongside [concepts.md](concepts.md) — the vocabulary
    and the classical ($m, q, \rho$) order parameters.
-3. [experiments.md](experiments.md) — the theory-free experiment API
+4. [experiments.md](experiments.md) — the theory-free experiment API
    that works for *any* architecture.
-4. [order_parameters.md](order_parameters.md) — full derivations once
+5. [order_parameters.md](order_parameters.md) — full derivations once
    you want to understand *why* a formula holds, not just what it
    measures.
-5. [THEORY.md](THEORY.md) — pointers into the literature for every
+6. [THEORY.md](THEORY.md) — pointers into the literature for every
    result implemented here.

@@ -24,6 +24,7 @@ Documentation is organized by role: the top-level [README](../README.md) covers 
 | [THEORY.md](THEORY.md) | Feature ↔ literature map: which module implements which result, exact vs heuristic status, pointers to recent work |
 | [replica_note.md](replica_note.md) | Replica method derivations (saddle-point equations, RS ansatz) |
 | [online_sgd_learning_note.md](online_sgd_learning_note.md) | Online SGD ODE derivations and concentration arguments |
+| [phase_continuation.md](phase_continuation.md) | The phase-continuation research program: core/domains/analysis/orchestration layout, the reproducibility contract, and the manifest suites (`phase-continuation` CLI) |
 
 ## Developer references
 

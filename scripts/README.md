@@ -10,7 +10,12 @@ scripts/
 ├── run_verification.py         # Core package verification (replica/online vs theory)
 ├── verify_architectures.py     # Teacher-student check across the architecture zoo
 ├── generate_readme_assets.py   # Regenerate the animated GIFs embedded in README
-└── output/                     # Output directory for verification results
+├── generate_paper_figures.py   # Generate the manuscript's figure suite (paper/generated)
+├── run_phase_study.py          # Thin CLI wrapper for statphys.experiment.studies
+├── run_gpu_reference.sh        # Docker-based GPU reference run of the tensor validation
+├── check_docs.py               # Validate relative doc links and documentation portability
+└── phase_tensor/                # Slurm/Spark-portable phase-tensor pipeline scripts
+    └── README.md                # Environment variables, manifest expansion, array execution
 ```
 
 ## Architecture Verification
@@ -75,6 +80,59 @@ specialization). Everything is computed from scratch with fixed seeds.
 ```bash
 python scripts/generate_readme_assets.py --out-dir assets --fps 20
 ```
+
+## Paper figures and studies
+
+### `generate_paper_figures.py`
+
+Generates the manuscript's full conceptual and quantitative figure suite
+(`paper/generated/`) from the public strict aggregate and generated TeX
+macros. Every figure has the exact physical size 6.4 by 4.8 inches.
+
+```bash
+python scripts/generate_paper_figures.py \
+    --reference evidence/tensor_reference_validation/aggregate.json \
+    --confirmation-macros paper/generated/confirmation_macros.tex \
+    --output paper/figures \
+    --macros paper/generated/macros.tex
+```
+
+### `run_phase_study.py`
+
+A thin CLI wrapper around the ready-made studies in
+`statphys.experiment.studies` (`committee`, `fss`, `diagram`, `attention`,
+`manifold`, `gpt`, `grokking`, `universality`, `double_descent`, `scaling`, ...).
+
+```bash
+python scripts/run_phase_study.py --study all --output-dir phase_results
+python scripts/run_phase_study.py --study grokking --quick
+```
+
+### `run_gpu_reference.sh`
+
+Runs the registered tensor-reference-validation manifest end to end inside a
+pinned PyTorch NGC Docker image on a GPU host (`run-local`, `aggregate`,
+`report` via `statphys.continuation.cli`/`statphys.cli`), reading
+`STATPHYS_REPO`, `STATPHYS_GPU_IMAGE`, `STATPHYS_MANIFEST`, and
+`STATPHYS_OUTPUT` from the environment — nothing is hardcoded.
+
+### `check_docs.py`
+
+Validates every Markdown file under `docs/` for relative-link integrity and
+portability (no `localhost`/loopback addresses, `file://` URLs, or absolute
+`/home`, `/mnt`, `/tmp`, `/var` paths).
+
+```bash
+python scripts/check_docs.py
+```
+
+### `phase_tensor/`
+
+The Slurm/Spark-portable phase-tensor workflow: manifest expansion, array
+execution, aggregation, figure generation, and TeX macro generation, with no
+site-specific paths committed to the repository. See
+[`scripts/phase_tensor/README.md`](phase_tensor/README.md) for the required
+environment variables and the full pipeline.
 
 ## Usage Notes
 
