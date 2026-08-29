@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
-import tomllib
 from collections.abc import Sequence
 from itertools import combinations
 from pathlib import Path
 from typing import Any
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10 fallback
+    import tomli as tomllib  # type: ignore[no-redef]
 
 from ..core.registry import is_supported
 from ..core.schema import validate_seed_set

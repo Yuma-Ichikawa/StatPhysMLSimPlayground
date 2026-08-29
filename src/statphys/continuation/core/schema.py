@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import math
 import re
-import tomllib
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import Enum
@@ -16,6 +15,11 @@ from types import MappingProxyType
 from typing import Any
 
 from statphys.core.scientific_spec import ScaleSpec
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10 fallback
+    import tomli as tomllib  # type: ignore[no-redef]
 
 REQUIRED_SEED_COUNT = 5
 SCHEMA_VERSION = "2.0"

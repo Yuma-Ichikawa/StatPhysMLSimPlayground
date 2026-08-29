@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import math
-import tomllib
 from collections import defaultdict
 from dataclasses import asdict
 from hashlib import sha256
@@ -12,6 +11,11 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10 fallback
+    import tomli as tomllib  # type: ignore[no-redef]
 
 from .schema import Manifest, Task
 from .simulators import run_task

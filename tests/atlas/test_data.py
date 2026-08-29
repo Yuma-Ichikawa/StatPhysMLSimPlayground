@@ -126,8 +126,11 @@ def test_codebook_is_quenched_and_discrete():
     batch = dataset.sample(100, seed=31)
     assert dataset.codebook is not None
     observed = batch.raw_tokens.reshape(-1, config.d_model) / config.sigma
-    distances = torch.cdist(observed, dataset.codebook)
-    assert torch.allclose(distances.min(dim=-1).values, torch.zeros(observed.shape[0]))
+    # Direct membership is the scientific contract.  ``torch.cdist`` may use
+    # a matrix-multiplication kernel whose cancellation error gives a nonzero
+    # distance even for identical float32 rows on newer PyTorch releases.
+    matches = (observed[:, None, :] == dataset.codebook[None, :, :]).all(dim=-1)
+    assert matches.any(dim=-1).all()
 
 
 def test_hmm_hidden_states_and_persistence_are_exposed():
