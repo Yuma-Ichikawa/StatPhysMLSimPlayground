@@ -1,122 +1,117 @@
-\section{An orthogonal atlas of numerical statistical mechanics}
+\section{Taxonomy: what is being studied?}
 \label{sec:taxonomy}
 
-The design space is a graph rather than a fully observed Cartesian tensor. A
-node is a scientific specification; an edge applies one registered deformation.
-Seven layers prevent axes of different abstraction from being conflated.
-
-\paragraph{Domain.}
-The domains are Transformer representations, diffusion trajectories, RL
-feedback dynamics, and multi-agent populations.
-
-\paragraph{State object.}
-The primary object is a parameter ensemble, representation, optimizer
-trajectory, generated sample, policy occupancy, or interacting population.
-
-\paragraph{Deformation.}
-Data/environment, architecture/interaction, objective/feedback,
-dynamics/optimizer, and lifecycle changes are explicit operators. Attention
-and MLP choices are subcoordinates of architecture, not peers of data or scale.
-
-\paragraph{Disorder.}
-Initialization, dataset draw, environment instance, evaluation draw, and inner
-replica each have a registered role and seed stream. The outer disorder unit is
-the independent unit for uncertainty.
-
-\paragraph{Scale.}
-$\mathbf N=(d,L,T,H,n,C,\ldots)$ is a vector. One component is declared the
-finite-size coordinate and the remaining components follow a registered path;
-the scalar word ``size'' alone is insufficient.
-
-\paragraph{Observable and phenomenon.}
-An observable records estimator, units, intensive/extensive character, ensemble,
-null, and validity range. A phenomenon is then a hypothesis about recovery,
-specialization, locality, multiplicity, symmetry breaking, crossover,
-criticality, glassiness, dynamical arrest, or collective alignment---never a
-synonym for a visually steep curve.
-
-\begin{table}[t]
-\centering\small
-\begin{tabularx}{\linewidth}{@{}p{25mm}YYYY@{}}
-\toprule
-Axis & Transformer & Diffusion & RL / RLVR & Multi-agent \\
-\midrule
-Data / environment & synthetic, grammar, web text & mixture, manifold, image
-data & bandit, MDP, verifier tasks & private evidence, task graph \\
-Model / interaction & QKV, heads, MLP, norm, residual & score model, U-Net,
-DiT, locality & tabular, MLP, Transformer policy & topology, bandwidth,
-memory, roles \\
-Objective / feedback & MSE, CE, causal, SFT, preference & $\epsilon$, $x_0$,
-$v$, flow, guidance & gold, proxy, process reward & individual, team,
-competitive reward \\
-Dynamics / optimizer & SGD-M, AdamW, Muon, SOAP, schedule & optimizer, noise
-schedule, solver & PPO, off-policy reuse, search & response and memory update \\
-Lifecycle / population & pretrain, LoRA, pruning, RAG, rollouts &
-distillation, conditioning & SFT--RL, verifier calls & heterogeneous agents,
-dynamic topology \\
-\bottomrule
-\end{tabularx}
-\caption{Domain-specific coordinates within the deformation layer. The other
-atlas layers---state, disorder, scale, observable, and phenomenon---are recorded
-separately; no empty cell is implied to have been tested.}
-\label{tab:taxonomy}
-\end{table}
-
-\subsection{What is measured}
-
-An order parameter must retain meaning under deformation. We group observables
-by function rather than by domain (Table~\ref{tab:orders}). In particular,
-$K_{\rm eff}^{\rm macro}=\exp H(Z)$ counts effective macrostates,
-$N_{\rm eff}^{\rm corr}$ discounts correlated components, and
-$r_{\rm eff}^{\rm spec}=(\sum_i\lambda_i)^2/\sum_i\lambda_i^2$ is a
-spectral effective rank. They are not interchangeable effective numbers.
-
-\begin{table}[t]
-\centering\small
-\begin{tabularx}{\linewidth}{@{}p{27mm}YYp{31mm}@{}}
-\toprule
-Family & Meaning & Representative probe & Required null \\
-\midrule
-Recovery & latent truth recovered & counterfactual semantic or oracle probe &
-shuffled latent labels \\
-Specialization & permutation symmetry broken & head, branch, strategy, or role
-assignment & permuted components \\
-Locality & range of causal influence & matched site or message perturbation &
-random-site perturbation \\
-Multiplicity & independent computational units & correlation participation &
-independent-replica null \\
-Entropy / commitment & macrostate selection & strategy or trajectory entropy &
-token-level entropy alone \\
-Replica structure & diversity of solutions & functional overlap distribution &
-seed-matched random solutions \\
-Robustness & quality of the ordered state & OOD risk, gold reward, truth
-consensus & proxy-only performance \\
-Resource response & marginal value of compute & matched FLOP, NFE, rollout, or
-message intervention & equal-resource control \\
-\bottomrule
-\end{tabularx}
-\caption{Order-parameter dictionary. A PhaseCard records the exact estimator,
-probe distribution, normalization, units, and null.}
-\label{tab:orders}
-\end{table}
-
-\subsection{Outcomes and PhaseCards}
-
-An edge has one of 13 registered outcomes: preserved, renormalized, rounded,
-split, merged, new regime, hysteretic, path-dependent,
-statistical--computational separation, semantic failure, censored without a
-crossing, unresolved, or not comparable.
-These outcomes are hypotheses adjudicated by diagnostics, not labels assigned
-from visual smoothness.
-
-The minimal experimental record is
+The taxonomy classifies a \emph{scientific object}, not a software module and
+not a level of evidence. A registered atlas point is the seven-tuple
 \begin{equation}
-\mathcal P=(D,S,\delta,\omega,\mathbf N,\mathbf g,\mathbf m,
-\mathbf R,H,T,F,\mathbf E,O),
+  \mathcal A=(D,X,\delta,\Omega,\mathbf N,m,H),
+  \label{eq:atlas-tuple}
 \end{equation}
-where $D$ is domain, $S$ the state object, $\delta$ deformation, $\omega$
-disorder hierarchy, $\mathbf N$ scale vector and path, $\mathbf g$ controls,
-$\mathbf m$ observables, $\mathbf R$ resources, $H$ holdout rule, $T$ theory
-status, $F$ fidelity, $\mathbf E$ the evidence vector, and $O$ outcome. Full
-PhaseCards are machine-readable; representative cards appear in
-Section~\ref{sec:protocol}.
+where $D$ is the system, $X$ the state object, $\delta$ the deformation,
+$\Omega$ the disorder ensemble, $\mathbf N$ the scale vector and path, $m$ the
+observable, and $H$ the hypothesized phenomenon. Two studies can be compared
+only after the components that are asserted equivalent have been named.
+
+\subsection{The seven scientific coordinates}
+
+\paragraph{1. System $D$.}
+The system fixes the update law and interaction structure: Transformer,
+diffusion process, reinforcement learner, or multi-agent population in this
+release. A domain label is a root node, not a claim that all descendants share
+one ensemble.
+
+\paragraph{2. State object $X$.}
+Examples include trained parameters, hidden representations, attention maps,
+feed-forward activations, optimizer trajectories, generated samples, policy
+occupancy, reward trajectories, beliefs, messages, and agent actions. A single
+run may expose several state objects, but each observable names the one on which
+it is defined.
+
+\paragraph{3. Deformation $\delta$.}
+A deformation changes data or environment, architecture or interaction,
+objective or feedback, dynamics or optimizer, or lifecycle. Width is a scale
+coordinate, whereas replacing a feed-forward activation is an architectural
+deformation; conflating them makes a scaling statement ambiguous.
+
+\paragraph{4. Disorder ensemble $\Omega$.}
+Initialization, data draw, minibatch order, environment instance, evaluation
+sample, dropout, diffusion noise, rollout, and inner replica are distinct random
+variables. The independent outer unit used for uncertainty must be declared.
+
+\paragraph{5. Scale path $\mathbf N$.}
+Scale is a vector such as $(d,L,n,T,C,A,\ldots)$ for width, depth, data,
+context, compute, and population. A finite-size study declares one coordinate
+as $N$ and registers how all others move or remain fixed. ``Larger model'' is not
+a scaling path.
+
+\paragraph{6. Observable $m$.}
+An observable is an estimator together with units, normalization, ensemble,
+null, and validity range. Normalized risk, semantic order, susceptibility,
+Binder cumulant, participation ratio, attention entropy, causal risk difference,
+gold reward, and truth-conditioned consensus are different observables even when
+all are dimensionless.
+
+\paragraph{7. Phenomenon $H$.}
+The hypothesis may concern recovery, specialization, locality, multiplicity,
+symmetry breaking, crossover, criticality, glassiness, dynamical arrest,
+speciation, reward collapse, or collective alignment. A phenomenon is not
+assigned from visual slope; it is adjudicated by registered diagnostics.
+
+\begin{table}[tbp]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}p{18mm}YYYY@{}}
+\toprule
+Coordinate & Transformer & Diffusion & Reinforcement learning & Multi-agent \\
+\midrule
+State $X$ & representations, attention, MLP, optimizer path & score/sample
+trajectory, endpoint & occupancy, policy, reward path & beliefs, messages,
+actions, population \\
+Deformation $\delta$ & data, block, objective, optimizer, lifecycle & score,
+schedule, solver, guidance & environment, verifier, KL, update rule & field,
+coupling, topology, memory, roles \\
+Disorder $\Omega$ & initialization, data, minibatch, evaluation & data, score
+noise, reverse noise & environment, rollout, verifier noise & private evidence,
+topology, update order \\
+Scale $\mathbf N$ & width, depth, data, context, steps & resolution, NFE, data,
+model size & horizon, samples, verifier calls & population, messages, rounds \\
+Observable $m$ & semantic order, risks, spectra, interventions & speciation,
+nonlocality, commitment, proximity & gold/proxy reward, support, entropy &
+truth consensus, polarization, accuracy \\
+Phenomenon $H$ & recovery, specialization, crossover & speciation, collapse,
+nonlocality & productive specialization, reward collapse & alignment,
+fragmentation, error amplification \\
+\bottomrule
+\end{tabularx}
+\caption{Domain crosswalk for six coordinates. The system coordinate is the
+column header. Entries are registered possibilities, not a claim that every
+cell has been run.}
+\label{tab:domain-crosswalk}
+\end{table}
+
+\subsection{What is deliberately outside the taxonomy}
+
+Theory status (exact, asymptotic, phenomenological, empirical), fidelity
+(solvable, trainable synthetic, natural, deployed), and evidence support
+(semantic, replicated, finite-size, predictive, interventional, external) are
+orthogonal metadata. This prevents an exact solvable result from being called
+externally valid, and prevents a large natural-data experiment from being called
+exact theory. Protocol fields---question, estimator, null, calibration,
+holdout, intervention, and falsifier---are also separate because the same atlas
+point can be tested well or poorly.
+
+\subsection{Outcome taxonomy}
+
+An atlas edge receives one of thirteen non-ordinal outcomes. Transport outcomes
+are preserved, renormalized, rounded, or censored. Topology outcomes are split,
+merged, or new regime. Accessibility outcomes are hysteretic, path-dependent,
+or statistical--computational separation. Evidential failures are semantic
+failure, unresolved, or not comparable. These labels answer \emph{what happened}
+before stronger phase language is considered.
+
+\manuscriptfigure{figures/figure2_outcome_taxonomy.pdf}{The registered outcome
+vocabulary. Transport, topology, accessibility, and evidential failure are
+separate branches. ``Unresolved'' records insufficient separation; ``not
+comparable'' records a broken common estimand; neither is silently dropped from
+the atlas.}{fig:outcome-taxonomy}
+
+\FloatBarrier

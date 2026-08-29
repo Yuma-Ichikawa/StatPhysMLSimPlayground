@@ -1,0 +1,16 @@
+[study]
+name = "tensor_outer_seed_dense_confirmation"
+description = "Prospective finite-width confirmation with distinct effective controls and a held-out largest width"
+seeds = [907957, 932963, 957977, 982981, 1007983, 1032991, 1057999, 1083013, 1108019, 1133021, 1158037, 1183039]
+uncertainty = "two-sided 95% interval over twelve fresh independent full-pipeline seeds"
+
+[[experiments]]
+domain = "transformer"
+family = "tensor_mlp"
+variants = ["gelu"]
+stage = "confirmation"
+control_name = "sample_coefficient"
+controls = [2.0, 3.0, 4.0, 6.0, 8.0, 12.0]
+sizes = [16, 32, 64, 96, 128]
+scale = { finite_size_coordinate = "width", depth = 1, context_length = 16, scaling_path = { depth = "fixed", context_length = "fixed", data_size = "sample_coefficient * width", largest_width = "prospective_holdout" } }
+parameters = { data_kind = "synthetic_retrieval", sequence_length = 16, depth = 1, heads = 4, ff_ratio = 2.0, normalization = "pre_rmsnorm", optimizer = "adamw", steps = 192, record_interval = 8, batch_size = 32, eval_examples = 256, learning_rate = 0.001, weight_decay = 0.01, noise = 0.12, ood_shift = 0.18, sample_exponent = 1.0, train_cap = 2048, bfloat16 = true, prospective_holdout_width = 128 }

@@ -1,0 +1,18 @@
+{
+  "figure_size_inches": [
+    6.4,
+    4.8
+  ],
+  "figures": [
+    "figure1_atlas_taxonomy.pdf",
+    "figure2_outcome_taxonomy.pdf",
+    "figure3_observable_map.pdf",
+    "figure4_phase_decision.pdf",
+    "figure5_reference_response.pdf",
+    "figure6_reference_mechanisms.pdf",
+    "figure7_reference_verdict.pdf",
+    "figure8_confirmation_summary.pdf",
+    "figure9_coverage_map.pdf"
+  ],
+  "reference_conditions": 9
+}

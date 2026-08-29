@@ -1,65 +1,168 @@
-\section{Reproducibility contract and representative PhaseCards}
+\section{Taxonomy dictionary and edge semantics}
+\label{app:taxonomy}
 
-Repository code contains no site path. Production adapters provide repository,
-manifest, output, data, and Python locations through environment variables.
-Numerical production is rejected unless the Slurm partition begins with
-\texttt{spark\_}. Each task writes atomically; strict aggregation requires
-the complete manifest seed set, finite required metrics, compatible trajectory
-checkpoints, and recorded censor and cap-hit status.
-The completed taxonomy screen contains \PhaseTensorRuns{} runs over
-\PhaseTensorConditions{} conditions. The frozen follow-up adds
-\PhaseConfirmRuns{} runs over \PhaseConfirmConditions{} conditions with
-\PhaseConfirmSeeds{} untouched seeds per condition.
-
-\begin{table}[h]
-\centering\scriptsize
-\begin{tabularx}{\linewidth}{@{}p{21mm}YYYY@{}}
-\toprule
-Field & Predictive anchor & MLP confirmation & Optimizer confirmation & Natural
-endpoint \\
-\midrule
-Level & representation & representation & learning dynamics & learning \\
-Deformation & hidden domain rule & activation/gating & update geometry &
-corpus \\
-Outer seeds & 16+16 & 12 fresh & 12 fresh & 12 fresh \\
-Primary order & semantic order & task success & $R_{\rm IID}$ & bits/byte \\
-Alternative & transport baselines & parameter count & LR/update mismatch &
-split overlap \\
-Holdout & hidden variant & matched modules & frozen LR slice & disjoint bytes \\
-Tier & A & B & B & C \\
-\bottomrule
-\end{tabularx}
-\caption{Representative PhaseCards. Full cards and hashes are stored in the
-experiment configurations and manifests.}
-\end{table}
-
-Every publication figure is generated from a strict aggregate. Figures use a
-white background, physical size $6.4\times4.8$ inches, 12-point base type,
-larger mathematical axis labels, inward ticks, dashed grids, and fixed line,
-marker, and color order. PDF generation checks that every required figure and
-result-macro file is older than the compiled manuscript PDF.
-
-\section{Negative-result taxonomy}
-
-\begin{table}[h]
+\begin{table}[tbp]
 \centering\small
-\begin{tabularx}{\linewidth}{@{}p{29mm}YY@{}}
+\begin{tabularx}{\linewidth}{@{}p{22mm}p{41mm}YY@{}}
 \toprule
-Outcome & Operational evidence & Allowed interpretation \\
+Field & Operational definition & Invalid shorthand & Required record \\
 \midrule
-No crossing & order remains on one side of threshold & censored threshold, not
-a boundary \\
-Rounding & response width fails to sharpen prospectively & crossover on tested
-sizes \\
-Semantic failure & probe loses mutual information with latent truth &
-abandon or replace the order \\
-Optimization failure & information/order exists but training does not reach it
-& computational--statistical separation candidate \\
-Unresolved contrast & interval and matched controls do not separate methods &
-no ranking \\
-Cap limited & requested sample path hits storage/training cap & exclude from
-scaling fit \\
+System $D$ & update and interaction law defining the domain & ``neural network''
+without task/dynamics & domain and implementation family \\
+State $X$ & random object on which the observable is defined & mixing parameters,
+activations, and trajectories & shape, checkpoint/endpoint, transformation \\
+Deformation $\delta$ & registered operator changing one scientific coordinate &
+``more realistic'' & source, target, coordinates held fixed \\
+Ensemble $\Omega$ & probability law and nesting of disorder & ``five runs'' &
+outer unit, inner replicas, seed streams \\
+Scale $\mathbf N$ & vector plus one declared finite-size coordinate and path &
+``model size'' & values, path, caps, effective resources \\
+Observable $m$ & estimator, normalization, units, ensemble, null, range &
+``entropy'' or ``accuracy'' alone & typed estimate and validity status \\
+Phenomenon $H$ & falsifiable collective-behavior hypothesis & visual phase label &
+diagnostics, alternative, next falsifier \\
 \bottomrule
 \end{tabularx}
-\caption{Negative results are recorded outcomes, not omitted cells.}
+\caption{Formal dictionary for the scientific taxonomy. Protocol and evidence
+fields are recorded separately.}
+\label{tab:taxonomy-dictionary}
 \end{table}
+
+An atlas edge applies one deformation while preserving an explicit source and
+target tuple. If multiple coordinates change, the edge is composite and the
+interaction
+\begin{equation}
+  \Delta_{ij}\gc=\gc^{ij}-\gc^i-\gc^j+\gc^0
+\end{equation}
+can diagnose non-additivity. A composite edge is not evidence that either
+single-coordinate transport succeeded. Missing, unimplemented, attempted,
+invalidated, censored, and supported cells are distinct machine states.
+
+\section{Observable and null catalog}
+\label{app:observables}
+
+\begin{table}[tbp]
+\centering\scriptsize
+\begin{tabularx}{\linewidth}{@{}p{25mm}p{34mm}p{33mm}Y@{}}
+\toprule
+Observable family & Estimator examples & Necessary control & Common invalid
+substitute \\
+\midrule
+Predictive risk & normalized CE/Brier; bits per byte; gold reward & chance,
+calibration, IID/OOD split & raw loss across incompatible tasks \\
+Semantic recovery & latent probe, counterfactual accuracy, mutual information &
+shuffled latent, nuisance-matched probe & terminal performance alone \\
+Specialization & component assignment, role occupancy, permutation-aligned
+overlap & permuted heads/roles, matched capacity & unaligned average attention \\
+Multiplicity & correlation participation, overlap distribution, effective
+macrostate count & independent replicas and correlation null & spectral rank
+called a state count \\
+Response & derivative, intervention response, peak width & window, resolution,
+and scale sensitivity & largest endpoint slope \\
+Fluctuation & outer-seed susceptibility, Binder cumulant & independent terminal
+outer seeds & checkpoint variance in one run \\
+Dynamics & time-to-order, commitment, path entropy, hysteresis & matched compute,
+forward/reverse path & final loss \\
+Mechanism & raw and bounded matched-ablation risk effect & sham intervention,
+resource matching & ratio with vanishing denominator \\
+Robustness & OOD risk, gold/proxy gap, truth consensus & held-out environment,
+truth labels & proxy score or agreement alone \\
+Resource response & marginal quality per FLOP/token/NFE/message & equal-resource
+policy & wall time on unmatched hardware \\
+\bottomrule
+\end{tabularx}
+\caption{Observable catalog. Each row names a different estimand and a common
+failure mode.}
+\label{tab:observable-catalog}
+\end{table}
+
+Three ``effective number'' constructions illustrate the naming rule:
+\begin{equation}
+ K_{\mathrm{eff}}^{\mathrm{macro}}=\exp H(Z),\qquad
+ N_{\mathrm{eff}}^{\mathrm{corr}}=
+ \frac{(\sum_i w_i)^2}{\sum_{ij}w_iw_j\rho_{ij}},\qquad
+ r_{\mathrm{eff}}^{\mathrm{spec}}=
+ \frac{(\sum_i\lambda_i)^2}{\sum_i\lambda_i^2}.
+\end{equation}
+They count macrostates, correlation-adjusted units, and spectral participation,
+respectively. None can be substituted for another because the numerical range
+looks similar.
+
+\section{Representative PhaseCards}
+\label{app:phasecards}
+
+\begin{table}[tbp]
+\centering\scriptsize
+\begin{tabularx}{\linewidth}{@{}p{22mm}YYYY@{}}
+\toprule
+Field & GPU reference & MLP confirmation & Natural endpoint & Multi-agent
+stress test \\
+\midrule
+System/state & Transformer representation & Transformer representation &
+byte-model learning endpoint & beliefs/messages/actions \\
+Deformation & effective data and width & feed-forward block & corpus & field,
+coupling, topology \\
+Outer unit & trained model & trained model & trained model & population instance \\
+Primary estimand & semantic order, IID risk & matched MLP risk effect & bits per
+byte & truth-conditioned consensus \\
+Scale path & width; fixed depth/context & width and matched FF budget & data and
+model size & population and rounds \\
+Critical null & shuffled/control task & sham and full-model evaluation & disjoint
+byte ranges & global false consensus \\
+Holdout & none in pilot & fresh seeds and frozen variants & held-out ranges &
+controlled field/coupling cells \\
+Outcome & finite-width response & bounded module contrast & measurement
+transport & model validation \\
+Blocked claim & phase boundary & universal MLP ranking & corpus quality ranking &
+Ising universality \\
+\bottomrule
+\end{tabularx}
+\caption{Representative PhaseCards in human-readable form. Machine records also
+store nested seeds, hashes, resources, censoring, and invalidation.}
+\label{tab:phasecards}
+\end{table}
+
+\section{Registered dense Transformer confirmation}
+\label{app:next-experiment}
+
+The next experiment is frozen in a portable configuration. It addresses the
+specific failures of the reference pilot rather than adding arbitrary compute:
+\begin{itemize}
+  \item controls $\alpha\in\{2,3,4,6,8,12\}$, which yield distinct effective
+  sample counts at every width;
+  \item widths $d\in\{16,32,64,96,128\}$, with $d=128$ reserved for
+  prospective evaluation;
+  \item twelve fresh outer seeds per condition and no inner sample promoted to
+  an outer replicate;
+  \item 192 update steps with checkpoints every eight steps, so time-to-order
+  and optimization censoring can be diagnosed;
+  \item an example cap above the largest requested value, plus explicit
+  requested/effective example fields;
+  \item primary semantic order and IID risk; secondary OOD risk, MLP and
+  attention intervention effects, attention entropy, susceptibility, Binder
+  cumulant, gradient geometry, and trajectory observables; and
+  \item a frozen decision: phase language requires an interior response feature,
+  robust finite-size behavior below the holdout, and a successful $d=128$
+  prediction. Otherwise the outcome is rounded, censored, or unresolved.
+\end{itemize}
+
+The design contains 360 trained models. It is not pooled with the pilot because
+training horizon and control support differ. Execution environment and scheduler
+settings are runtime inputs and are absent from the scientific configuration.
+
+\section{Figure and manuscript contract}
+\label{app:figures}
+
+Every manuscript plot is generated at exactly $6.4\times4.8$ inches, saved as
+vector PDF and 300-dpi PNG, and uses one palette, marker order, font hierarchy,
+and panel-label convention. Exact physical size is preserved by avoiding
+tight-bounding-box resizing. Figure captions state the estimand, uncertainty,
+and blocked interpretation rather than repeating only axis labels.
+
+The build places a float barrier at the end of every major section and clears
+all floats before appendices and references. This prevents figures from leaking
+into the bibliography or being separated from the claim they support. Tables
+use flexible-width columns and no manual scaling that would make text smaller
+than the caption.
+
+\FloatBarrier

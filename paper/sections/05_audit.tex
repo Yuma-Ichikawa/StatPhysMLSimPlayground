@@ -1,22 +1,52 @@
-\section{Artifact audit}
+\section{Artifact audit and reproducibility contract}
+\label{app:audit}
 
-The audit distinguishes source completeness from scientific validity. The
-completed exploratory tensor contains 8,700 trained models in 1,740 conditions,
-with five full-pipeline seeds per condition. A strict task count does not
-upgrade a performance-derived order, a censored threshold, a tuned endpoint, or
-an overlapping corpus split.
+\subsection{Material findings}
 
-Legacy artifacts are retained but not relabeled with statistics they did not
-record. The current invalidation ledger additionally prevents superseded metric
-or split definitions from supporting current claims. The audit found and corrected four material issues: an MLP causal
-ratio divided by a vanishing scale; threshold endpoints counted as crossings;
-optimizer learning rates selected on the endpoint being reported; and a
-quadratic sample path limited by \texttt{train\_cap}. The confirmation suite
-was frozen specifically around these failures.
+The audit distinguishes task count from scientific validity. The completed
+screen contains 8,700 trained models and the frozen follow-up 1,632, but those
+counts do not upgrade a performance-derived order, censored threshold, tuned
+endpoint, or overlapping split. Five material issues are recorded:
+\begin{enumerate}
+  \item a legacy MLP causal ratio divided by a vanishing scale;
+  \item threshold endpoints were previously eligible to be counted as crossings;
+  \item optimizer learning rates were selected on an endpoint later reported;
+  \item one quadratic data path hit a training-example cap; and
+  \item two nominal reference controls collapse to the same effective 32-example
+  condition at width 16.
+\end{enumerate}
+The first four motivated the frozen confirmation suite; the fifth is exposed in
+Figure~\ref{fig:reference-verdict} and motivates the dense registered design.
 
-The revised artifact contract also distinguishes temporal trajectory variance
-from outer-disorder susceptibility and records failed accelerator and fallback
-runs as separate attempts. The full JSON stores raw seed values, between-seed uncertainty, train/IID/OOD
-risks, trajectory checkpoints, resource accounting, dataset revision and hash,
-split ranges, crossing status, and cap-hit status. Aggregation fails on missing
-or non-finite required quantities.
+\subsection{Artifact identity and completeness}
+
+Scientific, protocol, implementation, and execution hashes are separate.
+Artifacts store condition identity, outer and nested seeds, raw outer values,
+interval method, metric units and validity, requested and effective resources,
+trajectory checkpoints, crossing/censor and cap-hit status, and data revision
+or content hash. Writes are atomic. Strict aggregation fails on missing seeds,
+non-finite required fields, incompatible trajectories, or mismatched schemas.
+
+Legacy artifacts remain available but are not relabeled with statistics they did
+not record. If an estimand, split, ensemble, or selection rule changes, the old
+artifact is marked invalid for the affected claim. It is never silently repaired
+after inspection.
+
+\subsection{Portability and privacy}
+
+No public source, configuration, figure, PDF metadata, or evidence bundle stores
+a hostname, scheduler partition, user directory, private data location, or
+site-specific container path. Repository, manifest, output, data, interpreter,
+and accelerator settings are supplied at runtime. The public workflow can run
+locally or under a scheduler without changing the PhaseCard.
+
+\subsection{Release checklist}
+
+A release is valid only if all generated figures and result macros predate the
+compiled PDF; the bibliography resolves; the LaTeX log contains no overfull box;
+every PDF page is rendered and visually inspected; all plots have the registered
+physical size; source and artifacts pass path/hostname scans; and code tests,
+lint, and documentation checks pass. The committed screenshots are render
+evidence, not scientific data.
+
+\FloatBarrier

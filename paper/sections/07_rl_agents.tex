@@ -1,55 +1,64 @@
-\section{Cross-domain validation}
+\section{Cross-domain dossiers and coverage}
 \label{sec:crossdomain}
 
-The following domains are canonical validation cases, not coequal mechanism
-studies and not evidence for shared equilibrium exponents.
+Cross-domain coverage tests whether the taxonomy can preserve different state
+objects and observables. It does not make the domains coequal in evidential
+depth (Figure~\ref{fig:coverage-map}).
 
 \subsection{Diffusion trajectories}
 
-The control is reverse time and the secondary coordinate controls locality.
-We track speciation, nonlocality, trajectory commitment, and proximity to
-memorized samples. The oracle anchor separates speciation from later collapse
-\cite{biroli2024dynamical}; the holdout asks whether their ordering survives a
-deformed score trajectory.
+The state object is a reverse-time sample trajectory. Reverse time is the
+primary control; locality or score deformation is secondary. Registered
+observables include speciation, nonlocality, trajectory commitment, and
+proximity to memorized samples. The oracle-score anchor separates speciation
+from later collapse \cite{biroli2024dynamical}; learned DDPM and DiT models
+would add score and architecture error \cite{ho2020ddpm,peebles2023dit}.
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.96\linewidth]{figures/figure4_diffusion.pdf}
-\caption{Diffusion finite-size validation. Raw order, response,
-pseudocritical drift, and largest-size predictive checks are shown separately.}
-\label{fig:diffusion}
-\end{figure}
+\claim{Observation.} The controlled dossier can represent separate speciation
+and collapse coordinates and retain censored boundaries. \claim{Interpretation.}
+This validates the trajectory PhaseCard and observable namespaces.
+\claim{Not established.} The current artifact does not establish a transition
+in a learned image model. \claim{Next falsifier.} Freeze the oracle calibration,
+train independent learned scores, and evaluate speciation and nearest-training
+sample proximity on a held-out largest resolution.
 
 \subsection{Reinforcement learning}
 
-RL is organized by KL pressure $\beta_{\rm KL}$ and verifier noise
-$\epsilon_{\rm ver}$. Gold reward, strategy support, and Goodhart gap are
-joint observables; entropy alone cannot distinguish productive specialization
-from collapse \cite{gao2023reward}. The two-dimensional map tests whether an
-oracle-calibrated critical region predicts the holdout feedback dynamics.
+The state object is a policy/reward trajectory under KL pressure
+$\beta_{\mathrm{KL}}$ and verifier noise $\epsilon_{\mathrm{ver}}$. Gold reward,
+proxy reward, strategy support, KL, and entropy are recorded jointly because
+entropy reduction alone cannot distinguish productive specialization from
+reward collapse \cite{gao2023reward,rafailov2024overoptimization}.
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.96\linewidth]{figures/figure5_reinforcement.pdf}
-\caption{RL validation in the $(\beta_{\rm KL},\epsilon_{\rm ver})$ plane.
-Color encodes gold reward; contours and companion diagnostics show strategy
-support and Goodhart behavior with uncertainty inherited from outer seeds.}
-\label{fig:rl}
-\end{figure}
+\claim{Observation.} The controlled map distinguishes a high-proxy/low-gold
+region from a supported-strategy region. \claim{Interpretation.} The taxonomy
+expresses Goodhart behavior as joint robustness and commitment observables.
+\claim{Not established.} It is not evidence for a phase transition in open
+RLVR training. \claim{Next falsifier.} Repeat with independent environments,
+gold audits, process and outcome reward, and a prospective verifier-noise
+holdout.
 
 \subsection{Multi-agent populations}
 
-Intrinsic evidence $h$ and social coupling $J$ are separate controls. A global
-flip prevents consensus from being mistaken for truth, and population size
-$A$ remains explicit. The heatmap distinguishes field-driven alignment,
-interaction-driven consensus, fragmentation, and error amplification.
+Intrinsic evidence $h$, social coupling $J$, topology, and population $A$ are
+separate coordinates. Truth-conditioned consensus is the primary order; raw
+agreement is insufficient because a global false consensus can have maximal
+magnetization. Polarization, truth accuracy, message diversity, and error
+amplification are companion observables.
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.96\linewidth]{figures/figure6_multiagent.pdf}
-\caption{Multi-agent validation in the $(h,J)$ plane with finite-population
-boundary overlays. The order is truth-conditioned consensus, not agreement
-alone.}
-\label{fig:agents}
-\end{figure}
+\claim{Observation.} Controlled populations separate field-driven truth
+alignment, interaction-driven consensus, fragmentation, and amplified error.
+\claim{Interpretation.} The PhaseCard prevents consensus from being equated with
+correctness. \claim{Not established.} No shared Ising universality class or
+scaling law for deployed language-agent teams is claimed. \claim{Next falsifier.}
+Vary population and topology prospectively with private evidence and a
+truth-labeled external task.
 
+\manuscriptfigure{figures/figure9_coverage_map.pdf}{Artifact coverage and
+evidential depth. Transformer cells include five-seed measurements and frozen
+confirmations. Diffusion, reinforcement-learning, and multi-agent cells are
+mainly controlled model validation. Open natural/learned endpoints remain
+visible. Color is evidence depth, not performance and not a universality score.}
+{fig:coverage-map}
+
+\FloatBarrier

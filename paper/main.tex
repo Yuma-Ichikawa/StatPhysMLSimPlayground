@@ -1,54 +1,144 @@
-\documentclass[11pt]{article}
-\usepackage[a4paper,margin=23mm]{geometry}
+\documentclass[10pt]{article}
+
+\usepackage[a4paper,top=25mm,bottom=24mm,left=23mm,right=23mm,headheight=20pt]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
 \usepackage{amsmath,amssymb,bm,mathtools}
-\IfFileExists{grfext.sty}{\usepackage{graphicx}}{\newcommand{\includegraphics}[2][]{\begingroup\pdfximage width 0.96\linewidth {##2}\pdfrefximage\pdflastximage\endgroup}}
+\usepackage{graphicx}
 \usepackage{booktabs,tabularx,array,multirow}
 \usepackage{xcolor}
-\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage{enumitem}
+\IfFileExists{caption.sty}{\usepackage{caption}}{}
+\IfFileExists{placeins.sty}{\usepackage{placeins}}{\newcommand{\FloatBarrier}{\clearpage}}
 \usepackage[numbers,sort&compress]{natbib}
-\hypersetup{colorlinks=true,linkcolor=blue!45!black,citecolor=blue!45!black,urlcolor=blue!45!black}
+\usepackage{hyperref}
+\IfFileExists{fancyhdr.sty}{\usepackage{fancyhdr}}{}
+
+\definecolor{AtlasNavy}{HTML}{17324D}
+\definecolor{AtlasBlue}{HTML}{2F6B8A}
+\definecolor{AtlasTeal}{HTML}{2A9D8F}
+\definecolor{AtlasOrange}{HTML}{E07A3F}
+\definecolor{AtlasRed}{HTML}{C64B4B}
+\definecolor{AtlasGray}{HTML}{68737D}
+\definecolor{AtlasPale}{HTML}{EFF3F5}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=AtlasBlue,
+  citecolor=AtlasBlue,
+  urlcolor=AtlasBlue,
+  pdftitle={An Evidence-Aware Statistical-Mechanics Atlas for Modern Machine Learning},
+  pdfauthor={Yuma Ichikawa}
+}
+\makeatletter
+\@ifpackageloaded{caption}{%
+  \captionsetup{
+    font=small,
+    labelfont={bf,color=AtlasNavy},
+    textfont={color=AtlasGray},
+    justification=justified,
+    singlelinecheck=false,
+    skip=5pt
+  }
+}{}
+\makeatother
+\setlist{nosep,leftmargin=1.6em}
 \setlength{\parindent}{1em}
-\setlength{\parskip}{0.15em}
-\setlength{\tabcolsep}{5pt}
+\setlength{\parskip}{0.1em}
+\setlength{\tabcolsep}{4.5pt}
 \setlength{\emergencystretch}{2em}
 \raggedbottom
+
+\makeatletter
+\renewcommand\section{\@startsection{section}{1}{\z@}%
+  {-2.6ex \@plus -0.8ex \@minus -.2ex}%
+  {1.1ex \@plus .2ex}%
+  {\normalfont\Large\bfseries\color{AtlasNavy}}}
+\renewcommand\subsection{\@startsection{subsection}{2}{\z@}%
+  {-2.0ex \@plus -0.6ex \@minus -.2ex}%
+  {0.8ex \@plus .2ex}%
+  {\normalfont\large\bfseries\color{AtlasBlue}}}
+\renewcommand\subsubsection{\@startsection{subsubsection}{3}{\z@}%
+  {-1.5ex \@plus -0.4ex \@minus -.2ex}%
+  {0.6ex \@plus .2ex}%
+  {\normalfont\normalsize\bfseries\color{AtlasNavy}}}
+\makeatother
+
+\makeatletter
+\@ifpackageloaded{fancyhdr}{%
+  \pagestyle{fancy}
+  \fancyhf{}
+  \fancyhead[L]{\small\color{AtlasGray}Evidence-Aware Statistical-Mechanics Atlas}
+  \fancyhead[R]{\small\color{AtlasGray}\nouppercase{\leftmark}}
+  \fancyfoot[C]{\small\color{AtlasGray}\thepage}
+  \renewcommand{\headrulewidth}{0.4pt}
+  \renewcommand{\headrule}{\hbox to\headwidth{\color{AtlasBlue}\leaders\hrule height \headrulewidth\hfill}}
+}{}
+\makeatother
+
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 \newcolumntype{C}{>{\centering\arraybackslash}X}
 \newcommand{\gc}{g_{\mathrm c}}
 \newcommand{\gchat}{\widehat g_{\mathrm c}}
 \newcommand{\Ebridge}{\mathcal E_{\mathrm{bridge}}}
 \newcommand{\Risk}{\mathcal R}
-\newcommand{\Tier}[1]{\textsf{Tier~#1}}
-\newcommand{\Badge}[2]{\begingroup\setlength{\fboxsep}{2pt}\colorbox{#1!13}{\textsf{\scriptsize #2}}\endgroup}
-\newcommand{\resultfigure}[2]{\begin{figure}[t]\centering\includegraphics[width=0.96\linewidth]{#1}\caption{#2}\end{figure}}
+\newcommand{\claim}[1]{\textcolor{AtlasNavy}{\textbf{#1}}}
+\newcommand{\statussupported}{\textcolor{AtlasTeal}{\textbf{supported}}}
+\newcommand{\statusbounded}{\textcolor{AtlasOrange}{\textbf{bounded}}}
+\newcommand{\statusnegative}{\textcolor{AtlasRed}{\textbf{not supported}}}
+\newcommand{\manuscriptfigure}[3]{%
+  \begin{figure}[tbp]
+    \centering
+    \includegraphics[width=0.94\linewidth]{#1}
+    \caption{#2}
+    \label{#3}
+  \end{figure}%
+}
+
 \input{generated/results.tex}
 \input{generated/phase_tensor_results.tex}
 \input{generated/phase_tensor_confirmation_results.tex}
+\input{generated/reference_results.tex}
 
-\title{Beyond Solvable Models:\\
-\large A Numerical Statistical-Mechanics Atlas of Modern Machine Learning}
+\title{\textcolor{AtlasNavy}{\bfseries An Evidence-Aware Statistical-Mechanics Atlas\\
+for Modern Machine Learning}\\[0.45em]
+\large\color{AtlasGray}Taxonomy, finite-size diagnostics, causal interventions, and cross-domain stress tests}
 \author{Yuma Ichikawa}
 \date{}
 
 \begin{document}
 \maketitle
+\vspace{-1.5em}
+\begin{center}
+  \color{AtlasBlue}\rule{0.82\linewidth}{1.1pt}
+\end{center}
+\vspace{-0.7em}
+
 \input{sections/00_abstract}
 \input{sections/00_readers_guide}
 \input{sections/01_introduction}
-\input{sections/02_taxonomy}
 \input{sections/02_prior_work}
+\input{sections/02_taxonomy}
 \input{sections/02b_research_questions}
 \input{sections/03_framework}
 \input{sections/04_statistics}
+\input{sections/05_experimental_design}
 \input{sections/06_transformer_diffusion}
 \input{sections/07_rl_agents}
 \input{sections/08_prediction}
-\input{sections/08b_empirical_tensor}
 \input{sections/09_limitations}
 \input{sections/10_conclusion}
+
+\FloatBarrier
+\clearpage
 \appendix
 \input{sections/appendix}
 \input{sections/05_audit}
+
+\FloatBarrier
+\clearpage
 \bibliographystyle{plainnat}
 \bibliography{references}
+
 \end{document}

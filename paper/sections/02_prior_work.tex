@@ -1,56 +1,85 @@
-\section{Theory frontier and the unresolved gap}
+\section{Related work and positioning}
 \label{sec:frontier}
 
-The literature registry separates a bibliographic claim from an implementation
-and from evidence generated here. It records publication status, model class,
-state object, assumptions, predicted observables, and the atlas edge for which
-the source is relevant. The taxonomy is our organizational proposal, informed by reproducibility
-frameworks that make model and dataset assumptions explicit
-\cite{mitchell2019modelcards,gebru2021datasheets,pineau2021reproducibility}.
-It is not presented as an established consensus.
+We organize prior work by the question it answers, not by a flat list of model
+families. This also separates the present problem---statistical mechanics
+\emph{of} learning systems---from machine learning used as a tool for classifying
+physical phases.
 
-For attention, Cui et al.'s published tied low-rank model exhibits a
-positional--semantic transition \cite{cui2024phase}, and attention-indexed models extend Bayes predictions to
-full-width matrices \cite{boncoraglio2026aim}. The open question is therefore
-not whether simplified attention can transition, but whether its boundary and
-order semantics survive standard blocks, MLPs, normalization, causal
-objectives, optimization, and natural carriers.
+\subsection{Solvable learning and inference}
 
-Diffusion theory distinguishes speciation from later memorized-point collapse
-in the published analysis of Biroli et al. \cite{biroli2024dynamical}; DDPM and DiT provide the relevant learned endpoints
-\cite{ho2020ddpm,peebles2023dit}. A recent unreviewed preprint reports nearby
-symmetry-breaking and nonlocality onsets \cite{zhang2026concurrence}, which we
-treat as a hypothesis rather than settled evidence. In RL, proxy optimization
-can reduce gold quality \cite{gao2023reward,rafailov2024overoptimization}, so
-entropy must be read jointly with gold reward and strategy support. Consensus
-dynamics have a classical foundation \cite{degroot1974consensus}; modern MARL
-and LLM debate add nonstationarity and heterogeneous language agents
-\cite{lowe2017maddpg,du2024debate}. The 2026 statistical-physics agent papers
-are explicitly recent preprints. De Nobili reports model-dependent crossovers
-dominated by intrinsic bias rather than evidence for a two-dimensional Ising
-transition; we use this as a cautionary hypothesis, not a settled frontier
-\cite{denobili2026collective,bertalanic2026ringelmann}.
+The statistical mechanics of learning begins from a specified ensemble and a
+limit in which quenched disorder and macroscopic order parameters become
+tractable \cite{engel2001statistical,mezard2009information}. Replica, cavity,
+state-evolution, and related methods identify information-theoretic thresholds,
+algorithmic thresholds, and computationally hard regions in planted inference
+problems \cite{zdeborova2016statistical}. These works establish the standard we
+adopt: a transition is attached to a state object, a disorder law, a scale, and
+an observable. Our atlas does not replace those theories. It records which of
+their assumptions survive when a trainable implementation removes a solvable
+constraint.
 
-\begin{table}[t]
-\centering\small
-\begin{tabularx}{\linewidth}{@{}p{30mm}YYY@{}}
-\toprule
-Anchor setting & Established result & Restrictive assumption & Deformation
-tested here \\
-\midrule
-Tied attention & positional--semantic boundary & low rank, attention only &
-trainable block and module screens \\
-Attention-indexed model & Bayes boundary & simplified data and loss &
-optimizer, objective, natural carrier \\
-Oracle diffusion score & speciation and collapse regimes & oracle score &
-trajectory and learned-score validation \\
-Proxy-reward model & Goodhart scaling & controlled verifier & KL--noise phase
-map \\
-Mean-field consensus & field/coupling response & homogeneous agents &
-population and field holdouts \\
-\bottomrule
-\end{tabularx}
-\caption{Theory frontier and the assumption removed by the benchmark. The
-last column states a test, not a guarantee of successful continuation.}
-\label{tab:frontier}
-\end{table}
+\subsection{Deep networks: signal propagation, kernels, and landscapes}
+
+Statistical-mechanics analyses of deep learning cover expressivity, signal
+propagation, random matrices, optimization landscapes, jamming, and
+nonequilibrium dynamics \cite{bahri2020statistical}. Mean-field signal
+propagation separates ordered and chaotic regimes at initialization
+\cite{schoenholz2017deep}; neural tangent kernels describe a wide-network lazy
+limit \cite{jacot2018neural}; exact deep-linear dynamics show how representations
+and timescales emerge during training \cite{saxe2019mathematical}; and the
+jamming perspective relates interpolation and loss geometry
+\cite{geiger2019jamming}. Random-feature asymptotics clarify double descent and
+generalization in another controlled limit \cite{mei2022generalization}.
+
+These contexts are complementary rather than interchangeable. Initialization
+signal propagation is not a terminal trained-model ensemble; kernel regression
+is not feature learning; interpolation is not semantic recovery; and a
+finite-width optimizer trajectory is not automatically an equilibrium sample.
+The atlas therefore records theory status and state object separately.
+
+\subsection{Modern architectures and driven systems}
+
+For attention, a solvable tied low-rank model exhibits a
+positional--semantic transition \cite{cui2024phase}, and attention-indexed models
+extend Bayes-optimal analysis to full-width matrices
+\cite{boncoraglio2026aim}. The unresolved transport question is whether order
+semantics and a boundary persist under standard feed-forward blocks,
+normalization, causal objectives, optimization, and natural carriers. Width,
+depth, context, and data are distinct deformations; compute-optimal scaling and
+hyperparameter transfer do not make them one thermodynamic coordinate
+\cite{tensor_chinchilla_hoffmann2022,tensor_mup_yang2022}.
+
+For diffusion, the published oracle-score analysis distinguishes early
+speciation from later collapse toward memorized samples
+\cite{biroli2024dynamical}; learned DDPM and DiT endpoints add score error,
+architecture, and solver effects \cite{ho2020ddpm,peebles2023dit}. For
+reinforcement learning, reward-model overoptimization demonstrates why proxy
+reward, gold reward, KL pressure, and strategy support must be measured jointly
+\cite{gao2023reward,rafailov2024overoptimization}. For multi-agent systems,
+classical consensus dynamics and modern MARL or language-agent interactions add
+field, coupling, topology, and population coordinates
+\cite{degroot1974consensus,lowe2017maddpg,du2024debate}. Recent 2026 claims about
+diffusion and collective language-agent behavior are treated as hypotheses
+rather than established anchors \cite{zhang2026concurrence,denobili2026collective,
+bertalanic2026ringelmann}.
+
+\subsection{Reproducibility and the gap addressed here}
+
+Model cards, datasheets, and reproducibility checklists make assumptions and
+artifacts inspectable \cite{mitchell2019modelcards,gebru2021datasheets,
+pineau2021reproducibility}. Preregistration separates exploratory choices from
+confirmatory tests \cite{nosek2018preregistration}. None of these alone supplies
+a statistical-mechanics ontology: they do not specify which randomness defines
+susceptibility, which component is the finite-size coordinate, or when a
+threshold is censored. Conversely, a phase diagram alone does not encode
+holdouts, provenance, or invalidation. The present work joins these two
+traditions through a typed PhaseCard and an evidence vector.
+
+The positioning is therefore precise. We contribute neither a new universal
+critical exponent nor a comprehensive survey of every physics-inspired machine
+learning theory. We contribute an operational taxonomy for numerical studies of
+modern learning systems and demonstrate it on a deliberately heterogeneous set
+of artifacts.
+
+\FloatBarrier

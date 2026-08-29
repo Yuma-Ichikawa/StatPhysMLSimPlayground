@@ -1,61 +1,80 @@
-\section{Experimental and statistical protocol}
-\label{sec:protocol}
+\section{Statistical contract}
+\label{sec:statistics}
 
-Evidence strength follows the vector summarized in Table~\ref{tab:evidence}. The controlled predictive
-benchmark uses 16 independent outer-disorder seeds, four inner stochastic
-replicates, and 16 additional outer seeds near the frozen boundary window.
-Inner replicates are never counted as independent disorder. The broad
-Transformer taxonomy uses exactly five full-pipeline seeds per condition and
-Student-$t$ intervals; it is a screen. Frozen confirmation uses twelve fresh
-outer seeds. These designs answer different questions and are never pooled.
+\subsection{Nested disorder and uncertainty}
 
-\begin{table}[t]
+A condition is a unique PhaseCard. A trained model under one outer seed is one
+independent unit. Inner stochastic evaluations are conditional replicates and
+are averaged within that unit before uncertainty is computed. For $S$ outer
+seeds with means $\bar m_s$,
+\begin{equation}
+  \bar m=\frac{1}{S}\sum_{s=1}^{S}\bar m_s,
+  \qquad
+  \widehat{\mathrm{SE}}(\bar m)=
+  \sqrt{\frac{1}{S(S-1)}\sum_s(\bar m_s-\bar m)^2}.
+\end{equation}
+Five- and twelve-seed Transformer summaries use two-sided 95\% Student-$t$
+intervals over complete full-pipeline seeds. The predictive simulator uses
+outer-profile resampling while preserving paired control curves. No inner
+replica is promoted to an outer sample.
+
+\subsection{Exploration, confirmation, and multiplicity}
+
+The five-seed tensor is an exploratory screen. It locates candidate contrasts,
+invalid controls, and negative outcomes; it does not support a universal phase
+claim and no familywise hypothesis-test interpretation is attached to its many
+intervals. The confirmation suite uses fresh seeds and freezes the selected
+module variants, optimizer slices, data paths, and corpus splits before those
+seeds are aggregated. Confirmation upgrades only the listed contrast, not every
+neighboring claim.
+
+\begin{table}[tbp]
 \centering\small
-\begin{tabularx}{\linewidth}{@{}p{12mm}p{31mm}p{19mm}p{20mm}Y@{}}
+\begin{tabularx}{\linewidth}{@{}p{23mm}p{22mm}p{19mm}p{24mm}Y@{}}
 \toprule
-Tier & Purpose & Sizes & Outer seeds & Allowed language \\
+Design & Independent unit & Replication & Selection rule & Allowed language \\
 \midrule
-A & finite-size phase or boundary transport & registered path & $12$--$32$ &
-phase structure, crossing/crossover, predictive boundary \\
-B & frozen mechanism or endpoint comparison & $\geq3$ & $\geq5$ &
-shift, mechanism candidate, resolved/unresolved contrast \\
-C & natural or open endpoint & $\geq2$ & $\geq5$ &
-measurement transport and bounded external validity \\
+Broad tensor screen & trained model & 5 seeds / condition & exploratory &
+candidate effect, finite-grid response, negative result \\
+Frozen confirmation & trained model & 12 fresh seeds / condition & fixed from
+screen audit & registered contrast, bounded mechanism evidence \\
+GPU reference grid & trained model & 5 seeds / condition & portable pilot &
+outer-seed estimate; no asymptotic phase claim \\
+Predictive simulator & outer disorder profile & 16+16 seeds, 4 inner & split
+before fitting & software/method validation \\
+Natural endpoint & trained byte model & 12 fresh seeds & disjoint byte ranges &
+measurement transport, corpus-specific result \\
 \bottomrule
 \end{tabularx}
-\caption{Convenient language classes derived from, but never replacing, the
-evidence vector. No fixed size count by itself upgrades an invalid order
-parameter or a non-independent holdout.}
-\label{tab:evidence}
+\caption{Statistical roles of the experiment families. Replication count is one
+coordinate of evidence and never overrides an invalid order parameter or a
+missing finite-size signature.}
+\label{tab:statistical-designs}
 \end{table}
 
-\paragraph{Finite-size inference.}
-Finite-size scaling is domain specific \cite{fisher1972scaling,binder1981cumulants,
-fisher1982firstorder}. We therefore do not impose $N^{-1/2}$ or $N^{-1}$ on
-width, trajectory resolution, horizon, and population as universal exponents.
-Candidate forms are empirical models whose parameters are fit below the
-largest size and selected without it; the untouched largest size is used only
-for prospective scoring. A phase label additionally
-requires order semantics, sharpening or crossing diagnostics, sensitivity to
-the minimum size and fitting window, and a registered alternative.
+\subsection{Finite-size fitting and censoring}
 
-\paragraph{Intensive observables.}
-For a vocabulary of size $V$, cross entropy is reported as
-$R_{\rm CE}=\ell_{\rm CE}/\log V$; the Brier risk is divided by
-$1-1/V$. We report $R_{\rm train}$, $R_{\rm IID}$, $R_{\rm OOD}$, and
-$e_{\rm gen}=R_{\rm IID}-R_{\rm train}$ separately. FLOPs, tokens, wall
-time, width, depth, context, and sample count remain resource coordinates.
-Causal module effects use raw risk differences and a bounded signed
-normalization, never division by a vanishing remaining-accuracy scale.
+Finite-size scaling is domain specific
+\cite{fisher1972scaling,binder1981cumulants,fisher1982firstorder}. We do not
+impose $N^{-1/2}$ or $N^{-1}$ on width, trajectory resolution, horizon, and
+population as universal exponents. Candidate drift and response-width models
+must be selected below a registered largest size, which is then used for
+prospective scoring. A curve that never crosses a threshold is left- or
+right-censored, not assigned the nearest endpoint as a critical point.
 
-\paragraph{Accounting and preregistration.}
-A condition is a unique PhaseCard; a trained model is one outer seed; an inner
-replicate is conditional stochasticity; an evaluation is not a new model.
-Metric schemas must match exactly across registered seeds: aggregation never
-takes the intersection of available keys. A boundary-profile bootstrap draws
-one outer-seed index vector and reuses it across all controls, preserving the
-paired disorder profile. Configuration hashes, corpus revisions and hashes, seed values, raw seed
-metrics, censor flags, cap-hit flags, tokens, estimated FLOPs, and elapsed time
-are stored before aggregation. Confirmation configurations were frozen after
-the exploratory audit in the machine-readable claim ledger
-\cite{nosek2018preregistration}.
+Sensitivity analysis varies the minimum included size, fitting window,
+threshold definition, and plausible alternative functional forms. A phase
+claim additionally requires order semantics and a finite-size diagnostic that
+is not generated by a duplicated control, resource cap, or evaluation leak.
+
+\subsection{Completeness and invalidation}
+
+Strict aggregation requires exactly the manifest seed set, finite required
+metrics, compatible trajectory checkpoints, and identical metric schemas. It
+never intersects whichever keys happened to survive. Each artifact records raw
+outer-seed values, nested seed identities, requested and effective resources,
+cap-hit and censor flags, configuration and data hashes, and elapsed time.
+Changing an estimand, split, or selection rule invalidates the old artifact for
+that claim without deleting its provenance.
+
+\FloatBarrier

@@ -1,52 +1,72 @@
 \section{Introduction}
+\label{sec:introduction}
 
-Statistical mechanics offers machine learning more than analogies to phase
-transitions: it offers explicit ensembles, scale coordinates, observables,
-interventions, and falsifiable statements about collective behavior. Yet a
-phase diagram drawn after the fact can merely summarize a simulator, and the
-same word ``entropy'' can denote token uncertainty, macrostate multiplicity, or
-trajectory diversity. We therefore study one umbrella question:
+Statistical mechanics supplies machine learning with a precise language for
+ensembles, collective observables, response, scale, and limiting behavior. It
+has clarified solvable inference thresholds, information--computation gaps,
+signal propagation, jamming, and optimization landscapes
+\cite{zdeborova2016statistical,bahri2020statistical,geiger2019jamming}. Modern
+architectures add a harder numerical question. A Transformer has attention and
+feed-forward modules, several scale coordinates, non-equilibrium training
+dynamics, and data-dependent semantics; diffusion and reinforcement learning
+replace a static parameter ensemble with trajectories and feedback. A curve can
+be steep in all these systems without representing the same physical object or
+the same kind of transition.
+
+Current numerical work is fragmented along three boundaries. First,
+\emph{ontology} is often implicit: ``size'' may mean width, depth, data, context,
+population, or trajectory resolution. Second, \emph{measurement} is often
+underspecified: temporal checkpoint variance can be mislabeled as disorder
+susceptibility, and token entropy can be mistaken for strategy or macrostate
+entropy. Third, \emph{evidence} is often compressed into a single adjective:
+an exact result in a restrictive model, a five-seed synthetic screen, and a
+natural-data measurement may all be called a ``phase transition'' despite
+answering different questions.
+
+We ask one central question:
 \begin{quote}
-How can numerical statistical mechanics describe, compare, and falsify
-collective phenomena across modern learning systems without confusing theory,
-realism, and evidence?
+How can numerical statistical mechanics organize and falsify collective
+phenomena across modern learning systems while keeping the state object,
+ensemble, finite-size path, and evidential scope explicit?
 \end{quote}
+Our answer is an evidence-aware atlas. Its core is a seven-coordinate scientific
+taxonomy. Around that core, a protocol layer records estimators, disorder,
+controls, interventions, and holdouts; an epistemic layer records theory status,
+fidelity, evidence support, and outcome. This separation makes a negative result
+first class: a boundary may be censored, a response may remain finite-width, an
+order parameter may lose semantic validity, or two conditions may be
+incommensurate.
 
-Our answer has three components. First, a seven-layer atlas states which state
-object, deformation, disorder ensemble, scale path, observable, and phenomenon
-are under study in each domain. Second, an experiment grammar maps these nouns
-to executable specifications and typed estimates. Third, domain dossiers state
-what was observed, what it may mean, and what remains unestablished.
-\emph{Predictive phase continuation} is a particularly demanding protocol
-inside this grammar: calibrate at an anchor, predict an untouched deformation,
-diagnose breakdown, and test a frozen repair on independent evidence.
+The empirical focus is intentionally asymmetric. Transformers receive broad
+module, optimizer, scaling, and data screens followed by frozen confirmations.
+A smaller GPU reference grid exposes raw outer-seed distributions and tests the
+phase-claim decision rule. Diffusion, reinforcement learning, and multi-agent
+systems are cross-domain stress tests for the grammar. They are not asserted to
+share an equilibrium ensemble or critical exponent. A separate controlled
+predictive-continuation simulator checks software and holdout semantics; because
+it generates its own response law, it is method validation rather than evidence
+about trained neural systems.
 
-The domain coverage is deliberately asymmetric. Transformers receive the
-deepest mechanism study; diffusion, reinforcement learning (RL), and
-multi-agent systems test portability of the grammar. We do not propose one
-universality class for these systems. The atlas instead separates a genuine
-crossing from a censored threshold, an $O(1)$ risk from an extensive resource,
-temporal fluctuations from disorder fluctuations, and a five-seed screen from
-a finite-size phase claim.
-
-The contributions are:
+The paper makes five contributions:
 \begin{enumerate}
-  \item an orthogonal seven-layer taxonomy, observable dictionary, 13-outcome
-  vocabulary, and PhaseCard v3 that preserve domain-specific physics;
-  \item a common execution and evidence grammar with typed estimates, nested
-  disorder, explicit censoring, interventions, provenance, and invalidation;
-  \item a held-out predictive-continuation protocol with nontrivial baselines
-  and prospective largest-size evaluation;
-  \item a Transformer flagship study that distinguishes broad exploratory
-  coverage from frozen confirmation of module, optimizer, scaling, and data
-  hypotheses; and
-  \item diffusion, RL, and multi-agent dossiers, plus literature, question,
-  implementation, claim, and artifact ledgers that distinguish unknown,
-  unimplemented, run, invalidated, and supported cells.
+  \item a precise seven-coordinate taxonomy and a thirteen-outcome vocabulary,
+  with protocol and evidence axes kept outside the scientific ontology;
+  \item an observable dictionary that binds every estimator to units, ensemble,
+  null, validity range, and allowed interpretation;
+  \item a finite-size claim rule requiring semantic validity, independent
+  disorder, scale diagnostics, robustness, and a prospective check;
+  \item a unified empirical report covering \PhaseTensorRuns{} exploratory and
+  \PhaseConfirmRuns{} frozen-confirmatory Transformer runs, plus an auditable
+  \ReferenceRuns-run GPU reference grid; and
+  \item an explicit claim ledger that distinguishes observed learning response,
+  bounded mechanism evidence, model validation, negative phase evidence, and
+  open external-validity cells.
 \end{enumerate}
 
-\resultfigure{figures/figure1_protocol.pdf}{The paper in one figure. A
-atlas coordinate selects a deformation; effective variables can then be
-calibrated at an anchor, scored on an untouched holdout, and assigned an outcome
-class. Taxonomy (what exists), protocol (what is tested), and evidence (what may
-be claimed) remain separate.}
+The main scientific conclusion is narrower than the atlas coverage. The
+reference Transformer learns more with width and effective data, and MLP
+ablation matters increasingly at larger width. Yet no registered finite-size
+diagnostic supports a phase boundary on that grid. This is the kind of
+distinction a statistical-mechanics study must preserve.
+
+\FloatBarrier

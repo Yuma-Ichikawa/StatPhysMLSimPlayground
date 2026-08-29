@@ -47,3 +47,18 @@ falsifier, and artifact. Expand the 1,632-task confirmation manifest with
 snapshot is stored under 'manifests/confirmation/' (136 conditions crossed
 with twelve seeds); verify it with
 'sha256sum -c manifests/confirmation/SHA256SUMS'.
+
+## Dense prospective Transformer confirmation
+
+`configs/tensor_reference_dense_confirmation.toml` is the frozen follow-up to
+the public 45-run reference grid. It removes duplicate effective controls,
+extends the training horizon, records denser trajectories, uses twelve fresh
+outer seeds, and reserves the largest width for prospective evaluation. Its
+versioned manifest contains 30 conditions and 360 tasks:
+
+    phase-continuation expand \
+      configs/tensor_reference_dense_confirmation.toml \
+      --manifest manifests/confirmation/tensor_reference_dense_confirmation.json
+
+The scheduler profile, queue policy, repository location, and artifact root are
+deployment inputs and are deliberately absent from both files.

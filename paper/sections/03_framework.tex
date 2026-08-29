@@ -1,83 +1,125 @@
-\section{Experiment grammar and predictive phase continuation}
+\section{Method: from atlas point to falsifiable experiment}
 \label{sec:method}
 
-Every run is generated from four typed objects. A \emph{ScientificSpec} names
-the question, state object, deformation, phenomenon, theory status, fidelity,
-and observables. A \emph{ProtocolSpec} fixes controls, outer and inner disorder,
-finite-size path, nulls, interventions, calibration, and holdouts. An
-\emph{ExecutionSpec} fixes implementation, resources, seed streams, and
-software identity without changing scientific identity. An
-\emph{EvidenceVector} records semantic validity, replication, finite-size
-diagnostics, prospective prediction, intervention, and external validity.
+\subsection{PhaseCard: one typed experimental record}
 
-The output of an estimator is not a bare float but
+The machine-readable PhaseCard joins the scientific tuple in
+Eq.~\eqref{eq:atlas-tuple} to a protocol and an epistemic record:
 \begin{equation}
-\widehat O=(\bar O,[O_-,O_+],q,U,n_{\rm outer},n_{\rm inner},
-\mathcal S_{\rm outer},\text{units}),
+  \mathcal P=
+  (\underbrace{D,X,\delta,\Omega,\mathbf N,m,H}_{\text{scientific object}},
+   \underbrace{g,\mathcal I,\mathcal N,\mathcal H,\mathcal F}_{\text{protocol}},
+   \underbrace{T,L,\mathbf E,C}_{\text{epistemic record}}).
+  \label{eq:phasecard}
 \end{equation}
-where $q$ is interval level and $U$ names the uncertainty method. The ensemble
-is part of the observable: checkpoint-to-checkpoint variability is a temporal
-statistic, whereas susceptibility and Binder cumulants used here are computed
-over independent terminal outer-seed samples.
+Here $g$ denotes controls, $\mathcal I$ interventions, $\mathcal N$ nulls,
+$\mathcal H$ holdouts, and $\mathcal F$ falsifiers. $T$ is theory status, $L$
+fidelity, $\mathbf E$ a vector of evidence coordinates, and $C$ the outcome.
+Resources, software identity, seed streams, and artifact hashes are attached as
+execution metadata; changing them does not silently change the scientific
+identity.
 
-\subsection{Predictive phase continuation as one atlas protocol}
+This representation enforces several invariants. Inner stochastic replicas are
+not counted as independent outer disorder. A threshold has an explicit crossing
+or censor status. A metric definition includes units and normalization. A
+post-hoc selected coordinate cannot be labeled preregistered. A failed
+accelerator attempt and a fallback are distinct execution attempts under one
+scientific condition.
 
-Let $\mathcal O_{\rm cal}$ be registered calibration observables and
-$\mathcal O_{\rm solv}(\bm\theta)$ a solvable surrogate. We estimate
+\subsection{An observable is more than a scalar}
+
+Every reported estimate has the form
 \begin{equation}
-\widehat{\bm\theta}_{\rm eff}
-=\arg\min_{\bm\theta}
-D\!\left(\mathcal O_{\rm cal}^{\rm target},
-\mathcal O_{\rm solv}(\bm\theta)\right),
+  \widehat m=(\bar m,[m_-,m_+],q,U,n_{\mathrm{outer}},
+  n_{\mathrm{inner}},\Omega,\text{units},\text{status}),
+  \label{eq:typed-estimate}
 \end{equation}
-then predict an order curve, a boundary $\gchat$, transition diagnostics, and
-an intervention response. The bridge error is evaluated only on withheld
-quantities,
+where $q$ is interval level and $U$ names the uncertainty procedure. The status
+records validity and censoring. This prevents a temporal standard deviation, a
+between-initialization variance, and a bootstrap interval from sharing the same
+unqualified field name.
+
+\manuscriptfigure{figures/figure3_observable_map.pdf}{Observable dictionary used
+throughout the atlas. Risk, semantic recovery, specialization, response,
+fluctuation, dynamics, and intervention effects require different averaging
+ensembles and nulls. Similar numerical ranges do not make the estimands
+interchangeable.}{fig:observable-map}
+
+\subsection{Primary observables}
+
+\paragraph{Intensive predictive risks.}
+Cross entropy is normalized by the random-reference entropy,
+$R_{\mathrm{CE}}=\ell_{\mathrm{CE}}/\log V$, and Brier risk by $1-1/V$ for
+vocabulary size $V$. Train, IID, and OOD risks are stored separately:
 \begin{equation}
-\Ebridge=
-D\!\left(\mathcal O_{\rm holdout}^{\rm target},
-\mathcal O_{\rm solv}(\widehat{\bm\theta}_{\rm eff})\right).
+  R_{\mathrm{train}},\qquad R_{\mathrm{IID}},\qquad R_{\mathrm{OOD}},
+  \qquad e_{\mathrm{gen}}=R_{\mathrm{IID}}-R_{\mathrm{train}}.
 \end{equation}
-Semantic retention $S_{\rm sem}=I(m;Z)/H(Z)$ is a separate estimand: a small
-boundary error is meaningless if $m$ no longer tracks the latent variable
-$Z$.
+Tokens, FLOPs, wall time, parameter count, and examples are resources rather
+than extensive versions of the risk.
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.96\linewidth]{figures/figure2_anchor_validation.pdf}
-\caption{Anchor calibration before continuation. Observed pseudocritical
-controls are compared with registered latent references, with outer-seed 95\%
-intervals on both axes and a residual panel. This is a calibration diagnostic,
-not held-out evidence for transport.}
-\label{fig:anchor-validation}
-\end{figure}
-
-\paragraph{Baselines.}
-Every predictive comparison includes a constant predictor, direct transport of
-the source boundary, a size-only or nearest-calibration predictor, the base
-surrogate, and the registered augmented surrogate. A diagonal plot without
-these controls cannot distinguish physical transport from simulator
-reparameterization.
-
-\paragraph{Breakdown and repair.}
-Two assumptions can interact through
+\paragraph{Semantic order.}
+When a latent variable $Z$ is known, semantic retention is measured through a
+registered probe, conceptually
 \begin{equation}
-\Delta_{ij}\gc=\gc^{ij}-\gc^i-\gc^j+\gc^0.
+  S_{\mathrm{sem}}=I(m;Z)/H(Z),
 \end{equation}
-Holdout A is used only to diagnose a missing coordinate. Candidate
-macrovariables and their selection rule are frozen on a calibration split.
-Only Holdout B can support a repair claim. When an augmented surrogate was
-specified before either holdout, we call it a preregistered comparison, not a
-post-hoc repair.
+and checked against shuffled labels. In the public reference grid the stored
+semantic order is the signed task-success coordinate produced by the controlled
+retrieval task. It remains a task order, not a universal magnetization.
 
-\paragraph{Prediction target.}
-A threshold estimate is recorded as crossed, left-censored, or right-censored.
-Only crossed estimates enter boundary-error summaries. Censored curves remain
-visible because the absence of a crossing is often the scientific result.
+\paragraph{Outer-disorder response and Binder diagnostic.}
+For independent outer-seed terminal orders $m_s$ and declared finite-size
+coordinate $N$,
+\begin{equation}
+  \chi_N=N\left(\langle m^2\rangle_{\Omega}
+  -\langle m\rangle_{\Omega}^2\right),\qquad
+  U_4=1-\frac{\langle m^4\rangle_{\Omega}}
+  {3\langle m^2\rangle_{\Omega}^2}.
+  \label{eq:phase-diagnostics}
+\end{equation}
+Checkpoint fluctuations from one training trajectory are named temporal
+variance and never substituted into Eq.~\eqref{eq:phase-diagnostics}.
 
-\paragraph{Attempt and invalidation semantics.}
-A failed accelerator attempt and a CPU fallback are separate attempts under one
-scientific condition. Artifact identity records scientific, protocol,
-implementation, and execution hashes separately. If a metric definition,
-ensemble, split, or selection rule changes, the prior artifact is retained but
-marked invalidated for the affected claim; it is never silently reinterpreted.
+\paragraph{Causal module effect.}
+For matched full and ablated evaluations, the raw effect is
+$\Delta R=R_{\mathrm{ablated}}-R_{\mathrm{full}}$. A bounded signed effect uses a
+non-vanishing registered risk scale. Ratios that divide by remaining accuracy
+near zero are invalid because they can diverge without a physical change.
+
+\subsection{Outcome assignment and finite-size logic}
+
+A phase-language claim must pass five gates: semantic validity; an independent
+disorder ensemble; an interior finite-size signature such as a crossing,
+sharpening response, or stable collapse; robustness to fitting window and
+minimum size; and a frozen prospective check. Failing a gate produces a named
+negative outcome rather than an omitted figure.
+
+\manuscriptfigure{figures/figure4_phase_decision.pdf}{Decision rule for
+finite-size claims. Each failed gate has a specific negative outcome. Passing
+the sequence licenses only a domain-specific, bounded claim; it does not by
+itself establish universality or an equilibrium thermodynamic limit.}
+{fig:phase-decision}
+
+\subsection{Predictive phase continuation}
+
+Predictive continuation is one protocol inside the atlas. Given calibration
+observables $\mathcal O_{\mathrm{cal}}$ and a surrogate
+$\mathcal O_{\mathrm{solv}}(\theta)$, fit
+\begin{equation}
+  \widehat\theta_{\mathrm{eff}}=arg\min_{\theta}
+  D\!\left(\mathcal O_{\mathrm{cal}}^{\mathrm{target}},
+  \mathcal O_{\mathrm{solv}}(\theta)\right),
+\end{equation}
+and evaluate only on withheld quantities,
+\begin{equation}
+  \Ebridge=D\!\left(\mathcal O_{\mathrm{holdout}}^{\mathrm{target}},
+  \mathcal O_{\mathrm{solv}}(\widehat\theta_{\mathrm{eff}})\right).
+\end{equation}
+Constant, source-boundary, size-only, nearest-calibration, and base-surrogate
+predictors are mandatory alternatives. Crossed, left-censored, and
+right-censored thresholds are retained separately. The controlled simulator in
+this release tests this accounting logic; it does not establish transport in a
+real training stack.
+
+\FloatBarrier

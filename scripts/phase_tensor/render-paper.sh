@@ -8,27 +8,23 @@ set -euo pipefail
 
 bash "$REPO_ROOT/scripts/phase_tensor/postprocess.sh"
 
+REFERENCE_AGGREGATE="${REFERENCE_AGGREGATE:-$REPO_ROOT/evidence/tensor_reference_validation/aggregate.json}"
+"${PYTHON:-python3}" "$REPO_ROOT/scripts/generate_paper_figures.py" \
+  --reference "$REFERENCE_AGGREGATE" \
+  --confirmation-macros "$PAPER_DIR/generated/phase_tensor_confirmation_results.tex" \
+  --output "$PAPER_DIR/figures" \
+  --macros "$PAPER_DIR/generated/reference_results.tex"
+
 required_figures=(
-  figure1_protocol.pdf
-  figure2_anchor_validation.pdf
-  figure3_transformer.pdf
-  figure4_diffusion.pdf
-  figure5_reinforcement.pdf
-  figure6_multiagent.pdf
-  figure7_predictive_bridge.pdf
-  figure8_theory_breakdown.pdf
-  figure09_mlp_phase_splitting.pdf
-  figure10_mlp_causal_contribution.pdf
-  figure11_optimizer_geometry.pdf
-  figure12_optimizer_gradient_heterogeneity.pdf
-  figure13_objective_homotopy.pdf
-  figure14_scaling_paths.pdf
-  figure15_natural_data_bridge.pdf
-  figure16_natural_data_generalization.pdf
-  figure17_compute_error_landscape.pdf
-  figure18_theory_experiment_coverage.pdf
-  figure19_training_generalization_dynamics.pdf
-  figure20_mlp_mechanism_atlas.pdf
+  figure1_atlas_taxonomy.pdf
+  figure2_outcome_taxonomy.pdf
+  figure3_observable_map.pdf
+  figure4_phase_decision.pdf
+  figure5_reference_response.pdf
+  figure6_reference_mechanisms.pdf
+  figure7_reference_verdict.pdf
+  figure8_confirmation_summary.pdf
+  figure9_coverage_map.pdf
 )
 for figure in "${required_figures[@]}"; do
   test -s "$PAPER_DIR/figures/$figure"
@@ -45,6 +41,7 @@ for figure in "${required_figures[@]}"; do
   test main.pdf -nt "figures/$figure"
 done
 test main.pdf -nt generated/phase_tensor_results.tex
+test main.pdf -nt generated/reference_results.tex
 if [ -f generated/phase_tensor_confirmation_results.tex ]; then
   test main.pdf -nt generated/phase_tensor_confirmation_results.tex
 fi

@@ -1,21 +1,45 @@
-\section{Research questions and dossier map}
+\section{Research questions and claim map}
 \label{sec:questions}
 
-The atlas is organized around seven questions rather than around a list of
-available simulators. RQ1 asks when a semantically validated order parameter
-survives a deformation. RQ2 asks whether a boundary sharpens, crosses, rounds,
-or becomes censored under finite-size scaling. RQ3 asks which modules or
-interactions causally support an ordered state. RQ4 asks how optimization and
-objective geometry alter the route to that state. RQ5 asks whether a numerical
-relation predicts an untouched size, control window, or realism edge. RQ6 asks
-which conclusions survive a natural-data or learned endpoint. RQ7 asks which
-failure mode---semantic loss, scale dependence, path dependence, or model
-misspecification---explains unsuccessful transport.
+The paper is organized around six questions. Each question has a primary
+estimand, a diagnostic that could block the claim, and an evidence status. This
+structure prevents the experiments from appearing as an unrelated plot catalog.
 
-Each domain dossier uses the same four-part report: \emph{observation} states a
-registered estimate; \emph{interpretation} states the narrow physical reading
-supported by its null and evidence vector; \emph{not established} prevents a
-nearby stronger claim; and \emph{next falsifier} names the experiment that could
-change the status. The machine-readable question and implementation registries
-link each RQ to runnable PhaseCards while leaving known-but-unimplemented and
-unknown cells visible.
+\begin{table}[tbp]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}p{7mm}p{36mm}p{38mm}Yp{18mm}@{}}
+\toprule
+RQ & Question & Required diagnostic & Main artifact & Status \\
+\midrule
+1 & Does an order parameter retain semantic meaning? & latent/shuffled probe;
+separate IID and OOD risk & observable dictionary and reference grid &
+\statussupported{} \\
+2 & Does a response sharpen into a finite-size boundary? & interior peak or
+crossing; window and size sensitivity & GPU reference diagnostics &
+\textcolor{AtlasRed}{\textbf{negative}} \\
+3 & Which module or interaction causally supports task order? & matched ablation;
+non-vanishing normalization; fresh seeds & MLP confirmation & \statusbounded{} \\
+4 & How do optimizer and scale path change the learned state? & frozen selection
+slice; compute and cap audit & optimizer and scaling confirmations &
+\statusbounded{} \\
+5 & Can a calibrated relation predict an untouched condition? & nontrivial
+baselines; disjoint holdout; censoring & controlled continuation simulator &
+model validation only \\
+6 & Which conclusions survive a natural or learned endpoint? & comparable
+estimand, disjoint split, independent implementation & corpus and cross-domain
+dossiers & partial; mostly open \\
+\bottomrule
+\end{tabularx}
+\caption{Question-to-claim map. ``Bounded'' means that the registered contrast
+is supported while a neighboring stronger interpretation remains unestablished.}
+\label{tab:rq-map}
+\end{table}
+
+The reporting template is the same for every result:
+\emph{observation} states the estimate; \emph{interpretation} states the narrow
+reading justified by its null and evidence vector; \emph{not established}
+blocks a tempting stronger claim; and \emph{next falsifier} identifies the
+experiment that could change the status. Sections~\ref{sec:results}--
+\ref{sec:crossdomain} follow this order.
+
+\FloatBarrier
