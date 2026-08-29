@@ -90,6 +90,12 @@ _LAZY_IMPORTS = {
     "ODESolver": ("statphys.theory", "ODESolver"),
     "SaddlePointSolver": ("statphys.theory", "SaddlePointSolver"),
     "TheoryResult": ("statphys.theory", "TheoryResult"),
+    "TheoryStatus": ("statphys.theory", "TheoryStatus"),
+    "Batch": ("statphys.core", "Batch"),
+    "LearningSystem": ("statphys.core", "LearningSystem"),
+    "ObservableSpec": ("statphys.core", "ObservableSpec"),
+    "SeedStreams": ("statphys.core", "SeedStreams"),
+    "TaskSpec": ("statphys.core", "TaskSpec"),
     "ResultsManager": ("statphys.utils.io", "ResultsManager"),
     "load_results": ("statphys.utils.io", "load_results"),
     "save_results": ("statphys.utils.io", "save_results"),
@@ -110,7 +116,17 @@ _LAZY_IMPORTS = {
     "plot_order_params_time": ("statphys.vis", "plot_order_params_time"),
 }
 
-_SUBMODULES = {"dataset", "model", "loss", "theory", "simulation", "experiment", "vis", "utils"}
+_SUBMODULES = {
+    "core",
+    "dataset",
+    "model",
+    "loss",
+    "theory",
+    "simulation",
+    "experiment",
+    "vis",
+    "utils",
+}
 
 __all__ = [
     # Metadata
@@ -124,6 +140,11 @@ __all__ = [
     "ResultsManager",
     "OrderParameterCalculator",
     "auto_calc_order_params",
+    "Batch",
+    "LearningSystem",
+    "ObservableSpec",
+    "SeedStreams",
+    "TaskSpec",
     # Dataset
     "GaussianDataset",
     "GaussianClassificationDataset",
@@ -163,6 +184,7 @@ __all__ = [
     "SaddlePointSolver",
     "ODESolver",
     "TheoryResult",
+    "TheoryStatus",
     # Visualization
     "Plotter",
     "ComparisonPlotter",
@@ -178,6 +200,7 @@ __all__ = [
     "plot_from_online_results",
     # Submodules
     "dataset",
+    "core",
     "model",
     "loss",
     "theory",

@@ -2,18 +2,18 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
-from pathlib import Path
-from typing import Any, Iterable
-
 import csv
 import json
 import math
+from collections import defaultdict
+from collections.abc import Iterable
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 from scipy.stats import t as student_t
 
-from ..schema import Manifest, REQUIRED_SEED_COUNT, TaskSpec, read_manifest
+from ..schema import REQUIRED_SEED_COUNT, Manifest, TaskSpec, read_manifest
 
 T95_DF4 = 2.7764451051977987
 
@@ -41,9 +41,7 @@ def _read_completed(task: TaskSpec, root: Path) -> dict[str, float] | None:
 def _interval(values: Iterable[float]) -> dict[str, float | int]:
     array = np.asarray(tuple(values), dtype=np.float64)
     if array.size < REQUIRED_SEED_COUNT or not np.isfinite(array).all():
-        raise ValueError(
-            f"uncertainty requires at least {REQUIRED_SEED_COUNT} finite seeds"
-        )
+        raise ValueError(f"uncertainty requires at least {REQUIRED_SEED_COUNT} finite seeds")
     standard_deviation = float(array.std(ddof=1))
     standard_error = standard_deviation / math.sqrt(array.size)
     critical = float(student_t.ppf(0.975, df=array.size - 1))
@@ -56,13 +54,13 @@ def _interval(values: Iterable[float]) -> dict[str, float | int]:
     }
 
 
-def _evidence(
-    records: list[dict[str, Any]], registered_seed_count: int
-) -> list[dict[str, Any]]:
+def _evidence(records: list[dict[str, Any]], registered_seed_count: int) -> list[dict[str, Any]]:
     groups: dict[tuple[str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
     for record in records:
         parameter_key = json.dumps(record["parameters"], sort_keys=True, separators=(",", ":"))
-        groups[(record["domain"], record["family"], record["variant"], parameter_key)].append(record)
+        groups[(record["domain"], record["family"], record["variant"], parameter_key)].append(
+            record
+        )
     result: list[dict[str, Any]] = []
     for (domain, family, variant, parameter_key), values in sorted(groups.items()):
         controls = sorted({float(value["control"]) for value in values})
@@ -161,8 +159,7 @@ def aggregate_manifest(
         first = runs[0][0]
         metric_names = set.intersection(*(set(metrics) for _, metrics in runs))
         metric_intervals = {
-            name: _interval(metrics[name] for _, metrics in runs)
-            for name in sorted(metric_names)
+            name: _interval(metrics[name] for _, metrics in runs) for name in sorted(metric_names)
         }
         records.append(
             {
@@ -202,8 +199,15 @@ def aggregate_manifest(
     metric_names = sorted({name for record in records for name in record["metrics"]})
     with (target / "summary.csv").open("w", newline="") as handle:
         fieldnames = [
-            "condition_id", "study", "domain", "family", "variant", "stage",
-            "control_name", "control", "size",
+            "condition_id",
+            "study",
+            "domain",
+            "family",
+            "variant",
+            "stage",
+            "control_name",
+            "control",
+            "size",
         ]
         for name in metric_names:
             fieldnames.extend((f"{name}_mean", f"{name}_ci95", f"{name}_sd"))

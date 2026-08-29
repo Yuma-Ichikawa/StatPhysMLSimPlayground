@@ -16,6 +16,7 @@ the output directory (default: ./statphys_results).
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -106,6 +107,100 @@ def _cmd_study(args) -> int:
     return 0
 
 
+def _cmd_catalog(_args) -> int:
+    from statphys.ui import catalog
+
+    print(json.dumps({"workflows": catalog()}, indent=2))
+    return 0
+
+
+def _cmd_new(args) -> int:
+    from statphys.ui import write_study_template
+
+    write_study_template(args.output, args.kind)
+    print(json.dumps({"created": Path(args.output).name, "kind": args.kind}, indent=2))
+    return 0
+
+
+def _cmd_validate(args) -> int:
+    from statphys.ui import validate_study
+
+    print(json.dumps(validate_study(args.study), indent=2, sort_keys=True))
+    return 0
+
+
+def _cmd_run(args) -> int:
+    from statphys.ui import run_study
+
+    artifact = run_study(args.study, args.output)
+    print(json.dumps({"result": artifact.name}, indent=2))
+    return 0
+
+
+def _cmd_resume(args) -> int:
+    from statphys.ui import run_study
+
+    run_directory = Path(args.run_id)
+    study = run_directory / "study.toml"
+    if not study.is_file():
+        raise ValueError("resume expects a run directory containing its immutable study.toml")
+    artifact = run_study(study, run_directory)
+    print(json.dumps({"result": artifact.name, "mode": "deterministic_rerun"}, indent=2))
+    return 0
+
+
+def _cmd_inspect(args) -> int:
+    from statphys.ui import inspect_artifact
+
+    print(json.dumps(inspect_artifact(args.artifact), indent=2, sort_keys=True))
+    return 0
+
+
+def _cmd_compare(args) -> int:
+    from statphys.ui import compare_artifacts
+
+    print(json.dumps(compare_artifacts(args.left, args.right), indent=2, sort_keys=True))
+    return 0
+
+
+def _cmd_report(args) -> int:
+    from statphys.ui import render_report
+
+    report = render_report(args.artifact, args.output)
+    print(json.dumps({"report": report.name}, indent=2))
+    return 0
+
+
+def _cmd_doctor(_args) -> int:
+    from statphys.ui import doctor
+
+    result = doctor()
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0 if result["ok"] else 1
+
+
+def _cmd_lab(args) -> int:
+    from statphys.ui import STUDY_KINDS, write_study_template
+
+    if args.kind is None:
+        print("Choose a workflow:")
+        choices = list(STUDY_KINDS)
+        for index, kind in enumerate(choices, start=1):
+            print(f"  {index}. {kind}: {STUDY_KINDS[kind]}")
+        selected = input("Workflow [1]: ").strip() or "1"
+        try:
+            kind = choices[int(selected) - 1]
+        except (ValueError, IndexError) as error:
+            raise ValueError("choose one of the displayed workflow numbers") from error
+    else:
+        kind = args.kind
+    write_study_template(args.output, kind)
+    print(
+        json.dumps({"created": Path(args.output).name, "next": "statphys validate STUDY"}, indent=2)
+    )
+    return 0
+
+
 def _add_common(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--alphas", type=float, nargs="+", default=None, help="sample ratios n/d")
     parser.add_argument("--replicas", type=int, default=4, help="students per grid point")
@@ -149,16 +244,67 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--quick", action="store_true", help="small smoke-test sizes")
     p.set_defaults(func=_cmd_study)
 
+    p = sub.add_parser("catalog", help="show guided workflows and their scientific purpose")
+    p.set_defaults(func=_cmd_catalog)
+
+    p = sub.add_parser("new", help="create a validated portable study template")
+    p.add_argument("--output", default="study.toml")
+    p.add_argument(
+        "--kind",
+        choices=("order_parameters", "phase_diagram", "online", "replica", "ready_made"),
+        default="order_parameters",
+    )
+    p.set_defaults(func=_cmd_new)
+
+    p = sub.add_parser("validate", help="validate a portable study TOML before computation")
+    p.add_argument("study")
+    p.set_defaults(func=_cmd_validate)
+
+    p = sub.add_parser("run", help="run a validated study and write a portable result artifact")
+    p.add_argument("study")
+    p.add_argument("--output")
+    p.set_defaults(func=_cmd_run)
+
+    p = sub.add_parser("resume", help="deterministically rerun a study from its run directory")
+    p.add_argument("run_id")
+    p.set_defaults(func=_cmd_resume)
+
+    p = sub.add_parser(
+        "inspect", help="summarize an artifact without opening implementation internals"
+    )
+    p.add_argument("artifact")
+    p.set_defaults(func=_cmd_inspect)
+
+    p = sub.add_parser("compare", help="compare condition-level means from two artifacts")
+    p.add_argument("left")
+    p.add_argument("right")
+    p.set_defaults(func=_cmd_compare)
+
+    p = sub.add_parser("report", help="create a self-contained visual evidence report")
+    p.add_argument("artifact")
+    p.add_argument("--output", default="statphys_report.html")
+    p.set_defaults(func=_cmd_report)
+
+    p = sub.add_parser("doctor", help="check optional capabilities without exposing host details")
+    p.set_defaults(func=_cmd_doctor)
+
+    p = sub.add_parser("lab", help="guided creation of a portable study TOML")
+    p.add_argument("--output", default="study.toml")
+    p.add_argument(
+        "--kind", choices=("order_parameters", "phase_diagram", "online", "replica", "ready_made")
+    )
+    p.set_defaults(func=_cmd_lab)
+
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     """Entry point for the statphys console command."""
-    import matplotlib
-
-    matplotlib.use("Agg")
-
     args = build_parser().parse_args(argv)
+    if args.command in {"list", "order-params", "phase-diagram", "study"}:
+        import matplotlib
+
+        matplotlib.use("Agg")
     return args.func(args)
 
 

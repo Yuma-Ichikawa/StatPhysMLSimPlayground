@@ -19,7 +19,8 @@ class SoftmaxRegression(BaseModel):
     Softmax (Multinomial Logistic) Regression for multi-class classification.
 
     Architecture:
-        z_k = (1/sqrt(d)) * w_k^T @ x  for k = 1, ..., K
+        z_k = w_k^T @ x  for k = 1, ..., K, with ``w_k`` initialized at
+        variance ``1 / d``.
         P(y=k|x) = exp(z_k) / sum_j exp(z_j)
 
     Uses the standard softmax parameterization with K weight vectors.
@@ -94,8 +95,8 @@ class SoftmaxRegression(BaseModel):
         else:
             squeeze_output = False
 
-        # Compute logits: z_k = (1/sqrt(d)) * w_k^T @ x
-        logits = (x @ self.W.T) / np.sqrt(self.d)  # (batch_size, K)
+        # Normal initialization already supplies the width scaling.
+        logits = x @ self.W.T  # (batch_size, K)
 
         output = logits if return_logits else F.softmax(logits, dim=-1)
 
@@ -181,7 +182,7 @@ class SoftmaxRegressionWithBias(SoftmaxRegression):
     Softmax Regression with bias terms.
 
     Architecture:
-        z_k = (1/sqrt(d)) * w_k^T @ x + b_k
+        z_k = w_k^T @ x + b_k, with width scaling in initialization.
         P(y=k|x) = exp(z_k) / sum_j exp(z_j)
     """
 
@@ -217,7 +218,7 @@ class SoftmaxRegressionWithBias(SoftmaxRegression):
         else:
             squeeze_output = False
 
-        logits = (x @ self.W.T) / np.sqrt(self.d) + self.bias
+        logits = x @ self.W.T + self.bias
 
         output = logits if return_logits else F.softmax(logits, dim=-1)
 

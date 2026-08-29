@@ -10,12 +10,12 @@ import platform
 import socket
 import subprocess
 import tempfile
+from collections.abc import Iterator, Mapping
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterator, Mapping
+from typing import Any
 
 from .schema import RunSpec
-
 
 TERMINAL_STATES = {"completed", "failed", "cancelled", "preempted"}
 
@@ -175,11 +175,10 @@ class RunArtifactStore:
     def append_event(self, event: Mapping[str, Any]) -> None:
         record = {"timestamp": utc_now(), **dict(event)}
         line = json.dumps(record, sort_keys=True, default=_json_default) + "\n"
-        with self._manifest_lock():
-            with self.manifest.open("a", encoding="utf-8") as handle:
-                handle.write(line)
-                handle.flush()
-                os.fsync(handle.fileno())
+        with self._manifest_lock(), self.manifest.open("a", encoding="utf-8") as handle:
+            handle.write(line)
+            handle.flush()
+            os.fsync(handle.fileno())
 
     def begin(self, run: RunSpec, repo: str | Path | None = None, overwrite: bool = False) -> Path:
         directory = self.run_dir(run)
@@ -242,4 +241,3 @@ class RunArtifactStore:
             if state != "completed" and (retry_failed or state not in TERMINAL_STATES):
                 result.append(spec)
         return result
-

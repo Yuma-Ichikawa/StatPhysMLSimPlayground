@@ -70,9 +70,10 @@ class RandomFeaturesModel(BaseModel):
         )
 
         # Learnable output weights
-        self.a = nn.Parameter(
-            torch.randn(p, dtype=dtype, device=device) * init_scale / np.sqrt(p)
-        )
+        # The forward map already averages features by ``1 / sqrt(p)``.
+        # Initializing ``a`` with another ``1 / sqrt(p)`` factor makes the
+        # output vanish with width.
+        self.a = nn.Parameter(torch.randn(p, dtype=dtype, device=device) * init_scale)
 
         # Activation function
         self._setup_activation(activation)

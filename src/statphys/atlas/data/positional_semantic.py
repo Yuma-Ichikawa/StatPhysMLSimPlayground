@@ -21,14 +21,13 @@ and model-initialization seeds are intentionally separate.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Literal
-from collections.abc import Mapping
 
 import numpy as np
 import torch
 from torch import Tensor
-
 
 EnsembleName = Literal["d0", "d1", "d2", "d3", "d4", "d5"]
 

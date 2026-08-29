@@ -55,8 +55,13 @@ class TestSlurm:
     """sbatch rendering and dry-run submission."""
 
     def test_render_basic(self):
-        cfg = SlurmConfig(job_name="foo", partition="debug", gpus=1,
-                          time_limit="00:10:00", setup_lines=["source .venv/bin/activate"])
+        cfg = SlurmConfig(
+            job_name="foo",
+            partition="debug",
+            gpus=1,
+            time_limit="00:10:00",
+            setup_lines=["source .venv/bin/activate"],
+        )
         script = render_sbatch("python run.py", cfg, log_dir="logs")
         assert script.startswith("#!/bin/bash")
         assert "#SBATCH --job-name=foo" in script
@@ -87,8 +92,11 @@ class TestSlurm:
     def test_submit_array_dry_run(self, tmp_path):
         launcher = SlurmLauncher(script_dir=tmp_path, log_dir="logs")
         path = submit_array(
-            ["echo a", "echo b"], SlurmConfig(job_name="arr"),
-            launcher=launcher, max_parallel=1, dry_run=True,
+            ["echo a", "echo b"],
+            SlurmConfig(job_name="arr"),
+            launcher=launcher,
+            max_parallel=1,
+            dry_run=True,
         )
         content = (tmp_path / "arr.sbatch").read_text()
         assert "#SBATCH --array=0-1%1" in content

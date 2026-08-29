@@ -35,6 +35,7 @@ from __future__ import annotations
 import numpy as np
 import torch
 
+from statphys.experiment.teacher import Teacher
 from statphys.frontier.common import (
     InputSampler,
     gaussian_sampler,
@@ -42,7 +43,6 @@ from statphys.frontier.common import (
     model_overlap,
     train_regression,
 )
-from statphys.experiment.teacher import Teacher
 from statphys.utils.seed import fix_seed
 
 __all__ = ["run_weak_to_strong", "sweep_weak_to_strong"]

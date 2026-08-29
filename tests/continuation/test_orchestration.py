@@ -4,7 +4,6 @@ from statphys.continuation.analysis.nested import five_seed_interval
 from statphys.continuation.schema import expand_config
 from statphys.continuation.slurm import load_profile, render_array_script
 
-
 ROOT = Path(__file__).resolve().parents[2]
 EXPERIMENT = ROOT / "experiments" / "phase_continuation"
 

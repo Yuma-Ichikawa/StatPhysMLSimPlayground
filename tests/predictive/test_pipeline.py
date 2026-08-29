@@ -12,13 +12,15 @@ from statphys.predictive.pipeline import (
     build_manifest,
     render_slurm,
 )
-from statphys.predictive.style import COLORS, FIGSIZE, LINE_STYLES, MARKERS, apply_style
 from statphys.predictive.simulators import run_task
+from statphys.predictive.style import COLORS, FIGSIZE, LINE_STYLES, MARKERS, apply_style
 
 
 def test_manifest_has_nested_design_and_holdout(tmp_path):
     config = tmp_path / "config.toml"
-    config.write_text('''[study]\nname="test"\nseeds=[11,13]\ninner_replicates=3\n[domains.transformer]\nvariants=["anchor","holdout"]\nholdout_variants=["holdout"]\nsizes=[8]\ncontrols=[0.9,1.1]\nsecondary_controls=[0.0]\nparameters={chains=16,steps=4,dt=0.02}\n''')
+    config.write_text(
+        """[study]\nname="test"\nseeds=[11,13]\ninner_replicates=3\n[domains.transformer]\nvariants=["anchor","holdout"]\nholdout_variants=["holdout"]\nsizes=[8]\ncontrols=[0.9,1.1]\nsecondary_controls=[0.0]\nparameters={chains=16,steps=4,dt=0.02}\n"""
+    )
     manifest = build_manifest(config)
     assert len(manifest.tasks) == 8
     assert {task.inner_replicates for task in manifest.tasks} == {3}
@@ -30,17 +32,23 @@ def test_manifest_has_nested_design_and_holdout(tmp_path):
 
 def test_slurm_rejects_non_spark_and_renders_portably(tmp_path):
     config = tmp_path / "config.toml"
-    config.write_text('''[study]\nname="test"\nseeds=[11]\ninner_replicates=2\n[domains.transformer]\nvariants=["anchor"]\nholdout_variants=[]\nsizes=[8]\ncontrols=[1.0]\nsecondary_controls=[0.0]\n''')
+    config.write_text(
+        """[study]\nname="test"\nseeds=[11]\ninner_replicates=2\n[domains.transformer]\nvariants=["anchor"]\nholdout_variants=[]\nsizes=[8]\ncontrols=[1.0]\nsecondary_controls=[0.0]\n"""
+    )
     manifest_path = build_manifest(config).write(tmp_path / "manifest.json")
     profile = tmp_path / "profile.toml"
-    profile.write_text('''[slurm]\npartition="spark_3H"\ntime="03:00:00"\ngpus=1\ncpus=2\nmemory="8G"\ntasks_per_array=4\nmax_parallel=2\n''')
+    profile.write_text(
+        """[slurm]\npartition="spark_3H"\ntime="03:00:00"\ngpus=1\ncpus=2\nmemory="8G"\ntasks_per_array=4\nmax_parallel=2\n"""
+    )
     script = render_slurm(manifest_path, profile, tmp_path / "job.sbatch").read_text()
     assert "#SBATCH --partition=spark_3H" in script
     assert "/mnt/" not in script
     assert 'cd "$STATPHYS_REPO"' in script
     assert '"$STATPHYS_PYTHON" -m statphys.predictive.cli' in script
 
-    profile.write_text('''[slurm]\npartition="gpu_shared"\ntime="03:00:00"\ngpus=1\ntasks_per_array=4\nmax_parallel=2\n''')
+    profile.write_text(
+        """[slurm]\npartition="gpu_shared"\ntime="03:00:00"\ngpus=1\ntasks_per_array=4\nmax_parallel=2\n"""
+    )
     with pytest.raises(ValueError, match="DGX Spark partition"):
         render_slurm(manifest_path, profile, tmp_path / "non_spark.sbatch")
 
@@ -61,10 +69,27 @@ def test_journal_style_contract():
 
 def test_adaptive_manifest_adds_only_boundary_window(tmp_path):
     config = tmp_path / "config.toml"
-    config.write_text('''[study]\nname="adaptive"\nseeds=[11]\nadaptive_seeds=[17,19]\ninner_replicates=2\n[domains.transformer]\nvariants=["anchor"]\nholdout_variants=[]\nsizes=[8]\ncontrols=[0.8,1.0,1.2,1.4]\nsecondary_controls=[0.0]\n''')
+    config.write_text(
+        """[study]\nname="adaptive"\nseeds=[11]\nadaptive_seeds=[17,19]\ninner_replicates=2\n[domains.transformer]\nvariants=["anchor"]\nholdout_variants=[]\nsizes=[8]\ncontrols=[0.8,1.0,1.2,1.4]\nsecondary_controls=[0.0]\n"""
+    )
     base_path = build_manifest(config).write(tmp_path / "base.json")
     aggregate = tmp_path / "aggregate.json"
-    aggregate.write_text(json.dumps({"boundaries": [{"domain": "transformer", "variant": "anchor", "size": 8, "secondary": 0.0, "observed": 1.2, "holdout": False}]}))
+    aggregate.write_text(
+        json.dumps(
+            {
+                "boundaries": [
+                    {
+                        "domain": "transformer",
+                        "variant": "anchor",
+                        "size": 8,
+                        "secondary": 0.0,
+                        "observed": 1.2,
+                        "holdout": False,
+                    }
+                ]
+            }
+        )
+    )
     adaptive = build_adaptive_manifest(base_path, aggregate, config)
     assert len(adaptive.tasks) == 10
     added = [task for task in adaptive.tasks if task.seed in {17, 19}]
@@ -104,9 +129,7 @@ def test_predictive_benchmarks_include_nontrivial_baselines():
         "augmented",
     }
     first_holdout = [
-        row
-        for row in result["records"]
-        if row["size"] == 16 and row["secondary"] == 1.0
+        row for row in result["records"] if row["size"] == 16 and row["secondary"] == 1.0
     ]
     predictions = {row["model"]: row["predicted"] for row in first_holdout}
     assert predictions["constant"] == pytest.approx(2.0)
@@ -115,7 +138,9 @@ def test_predictive_benchmarks_include_nontrivial_baselines():
     assert result["summary"]["augmented"]["holdout_b_mean_absolute_error"] is not None
     assert result["summary"]["augmented"]["mean_absolute_error_ci95_high"] > 0.0
     assert all("predicted_ci95_low" in row for row in first_holdout)
-    assert {row["selection_status"] for row in first_holdout if row["model"] == "augmented"} == {"preregistered"}
+    assert {row["selection_status"] for row in first_holdout if row["model"] == "augmented"} == {
+        "preregistered"
+    }
 
 
 def test_holdout_split_is_stable_disjoint_and_model_consistent():
@@ -151,12 +176,14 @@ def test_holdout_split_is_stable_disjoint_and_model_consistent():
 
 
 def test_transition_model_comparison_ignores_intervention_only_rows():
-    conditions = [{
-        "domain": "transformer",
-        "variant": "holdout",
-        "secondary": 0.0,
-        "size": 16,
-        "control": 1.0,
-        "metrics": {"intervention_quality": {"mean": 0.5}},
-    }]
+    conditions = [
+        {
+            "domain": "transformer",
+            "variant": "holdout",
+            "secondary": 0.0,
+            "size": 16,
+            "control": 1.0,
+            "metrics": {"intervention_quality": {"mean": 0.5}},
+        }
+    ]
     assert _compare_transition_models(conditions) == []

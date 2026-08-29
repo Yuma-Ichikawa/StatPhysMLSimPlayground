@@ -267,7 +267,7 @@ def submit_array(
     case_lines = ["case ${SLURM_ARRAY_TASK_ID} in"]
     for i, cmd in enumerate(commands):
         case_lines.append(f"  {i}) {cmd} ;;")
-    case_lines.append("  *) echo \"unknown task ${SLURM_ARRAY_TASK_ID}\" >&2; exit 1 ;;")
+    case_lines.append('  *) echo "unknown task ${SLURM_ARRAY_TASK_ID}" >&2; exit 1 ;;')
     case_lines.append("esac")
     payload = "\n".join(case_lines)
 

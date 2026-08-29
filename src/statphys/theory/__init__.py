@@ -13,7 +13,7 @@ Example:
 
 """
 
-from statphys.theory.base import BaseTheory, TheoryResult, TheoryType
+from statphys.theory.base import BaseTheory, TheoryResult, TheoryStatus, TheoryType
 from statphys.theory.online import ODESolver, OnlineEquations
 from statphys.theory.replica import ReplicaEquations, SaddlePointSolver
 
@@ -21,6 +21,7 @@ __all__ = [
     # Base classes
     "BaseTheory",
     "TheoryResult",
+    "TheoryStatus",
     "TheoryType",
     # Replica
     "SaddlePointSolver",

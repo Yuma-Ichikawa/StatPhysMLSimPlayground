@@ -107,9 +107,7 @@ class DynamicsPlotter(Plotter):
 
         if streamlines:
             color = speed if show_speed else self.style.colors[0]
-            strm = ax.streamplot(
-                M, Q, dM, dQ, color=color, cmap="viridis", density=1.2, **kwargs
-            )
+            strm = ax.streamplot(M, Q, dM, dQ, color=color, cmap="viridis", density=1.2, **kwargs)
             if show_speed:
                 cbar = fig.colorbar(strm.lines, ax=ax)
                 cbar.set_label(r"flow speed $|\dot{y}|$")
@@ -118,12 +116,8 @@ class DynamicsPlotter(Plotter):
 
         if show_nullclines:
             with np.errstate(invalid="ignore"):
-                cs_m = ax.contour(
-                    M, Q, dM, levels=[0.0], colors=["tab:red"], linewidths=2
-                )
-                cs_q = ax.contour(
-                    M, Q, dQ, levels=[0.0], colors=["tab:orange"], linewidths=2
-                )
+                cs_m = ax.contour(M, Q, dM, levels=[0.0], colors=["tab:red"], linewidths=2)
+                cs_q = ax.contour(M, Q, dQ, levels=[0.0], colors=["tab:orange"], linewidths=2)
             # Label nullclines via proxy artists (contour has no label kwarg)
             from matplotlib.lines import Line2D
 

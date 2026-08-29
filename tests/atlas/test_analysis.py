@@ -193,4 +193,3 @@ def test_adjacent_js_histograms_and_change_point_candidates() -> None:
     observables = np.array([0.0, 0.0, 0.0, 10.0, 10.0, 10.0])
     candidates = change_point_candidates(control, observables, z_threshold=2.0)
     assert candidates["candidates"][0]["control_midpoint"] == pytest.approx(2.5)
-

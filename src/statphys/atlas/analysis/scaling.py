@@ -83,9 +83,7 @@ def fit_finite_size_scaling_grid(
 ) -> dict[str, Any]:
     """Fit finite-size scaling parameters by an explicit deterministic grid."""
 
-    critical_values = as_float_array(
-        critical_control_grid, name="critical_control_grid", ndim=1
-    )
+    critical_values = as_float_array(critical_control_grid, name="critical_control_grid", ndim=1)
     exponent_values = as_float_array(
         observable_exponent_grid, name="observable_exponent_grid", ndim=1
     )
@@ -210,4 +208,3 @@ def bootstrap_finite_size_scaling(
         "confidence": float(confidence),
         "n_bootstrap": int(n_bootstrap),
     }
-

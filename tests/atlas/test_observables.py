@@ -168,4 +168,3 @@ def test_intervention_deltas_and_functional_replica_distribution() -> None:
     np.testing.assert_allclose(replicas["overlap_matrix"], [[1, 1, -1], [1, 1, -1], [-1, -1, 1]])
     np.testing.assert_allclose(np.sort(replicas["pair_overlaps"]), [-1.0, -1.0, 1.0])
     assert replicas["histogram"]["counts"].sum() == 3
-

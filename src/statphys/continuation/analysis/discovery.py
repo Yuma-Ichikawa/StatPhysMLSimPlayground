@@ -14,7 +14,11 @@ def adjacent_js(histograms: np.ndarray) -> np.ndarray:
         terms = []
         for probability in (left, right):
             mask = probability > 0
-            terms.append(np.sum(probability[mask] * np.log(probability[mask] / np.maximum(middle[mask], 1e-12))))
+            terms.append(
+                np.sum(
+                    probability[mask] * np.log(probability[mask] / np.maximum(middle[mask], 1e-12))
+                )
+            )
         output.append(0.5 * sum(terms))
     return np.asarray(output)
 
@@ -30,6 +34,10 @@ def propose_boundaries(histograms: np.ndarray, controls: np.ndarray, count: int 
     js = adjacent_js(histograms)
     fisher = fisher_sensitivity(histograms, controls)
     midpoint = 0.5 * (controls[:-1] + controls[1:])
-    candidates = [(float(score), float(control)) for score, control in zip(js, midpoint, strict=True)]
-    candidates += [(float(score), float(control)) for score, control in zip(fisher, controls, strict=True)]
+    candidates = [
+        (float(score), float(control)) for score, control in zip(js, midpoint, strict=True)
+    ]
+    candidates += [
+        (float(score), float(control)) for score, control in zip(fisher, controls, strict=True)
+    ]
     return [control for _, control in sorted(candidates, reverse=True)[:count]]

@@ -13,9 +13,9 @@ from statphys.experiment import (
     get_preset,
     init_weights_,
     linear_cka,
-    weight_overlap,
 )
 from statphys.experiment import test_error as compute_test_error
+from statphys.experiment import weight_overlap
 
 
 class TestInitWeights:
@@ -169,9 +169,7 @@ class TestExperiment:
 
     def test_dim_inference(self):
         teacher = Teacher(nn.Sequential(nn.Linear(24, 4), nn.Tanh(), nn.Linear(4, 1)))
-        exp = TeacherStudentExperiment(
-            teacher=teacher, student_factory=lambda: nn.Linear(24, 1)
-        )
+        exp = TeacherStudentExperiment(teacher=teacher, student_factory=lambda: nn.Linear(24, 1))
         assert exp.d == 24
 
 

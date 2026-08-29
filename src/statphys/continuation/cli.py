@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import argparse
-from collections import Counter
 import json
+from collections import Counter
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 from .core.schema import (
     Manifest,
@@ -51,7 +51,9 @@ def _states(manifest: Manifest, root: Path) -> tuple[Counter, list[str]]:
             state = "missing"
         else:
             try:
-                state = str(json.loads(status_path.read_text(encoding="utf-8")).get("state", "unknown"))
+                state = str(
+                    json.loads(status_path.read_text(encoding="utf-8")).get("state", "unknown")
+                )
             except (OSError, json.JSONDecodeError):
                 state = "corrupt"
         counts[state] += 1
@@ -70,7 +72,9 @@ def build_parser() -> argparse.ArgumentParser:
     expand.add_argument("config")
     expand.add_argument("--manifest", required=True)
 
-    compose = commands.add_parser("compose", help="compose complete manifests with one seed contract")
+    compose = commands.add_parser(
+        "compose", help="compose complete manifests with one seed contract"
+    )
     compose.add_argument("manifests", nargs="+")
     compose.add_argument("--study", required=True)
     compose.add_argument("--output", required=True)
@@ -120,7 +124,9 @@ def build_parser() -> argparse.ArgumentParser:
     retry.add_argument("--runs", required=True)
     retry.add_argument("--output", required=True)
 
-    coverage = commands.add_parser("coverage", help="fail if a proposal experiment is unimplemented")
+    coverage = commands.add_parser(
+        "coverage", help="fail if a proposal experiment is unimplemented"
+    )
     coverage.add_argument("registry")
     coverage.add_argument("configs", nargs="+")
     coverage.add_argument("--output")
@@ -138,20 +144,37 @@ def main(argv: Sequence[str] | None = None) -> None:
     if args.command == "expand":
         manifest = expand_config(args.config)
         path = write_manifest(args.manifest, manifest)
-        _print({"manifest": str(path), "tasks": len(manifest.tasks), "conditions": manifest.n_conditions, "seeds": len(manifest.seeds)})
+        _print(
+            {
+                "manifest": str(path),
+                "tasks": len(manifest.tasks),
+                "conditions": manifest.n_conditions,
+                "seeds": len(manifest.seeds),
+            }
+        )
     elif args.command == "compose":
         manifest = compose_manifests(args.manifests, args.study)
-        _print({"manifest": str(write_manifest(args.output, manifest)), "tasks": len(manifest.tasks)})
+        _print(
+            {"manifest": str(write_manifest(args.output, manifest)), "tasks": len(manifest.tasks)}
+        )
     elif args.command == "run-task":
         from .runner import run_manifest_task
 
-        _print(run_manifest_task(args.manifest, args.index, args.output, device=args.device, overwrite=args.overwrite))
+        _print(
+            run_manifest_task(
+                args.manifest, args.index, args.output, device=args.device, overwrite=args.overwrite
+            )
+        )
     elif args.command == "run-local":
         _run_local(args)
     elif args.command == "aggregate":
         from .aggregate import aggregate_manifest
 
-        _print(aggregate_manifest(args.manifest, args.runs, args.output, allow_incomplete=args.allow_incomplete))
+        _print(
+            aggregate_manifest(
+                args.manifest, args.runs, args.output, allow_incomplete=args.allow_incomplete
+            )
+        )
     elif args.command == "plot":
         from .plotting import plot_all
 
@@ -167,7 +190,13 @@ def main(argv: Sequence[str] | None = None) -> None:
     elif args.command == "status":
         manifest = read_manifest(args.manifest)
         counts, conditions = _states(manifest, Path(args.runs))
-        _print({"tasks": len(manifest.tasks), "states": dict(counts), "incomplete_conditions": len(conditions)})
+        _print(
+            {
+                "tasks": len(manifest.tasks),
+                "states": dict(counts),
+                "incomplete_conditions": len(conditions),
+            }
+        )
     elif args.command == "retry-manifest":
         manifest = read_manifest(args.manifest)
         _, conditions = _states(manifest, Path(args.runs))
@@ -179,7 +208,9 @@ def main(argv: Sequence[str] | None = None) -> None:
             config_hash=manifest.config_hash,
             metadata={**dict(manifest.metadata), "retry_of": str(args.manifest)},
         )
-        _print({"manifest": str(write_manifest(args.output, retry_manifest)), "tasks": len(selected)})
+        _print(
+            {"manifest": str(write_manifest(args.output, retry_manifest)), "tasks": len(selected)}
+        )
     elif args.command == "coverage":
         from .analysis.coverage import validate_coverage, write_coverage_report
 
@@ -196,7 +227,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         if args.output:
             destination = Path(args.output)
             destination.parent.mkdir(parents=True, exist_ok=True)
-            destination.write_text(json.dumps(report, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
+            destination.write_text(
+                json.dumps(report, indent=2, sort_keys=True) + "\\n", encoding="utf-8"
+            )
         _print(report)
         if not report["ok"]:
             raise SystemExit(2)

@@ -150,9 +150,7 @@ def run_transformer(
         row_multiplicity = effective_multiplicity(attention, dim=-1)
         positions = torch.arange(seq_len, device=device, dtype=torch.float32)
         distance = (positions[:, None] - positions[None, :]).abs()
-        interaction_range = float(
-            (attention * distance).sum(dim=-1).mean() / max(1, seq_len - 1)
-        )
+        interaction_range = float((attention * distance).sum(dim=-1).mean() / max(1, seq_len - 1))
         macro_probability = ((signed_order + 1.0) / 2.0).clamp(0.0, 1.0)
 
         oracle_attention = heldout.mixed_attention

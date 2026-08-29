@@ -7,7 +7,6 @@ from typing import Any
 import numpy as np
 import torch
 from torch import nn
-from torch.nn import functional as F
 
 from ...core.metrics import seed_everything
 from ...core.schema import TaskSpec
@@ -29,13 +28,19 @@ class _Policy(nn.Module):
             self.input = nn.Linear(1, dimension)
             self.position = nn.Parameter(torch.zeros(1, horizon, dimension))
             layer = nn.TransformerEncoderLayer(
-                dimension, 4, dim_feedforward=4 * dimension, dropout=0.0,
-                batch_first=True, norm_first=True,
+                dimension,
+                4,
+                dim_feedforward=4 * dimension,
+                dropout=0.0,
+                batch_first=True,
+                norm_first=True,
             )
             self.encoder = nn.TransformerEncoder(layer, num_layers=2)
             self.policy = nn.Linear(dimension, 2)
         else:
-            raise ValueError(f"learned policy variant must be linear, mlp, or transformer: {variant}")
+            raise ValueError(
+                f"learned policy variant must be linear, mlp, or transformer: {variant}"
+            )
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
         if self.variant == "linear":
@@ -75,14 +80,14 @@ def run_learned_policy(
     n_probe = max(16, int(task.parameters.get("n_probe", 512)))
     observation_noise = float(task.parameters.get("observation_noise", 0.2))
     verifier_noise = float(np.clip(task.control, 0.0, 0.499))
-    train_obs, _, train_verifier = _pomdp(
-        rng, worlds, horizon, observation_noise, verifier_noise
-    )
+    train_obs, _, train_verifier = _pomdp(rng, worlds, horizon, observation_noise, verifier_noise)
     observations = torch.as_tensor(train_obs, device=device)
     verifier = torch.as_tensor(train_verifier, device=device)
 
     model = _Policy(task.variant, width, horizon).to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=float(task.parameters.get("learning_rate", 3e-3)))
+    optimizer = torch.optim.AdamW(
+        model.parameters(), lr=float(task.parameters.get("learning_rate", 3e-3))
+    )
     entropy_coefficient = float(task.parameters.get("entropy_coefficient", 0.01))
     steps = max(1, int(task.parameters.get("steps", 96)))
     losses: list[float] = []

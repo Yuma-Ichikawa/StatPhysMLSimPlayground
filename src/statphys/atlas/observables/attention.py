@@ -53,6 +53,7 @@ def attention_geometry(
     dict
         Scalar aggregate observables, per-map observables, and the row-level
         entropy/support/span arrays. Entropy uses natural logarithms.
+
     """
 
     weights = as_float_array(attention, name="attention")
@@ -103,7 +104,9 @@ def attention_geometry(
     distance = np.abs(q_pos[:, None] - k_pos[None, :])
     row_span = np.where(valid, (probabilities * distance).sum(axis=-1), np.nan)
 
-    sink_mass = probabilities[..., sinks].sum(axis=-1) if sinks.size else np.zeros_like(valid, dtype=float)
+    sink_mass = (
+        probabilities[..., sinks].sum(axis=-1) if sinks.size else np.zeros_like(valid, dtype=float)
+    )
     diagonal_mask = q_pos[:, None] == k_pos[None, :]
     previous_mask = k_pos[None, :] == (q_pos[:, None] - 1.0)
     diagonal_mass = (probabilities * diagonal_mask).sum(axis=-1)
@@ -146,4 +149,3 @@ def attention_geometry(
         "row_effective_support": row_support,
         "row_span": row_span,
     }
-

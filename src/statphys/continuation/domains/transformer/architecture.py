@@ -11,7 +11,6 @@ import torch
 from ...core.schema import TaskSpec
 from ..common import common_coordinates, entropy, task_rng
 
-
 _DATA_NOISE = {
     "d0": 1.0,
     "d1": 1.25,
@@ -83,13 +82,20 @@ def run_architecture_ladder(
     direction = str(task.parameters.get("scan_direction", "independent")).lower()
     if direction in {"up", "down"}:
         branch = 1.0 if direction == "up" else -1.0
-        metastability = math.exp(-dimension / max(float(task.parameters.get("hysteresis_scale", 256)), 1.0))
+        metastability = math.exp(
+            -dimension / max(float(task.parameters.get("hysteresis_scale", 256)), 1.0)
+        )
         estimate[0] += branch * metastability * 0.1
     denominator = max(np.linalg.norm(signal) * np.linalg.norm(estimate), 1e-12)
     total_overlap = float(np.dot(signal, estimate) / denominator)
-    positional_overlap = float(signal[0] * estimate[0] / max(abs(signal[0] * estimate[0]) + noise_scale, 1e-12))
+    positional_overlap = float(
+        signal[0] * estimate[0] / max(abs(signal[0] * estimate[0]) + noise_scale, 1e-12)
+    )
     semantic_overlap = (
-        float(np.dot(signal[1:], estimate[1:]) / max(np.linalg.norm(signal[1:]) * np.linalg.norm(estimate[1:]), 1e-12))
+        float(
+            np.dot(signal[1:], estimate[1:])
+            / max(np.linalg.norm(signal[1:]) * np.linalg.norm(estimate[1:]), 1e-12)
+        )
         if teacher_rank > 1 and np.linalg.norm(estimate[1:]) > 0
         else 0.0
     )

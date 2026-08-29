@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any, Mapping
-
+import contextlib
 import json
 import os
 import platform
@@ -12,6 +10,9 @@ import socket
 import tempfile
 import time
 import traceback
+from collections.abc import Mapping
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 import torch
@@ -29,10 +30,8 @@ def _atomic_text(path: Path, text: str) -> None:
             os.fsync(handle.fileno())
         os.replace(temporary, path)
     except BaseException:
-        try:
+        with contextlib.suppress(FileNotFoundError):
             os.unlink(temporary)
-        except FileNotFoundError:
-            pass
         raise
 
 
@@ -48,10 +47,8 @@ def _atomic_npz(path: Path, arrays: Mapping[str, Any]) -> None:
         np.savez_compressed(temporary, **{key: np.asarray(value) for key, value in arrays.items()})
         os.replace(temporary, path)
     except BaseException:
-        try:
+        with contextlib.suppress(FileNotFoundError):
             os.unlink(temporary)
-        except FileNotFoundError:
-            pass
         raise
 
 

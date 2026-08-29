@@ -8,14 +8,13 @@ and a common set of diagnostics.
 
 from __future__ import annotations
 
+import math
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Literal, overload
-from collections.abc import Mapping
 
-import math
 import torch
 from torch import Tensor, nn
-
 
 StageName = Literal["m0", "m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8"]
 NormName = Literal["pre", "post"]

@@ -2,17 +2,23 @@
 
 from __future__ import annotations
 
+import tomllib
+from collections.abc import Sequence
 from itertools import combinations
 from pathlib import Path
-import tomllib
-from typing import Any, Sequence
+from typing import Any
 
 from ..core.registry import is_supported
 from ..core.schema import validate_seed_set
 
 COORDINATES = ("data", "architecture", "objective", "optimizer", "dynamics", "population")
 OUTCOMES = (
-    "stable", "renormalized", "splitting", "merging", "rounding", "new_phase",
+    "stable",
+    "renormalized",
+    "splitting",
+    "merging",
+    "rounding",
+    "new_phase",
     "computational_statistical_separation",
 )
 TIERS = ("A", "B", "B+", "C")
@@ -39,7 +45,9 @@ def validate_taxonomy(path: str | Path, config_paths: Sequence[str | Path]) -> d
             key = (str(experiment["domain"]), str(experiment.get("family", "anchor")))
             configured.setdefault(key, []).append(dict(experiment))
             if key == ("cross_domain", "assumption_pairs"):
-                pair_values.update(str(value) for value in experiment.get("parameter_grid", {}).get("pair", ()))
+                pair_values.update(
+                    str(value) for value in experiment.get("parameter_grid", {}).get("pair", ())
+                )
         reports.append({"path": str(config_path), "seeds": len(seeds)})
 
     endpoint_ids: set[str] = set()

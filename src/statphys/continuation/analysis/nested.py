@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import math
-from typing import Iterable, Mapping, Any
+from collections.abc import Iterable, Mapping
+from typing import Any
 
 import numpy as np
 from scipy.stats import t as student_t
@@ -43,7 +44,9 @@ def nested_variance(
     if len(grouped) < 5:
         raise ValueError("nested variance requires at least five outer seeds")
     outer_means = np.asarray([np.mean(grouped[key]) for key in sorted(grouped)])
-    within = np.asarray([np.var(grouped[key], ddof=1) if len(grouped[key]) > 1 else 0.0 for key in sorted(grouped)])
+    within = np.asarray(
+        [np.var(grouped[key], ddof=1) if len(grouped[key]) > 1 else 0.0 for key in sorted(grouped)]
+    )
     interval = registered_seed_interval(outer_means)
     interval.update(
         between_seed_variance=float(np.var(outer_means, ddof=1)),

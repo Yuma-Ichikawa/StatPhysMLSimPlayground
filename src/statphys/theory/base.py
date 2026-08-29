@@ -17,6 +17,29 @@ class TheoryType(Enum):
     CAVITY = "cavity"
 
 
+class TheoryStatus(str, Enum):
+    """Strength and provenance of a theoretical or synthetic prediction."""
+
+    UNCLASSIFIED = "unclassified"
+    EXACT = "exact"
+    ASYMPTOTIC = "asymptotically_exact"
+    CONTROLLED_APPROX = "controlled_approximation"
+    HEURISTIC = "heuristic"
+    SYNTHETIC = "synthetic_ground_truth"
+
+    @property
+    def line_style(self) -> str:
+        """A safe default rendering convention for theory comparisons."""
+        return {
+            TheoryStatus.EXACT: "-",
+            TheoryStatus.ASYMPTOTIC: "-",
+            TheoryStatus.CONTROLLED_APPROX: "--",
+            TheoryStatus.HEURISTIC: ":",
+            TheoryStatus.SYNTHETIC: "-.",
+            TheoryStatus.UNCLASSIFIED: ":",
+        }[self]
+
+
 @dataclass
 class TheoryResult:
     """
@@ -38,6 +61,12 @@ class TheoryResult:
     converged: list[bool]
     iterations: list[int]
     metadata: dict[str, Any] = field(default_factory=dict)
+    status: TheoryStatus = TheoryStatus.UNCLASSIFIED
+    validity: dict[str, str] = field(default_factory=dict)
+    residual: list[float] | None = None
+    stability: list[float] | None = None
+    branch_id: str | None = None
+    references: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -48,6 +77,12 @@ class TheoryResult:
             "converged": self.converged,
             "iterations": self.iterations,
             "metadata": self.metadata,
+            "status": self.status.value,
+            "validity": self.validity,
+            "residual": self.residual,
+            "stability": self.stability,
+            "branch_id": self.branch_id,
+            "references": self.references,
         }
 
     @classmethod
@@ -60,6 +95,12 @@ class TheoryResult:
             converged=data["converged"],
             iterations=data["iterations"],
             metadata=data.get("metadata", {}),
+            status=TheoryStatus(data.get("status", TheoryStatus.UNCLASSIFIED.value)),
+            validity=data.get("validity", {}),
+            residual=data.get("residual"),
+            stability=data.get("stability"),
+            branch_id=data.get("branch_id"),
+            references=data.get("references", []),
         )
 
     def get_order_param(self, name: str) -> np.ndarray:

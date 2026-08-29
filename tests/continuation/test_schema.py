@@ -2,7 +2,13 @@ from pathlib import Path
 
 import pytest
 
-from statphys.continuation.schema import Domain, Manifest, REQUIRED_SEED_COUNT, TaskSpec, expand_config
+from statphys.continuation.schema import (
+    REQUIRED_SEED_COUNT,
+    Domain,
+    Manifest,
+    TaskSpec,
+    expand_config,
+)
 
 
 def _config(seeds: str) -> str:
@@ -29,9 +35,9 @@ def test_expansion_has_registered_seed_set_per_condition(tmp_path: Path) -> None
     assert len(manifest.seeds) == REQUIRED_SEED_COUNT
     assert len(manifest.tasks) == 2 * 2 * 2 * REQUIRED_SEED_COUNT
     for condition in {task.condition_id for task in manifest.tasks}:
-        assert {
-            task.seed for task in manifest.tasks if task.condition_id == condition
-        } == set(manifest.seeds)
+        assert {task.seed for task in manifest.tasks if task.condition_id == condition} == set(
+            manifest.seeds
+        )
 
 
 def test_expansion_accepts_stronger_replication(tmp_path: Path) -> None:
@@ -67,8 +73,7 @@ def test_composition_preserves_component_task_ids() -> None:
         study="component_a",
         seeds=(11, 13, 17, 19, 23),
         tasks=tuple(
-            TaskSpec.from_dict({**first.to_dict(), "seed": seed})
-            for seed in (11, 13, 17, 19, 23)
+            TaskSpec.from_dict({**first.to_dict(), "seed": seed}) for seed in (11, 13, 17, 19, 23)
         ),
         config_hash="a",
     )
@@ -86,8 +91,7 @@ def test_composition_preserves_component_task_ids() -> None:
         study="component_b",
         seeds=(11, 13, 17, 19, 23),
         tasks=tuple(
-            TaskSpec.from_dict({**second.to_dict(), "seed": seed})
-            for seed in (11, 13, 17, 19, 23)
+            TaskSpec.from_dict({**second.to_dict(), "seed": seed}) for seed in (11, 13, 17, 19, 23)
         ),
         config_hash="b",
     )

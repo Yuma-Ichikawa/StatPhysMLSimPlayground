@@ -12,7 +12,9 @@ from ...core.schema import TaskSpec
 from ..common import common_coordinates, effective_count, entropy, softmax, task_rng
 
 
-def _centers(rng: np.random.Generator, components: int, dimension: int) -> tuple[np.ndarray, np.ndarray]:
+def _centers(
+    rng: np.random.Generator, components: int, dimension: int
+) -> tuple[np.ndarray, np.ndarray]:
     semantic = np.where(np.arange(components) < components // 2, -1.0, 1.0)
     centers = rng.normal(size=(components, dimension))
     centers /= np.maximum(np.linalg.norm(centers, axis=1, keepdims=True), 1e-12)
@@ -103,7 +105,9 @@ def _trajectory(task: TaskSpec):
         commitment[newly_committed] = step
         previous_sign = sign
     final_order = semantic_path[:, -1]
-    final_distance = np.sqrt(np.min(np.sum((x[:, None, :] - centers[None, :, :]) ** 2, axis=2), axis=1))
+    final_distance = np.sqrt(
+        np.min(np.sum((x[:, None, :] - centers[None, :, :]) ** 2, axis=2), axis=1)
+    )
     replica_overlap = float(np.mean(np.sign(final_order[:, None]) == np.sign(final_order[None, :])))
     result = common_coordinates(
         final_order,
@@ -144,7 +148,9 @@ def _locality(task: TaskSpec):
     exact_score = np.fft.irfft(
         -np.fft.rfft(field, axis=1) / np.maximum(spectrum, 1e-8), n=d, axis=1
     )
-    radius = max(1, int(task.parameters.get("local_radius", max(1, round(float(task.control) * d)))))
+    radius = max(
+        1, int(task.parameters.get("local_radius", max(1, round(float(task.control) * d))))
+    )
     kernel = np.zeros(d)
     kernel[0] = 1.0
     for offset in range(1, min(radius + 1, d // 2)):
@@ -165,9 +171,13 @@ def _locality(task: TaskSpec):
         effective_multiplicity=float((spectrum.sum() ** 2) / np.sum(spectrum**2)),
         interaction_range=float(radius / d),
         oracle_gap=float(np.mean(error) / scale),
-        intervention_response=float(np.mean(np.abs(response)) / (np.mean(np.abs(local_score)) + 1e-12)),
+        intervention_response=float(
+            np.mean(np.abs(response)) / (np.mean(np.abs(local_score)) + 1e-12)
+        ),
         extras={
-            "score_nonlocality": float(np.linalg.norm(exact_score - local_score) / max(np.linalg.norm(exact_score), 1e-12)),
+            "score_nonlocality": float(
+                np.linalg.norm(exact_score - local_score) / max(np.linalg.norm(exact_score), 1e-12)
+            ),
             "correlation_length": correlation_length,
             "local_radius": float(radius),
             "distant_response": float(np.mean(np.abs(response))),
@@ -188,11 +198,25 @@ def _memorization(task: TaskSpec):
     mixing = np.clip(float(task.control), 0.0, 1.0)
     copied = rng.integers(0, train_count, size=probes)
     generated = mixing * train[copied] + (1.0 - mixing) * fresh
-    distances = np.sqrt(np.min(np.sum((generated[:, None, :] - train[None, :, :]) ** 2, axis=2), axis=1))
-    threshold = float(np.quantile(np.sqrt(np.sum((fresh[: min(probes, train_count)] - train[: min(probes, train_count)]) ** 2, axis=1)), 0.1))
+    distances = np.sqrt(
+        np.min(np.sum((generated[:, None, :] - train[None, :, :]) ** 2, axis=2), axis=1)
+    )
+    threshold = float(
+        np.quantile(
+            np.sqrt(
+                np.sum(
+                    (fresh[: min(probes, train_count)] - train[: min(probes, train_count)]) ** 2,
+                    axis=1,
+                )
+            ),
+            0.1,
+        )
+    )
     memorized = distances < threshold
     signed = 2.0 * memorized.astype(float) - 1.0
-    assignments = np.argmin(np.sum((generated[:, None, :] - train[None, :, :]) ** 2, axis=2), axis=1)
+    assignments = np.argmin(
+        np.sum((generated[:, None, :] - train[None, :, :]) ** 2, axis=2), axis=1
+    )
     load = np.bincount(assignments, minlength=train_count) / probes
     result = common_coordinates(
         signed,
@@ -211,11 +235,15 @@ def _memorization(task: TaskSpec):
         },
     )
     metrics, arrays = result
-    arrays.update(memorization_distance=distances.astype(np.float32), training_load=load.astype(np.float32))
+    arrays.update(
+        memorization_distance=distances.astype(np.float32), training_load=load.astype(np.float32)
+    )
     return metrics, arrays
 
 
-def run_diffusion_program(task: TaskSpec, device: torch.device) -> tuple[dict[str, float], dict[str, Any]]:
+def run_diffusion_program(
+    task: TaskSpec, device: torch.device
+) -> tuple[dict[str, float], dict[str, Any]]:
     del device
     runners = {
         "guidance": _guidance,

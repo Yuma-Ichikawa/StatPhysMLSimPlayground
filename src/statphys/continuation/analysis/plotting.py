@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
 import json
+from collections import defaultdict
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -130,9 +131,7 @@ def _representative_series(
     return [series[index] for index in indices]
 
 
-def _errorbar(
-    ax: Any, values: list[dict[str, Any]], metric: str, label: str, index: int
-) -> None:
+def _errorbar(ax: Any, values: list[dict[str, Any]], metric: str, label: str, index: int) -> None:
     x = [float(value["control"]) for value in values]
     y = [float(value["metrics"][metric]["mean"]) for value in values]
     error = [float(value["metrics"][metric]["ci95"]) for value in values]
@@ -165,9 +164,11 @@ def plot_phase_panels(aggregate: dict[str, Any] | str | Path, output_dir: str | 
     data = read_aggregate(aggregate) if isinstance(aggregate, (str, Path)) else aggregate
     _style()
     figure, axes = plt.subplots(2, 2, figsize=(6.4, 4.8), constrained_layout=True)
-    for ax, domain in zip(axes.flat, DOMAIN_ORDER):
+    for ax, domain in zip(axes.flat, DOMAIN_ORDER, strict=False):
         records = [value for value in data["records"] if value["domain"] == domain]
-        for index, (label, _, values) in enumerate(_representative_series(records, "order_parameter", 8)):
+        for index, (label, _, values) in enumerate(
+            _representative_series(records, "order_parameter", 8)
+        ):
             _errorbar(ax, values, "order_parameter", label, index)
         ax.set_title(DOMAIN_TITLES[domain], loc="left", fontweight="bold")
         ax.set_xlabel(_control_label(records[0]["control_name"]) if records else r"$g$")
@@ -177,9 +178,7 @@ def plot_phase_panels(aggregate: dict[str, Any] | str | Path, output_dir: str | 
     return _save(figure, output_dir, "phase_order_parameter")
 
 
-def plot_common_coordinates(
-    aggregate: dict[str, Any] | str | Path, output_dir: str | Path
-) -> Path:
+def plot_common_coordinates(aggregate: dict[str, Any] | str | Path, output_dir: str | Path) -> Path:
     data = read_aggregate(aggregate) if isinstance(aggregate, (str, Path)) else aggregate
     _style()
     metrics = (
@@ -207,17 +206,17 @@ def plot_common_coordinates(
     return _save(figure, output_dir, "common_coordinates")
 
 
-def plot_finite_size(
-    aggregate: dict[str, Any] | str | Path, output_dir: str | Path
-) -> Path:
+def plot_finite_size(aggregate: dict[str, Any] | str | Path, output_dir: str | Path) -> Path:
     data = read_aggregate(aggregate) if isinstance(aggregate, (str, Path)) else aggregate
     _style()
     figure, axes = plt.subplots(2, 2, figsize=(6.4, 4.8), constrained_layout=True)
-    for ax, domain in zip(axes.flat, DOMAIN_ORDER):
+    for ax, domain in zip(axes.flat, DOMAIN_ORDER, strict=False):
         records = [value for value in data["records"] if value["domain"] == domain]
         groups: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
         for value in records:
-            groups[(value.get("family", "anchor"), value["variant"], _parameter_key(value))].append(value)
+            groups[(value.get("family", "anchor"), value["variant"], _parameter_key(value))].append(
+                value
+            )
         items = sorted(groups.items())
         if len(items) > 8:
             items = [items[index] for index in np.linspace(0, len(items) - 1, 8, dtype=int)]
@@ -226,7 +225,10 @@ def plot_finite_size(
             for size in sorted({int(value["size"]) for value in values}):
                 candidates = [value for value in values if int(value["size"]) == size]
                 peak_values.append(
-                    max(candidates, key=lambda value: float(value["metrics"]["susceptibility"]["mean"]))
+                    max(
+                        candidates,
+                        key=lambda value: float(value["metrics"]["susceptibility"]["mean"]),
+                    )
                 )
             ax.errorbar(
                 [int(value["size"]) for value in peak_values],
@@ -269,11 +271,15 @@ def _registered_panel(
     ]
     figure, axes = plt.subplots(2, 2, figsize=(6.4, 4.8), constrained_layout=True)
     figure.suptitle(title, fontweight="bold")
-    for ax, (metric, ylabel) in zip(axes.flat, metrics):
+    for ax, (metric, ylabel) in zip(axes.flat, metrics, strict=False):
         metric_records = [record for record in records if metric in record["metrics"]]
-        for index, (label, _, values) in enumerate(_representative_series(metric_records, metric, 10)):
+        for index, (label, _, values) in enumerate(
+            _representative_series(metric_records, metric, 10)
+        ):
             _errorbar(ax, values, metric, label, index)
-        ax.set_xlabel(_control_label(metric_records[0]["control_name"]) if metric_records else r"$g$")
+        ax.set_xlabel(
+            _control_label(metric_records[0]["control_name"]) if metric_records else r"$g$"
+        )
         ax.set_ylabel(METRIC_LABELS.get(metric, ylabel))
         if metric_records:
             ax.legend(fontsize=5.2, ncol=2 if len(metric_records) > 20 else 1)
@@ -285,22 +291,102 @@ def plot_registered_figures(
 ) -> list[Path]:
     data = read_aggregate(aggregate) if isinstance(aggregate, (str, Path)) else aggregate
     specifications = (
-        ("figure1_architecture", "Architecture and data continuation", ("transformer",), ("architecture",),
-         (("order_parameter", "recovery"), ("susceptibility", "susceptibility"), ("binder_cumulant", "Binder cumulant"), ("generalization_error", "generalization error"))),
-        ("figure2_heads_algorithms", "Head symmetry and attention-MLP phases", ("transformer",), ("heads", "attention_mlp"),
-         (("order_parameter", "functional order"), ("effective_multiplicity", "effective heads"), ("intervention_response", "ablation response"), ("oracle_gap", "oracle gap"))),
-        ("figure3_icl_lifecycle", "ICL, context, adaptation, optimization, and lifecycle", ("transformer",), ("icl", "long_context", "lora", "glass", "optimizer", "lifecycle", "learned_decoder"),
-         (("order_parameter", "order"), ("generalization_error", "generalization error"), ("interaction_range", "interaction range"), ("intervention_response", "response"))),
-        ("figure4_systems", "MoE, retrieval, multimodal, generation, and compression", ("transformer",), ("moe", "retrieval", "multimodal", "compression", "generation"),
-         (("effective_multiplicity", "effective multiplicity"), ("generalization_error", "error"), ("interaction_range", "interaction range"), ("intervention_response", "response"))),
-        ("figure5_diffusion", "Diffusion phase cube and trainable score bridge", ("diffusion",), None,
-         (("order_parameter", "semantic order"), ("susceptibility", "susceptibility"), ("oracle_gap", "oracle gap"), ("intervention_response", "guidance/locality response"))),
-        ("figure6_rl", "RL entropy, Goodhart, and learned-policy phase cube", ("reinforcement",), None,
-         (("order_parameter", "policy order"), ("effective_multiplicity", "policy multiplicity"), ("oracle_gap", "oracle gap"), ("intervention_response", "policy response"))),
-        ("figure7_multiagent", "Collective reasoning and learned communication", ("multiagent",), None,
-         (("order_parameter", "collective order"), ("effective_multiplicity", "effective agents"), ("oracle_gap", "oracle gap"), ("intervention_response", "global-flip response"))),
-        ("figure8_cross_domain", "Matched-latent and assumption-graph continuation", ("cross_domain",), None,
-         (("pair_interaction_delta", "pair nonadditivity"), ("bridge_error", "held-out bridge error"), ("response_slope", "critical response"), ("threshold_separation", "threshold separation"))),
+        (
+            "figure1_architecture",
+            "Architecture and data continuation",
+            ("transformer",),
+            ("architecture",),
+            (
+                ("order_parameter", "recovery"),
+                ("susceptibility", "susceptibility"),
+                ("binder_cumulant", "Binder cumulant"),
+                ("generalization_error", "generalization error"),
+            ),
+        ),
+        (
+            "figure2_heads_algorithms",
+            "Head symmetry and attention-MLP phases",
+            ("transformer",),
+            ("heads", "attention_mlp"),
+            (
+                ("order_parameter", "functional order"),
+                ("effective_multiplicity", "effective heads"),
+                ("intervention_response", "ablation response"),
+                ("oracle_gap", "oracle gap"),
+            ),
+        ),
+        (
+            "figure3_icl_lifecycle",
+            "ICL, context, adaptation, optimization, and lifecycle",
+            ("transformer",),
+            ("icl", "long_context", "lora", "glass", "optimizer", "lifecycle", "learned_decoder"),
+            (
+                ("order_parameter", "order"),
+                ("generalization_error", "generalization error"),
+                ("interaction_range", "interaction range"),
+                ("intervention_response", "response"),
+            ),
+        ),
+        (
+            "figure4_systems",
+            "MoE, retrieval, multimodal, generation, and compression",
+            ("transformer",),
+            ("moe", "retrieval", "multimodal", "compression", "generation"),
+            (
+                ("effective_multiplicity", "effective multiplicity"),
+                ("generalization_error", "error"),
+                ("interaction_range", "interaction range"),
+                ("intervention_response", "response"),
+            ),
+        ),
+        (
+            "figure5_diffusion",
+            "Diffusion phase cube and trainable score bridge",
+            ("diffusion",),
+            None,
+            (
+                ("order_parameter", "semantic order"),
+                ("susceptibility", "susceptibility"),
+                ("oracle_gap", "oracle gap"),
+                ("intervention_response", "guidance/locality response"),
+            ),
+        ),
+        (
+            "figure6_rl",
+            "RL entropy, Goodhart, and learned-policy phase cube",
+            ("reinforcement",),
+            None,
+            (
+                ("order_parameter", "policy order"),
+                ("effective_multiplicity", "policy multiplicity"),
+                ("oracle_gap", "oracle gap"),
+                ("intervention_response", "policy response"),
+            ),
+        ),
+        (
+            "figure7_multiagent",
+            "Collective reasoning and learned communication",
+            ("multiagent",),
+            None,
+            (
+                ("order_parameter", "collective order"),
+                ("effective_multiplicity", "effective agents"),
+                ("oracle_gap", "oracle gap"),
+                ("intervention_response", "global-flip response"),
+            ),
+        ),
+        (
+            "figure8_cross_domain",
+            "Matched-latent and assumption-graph continuation",
+            ("cross_domain",),
+            None,
+            (
+                ("pair_interaction_delta", "pair nonadditivity"),
+                ("bridge_error", "held-out bridge error"),
+                ("response_slope", "critical response"),
+                ("threshold_separation", "threshold separation"),
+            ),
+        ),
     )
     return [
         _registered_panel(
@@ -326,6 +412,11 @@ def plot_all(aggregate: dict[str, Any] | str | Path, output_dir: str | Path) -> 
 
 
 __all__ = [
-    "DOMAIN_ORDER", "DOMAIN_TITLES", "plot_all", "plot_common_coordinates",
-    "plot_finite_size", "plot_phase_panels", "plot_registered_figures",
+    "DOMAIN_ORDER",
+    "DOMAIN_TITLES",
+    "plot_all",
+    "plot_common_coordinates",
+    "plot_finite_size",
+    "plot_phase_panels",
+    "plot_registered_figures",
 ]

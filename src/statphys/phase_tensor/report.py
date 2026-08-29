@@ -2,18 +2,18 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor
 import json
 import math
+from collections import defaultdict
+from collections.abc import Iterable
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 import numpy as np
 from scipy.stats import t as student_t
 
 from statphys.continuation.core.schema import read_manifest
-
 
 LEGACY_CAUSAL_METRICS = {
     "attention_contribution": "attention",
@@ -70,7 +70,14 @@ def _canonical_causal_metrics(metrics: dict[str, Any]) -> dict[str, Any]:
     legacy_scale = max(1.0 - full, 1e-8)
     branches = (
         ("attention", "attention_contribution"),
-        ("mlp", "mlp_causal_contribution" if "mlp_causal_contribution" in result else "mlp_contribution"),
+        (
+            "mlp",
+            (
+                "mlp_causal_contribution"
+                if "mlp_causal_contribution" in result
+                else "mlp_contribution"
+            ),
+        ),
     )
     for branch, legacy_name in branches:
         risk_name = f"{branch}_ablated_risk"
@@ -188,9 +195,7 @@ def aggregate_phase_tensor(
         status = json.loads(status_path.read_text(encoding="utf-8"))
         if status.get("state") != "completed":
             return None, task.run_id
-        metrics = _canonical_causal_metrics(
-            json.loads(metrics_path.read_text(encoding="utf-8"))
-        )
+        metrics = _canonical_causal_metrics(json.loads(metrics_path.read_text(encoding="utf-8")))
         trajectories: dict[str, np.ndarray] = {}
         arrays_path = directory / "arrays.npz"
         required_trajectories = (
@@ -232,7 +237,9 @@ def aggregate_phase_tensor(
                 missing.append(absent)
     if missing:
         sample = ", ".join(missing[:8])
-        raise RuntimeError(f"refusing incomplete aggregation: {len(missing)} missing/failed runs ({sample})")
+        raise RuntimeError(
+            f"refusing incomplete aggregation: {len(missing)} missing/failed runs ({sample})"
+        )
 
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
@@ -241,41 +248,73 @@ def aggregate_phase_tensor(
     for condition_id, members in sorted(grouped.items()):
         seeds = {int(member["seed"]) for member in members}
         if seeds != set(manifest_seeds) or len(members) != len(manifest_seeds):
-            raise RuntimeError(f"condition {condition_id} violates the exact manifest-seed contract")
+            raise RuntimeError(
+                f"condition {condition_id} violates the exact manifest-seed contract"
+            )
         first = members[0]
         summaries = _condition_metric_summaries(members, manifest_seeds)
-        conditions.append({
-            key: first[key]
-            for key in ("condition_id", "study", "domain", "family", "variant", "stage", "control_name", "control", "size", "parameters")
-        } | {"metrics": summaries})
+        conditions.append(
+            {
+                key: first[key]
+                for key in (
+                    "condition_id",
+                    "study",
+                    "domain",
+                    "family",
+                    "variant",
+                    "stage",
+                    "control_name",
+                    "control",
+                    "size",
+                    "parameters",
+                )
+            }
+            | {"metrics": summaries}
+        )
 
     dynamics: list[dict[str, Any]] = []
     for condition_id, members in sorted(grouped.items()):
-        required = {"history_step", "history_train_risk", "history_test_risk", "history_generalization_gap"}
+        required = {
+            "history_step",
+            "history_train_risk",
+            "history_test_risk",
+            "history_generalization_gap",
+        }
         if not all(required <= set(member["trajectories"]) for member in members):
             raise RuntimeError(f"condition {condition_id} lacks a required trajectory")
         reference_steps = members[0]["trajectories"]["history_step"]
-        if not all(np.array_equal(reference_steps, member["trajectories"]["history_step"]) for member in members[1:]):
+        if not all(
+            np.array_equal(reference_steps, member["trajectories"]["history_step"])
+            for member in members[1:]
+        ):
             raise RuntimeError(f"condition {condition_id} has incompatible trajectory checkpoints")
         summaries: dict[str, dict[str, list[float]]] = {}
         for name in sorted(required - {"history_step"}):
             members_by_seed = {int(member["seed"]): member for member in members}
-            stacked = np.stack([members_by_seed[seed]["trajectories"][name] for seed in manifest_seeds], axis=0)
+            stacked = np.stack(
+                [members_by_seed[seed]["trajectories"][name] for seed in manifest_seeds], axis=0
+            )
             if not np.isfinite(stacked).all():
                 raise RuntimeError(f"trajectory {name!r} contains a non-finite value")
             critical = float(student_t.ppf(0.975, df=len(manifest_seeds) - 1))
             summaries[name] = {
                 "mean": [float(value) for value in stacked.mean(axis=0)],
-                "ci95": [float(critical * value / math.sqrt(len(manifest_seeds))) for value in stacked.std(axis=0, ddof=1)],
+                "ci95": [
+                    float(critical * value / math.sqrt(len(manifest_seeds)))
+                    for value in stacked.std(axis=0, ddof=1)
+                ],
                 "n": len(manifest_seeds),
                 "seed_ids": list(manifest_seeds),
                 "raw_values": [[float(value) for value in row] for row in stacked],
             }
         first = members[0]
-        dynamics.append({
-            key: first[key]
-            for key in ("condition_id", "family", "variant", "control", "size", "parameters")
-        } | {"steps": [int(value) for value in reference_steps], "metrics": summaries})
+        dynamics.append(
+            {
+                key: first[key]
+                for key in ("condition_id", "family", "variant", "control", "size", "parameters")
+            }
+            | {"steps": [int(value) for value in reference_steps], "metrics": summaries}
+        )
 
     boundary_groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
@@ -310,16 +349,29 @@ def aggregate_phase_tensor(
                 estimates.append({"seed_id": seed} | estimate)
             else:
                 estimates.append({"seed_id": seed, "value": None, "status": "insufficient_grid"})
-        counts = {status: sum(item["status"] == status for item in estimates) for status in (
-            "interpolated", "observed", "left_censored", "right_censored", "nonmonotone_no_crossing", "insufficient_grid"
-        )}
+        counts = {
+            status: sum(item["status"] == status for item in estimates)
+            for status in (
+                "interpolated",
+                "observed",
+                "left_censored",
+                "right_censored",
+                "nonmonotone_no_crossing",
+                "insufficient_grid",
+            )
+        }
         boundary = _boundary_summary(estimates, manifest_seeds)
-        thresholds.append(identity | {
-            "target": 0.5,
-            "estimates": estimates,
-            "status_counts": counts,
-            "boundary_status": "identified" if boundary is not None else "censored_or_unidentified",
-        })
+        thresholds.append(
+            identity
+            | {
+                "target": 0.5,
+                "estimates": estimates,
+                "status_counts": counts,
+                "boundary_status": (
+                    "identified" if boundary is not None else "censored_or_unidentified"
+                ),
+            }
+        )
         if boundary is not None:
             boundaries.append(identity | {"status": "identified", "semantic_order_half": boundary})
 
@@ -390,7 +442,9 @@ def aggregate_phase_tensor(
     destination = Path(output_path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = destination.with_suffix(destination.suffix + ".tmp")
-    temporary.write_text(json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8")
+    temporary.write_text(
+        json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8"
+    )
     temporary.replace(destination)
     return destination
 

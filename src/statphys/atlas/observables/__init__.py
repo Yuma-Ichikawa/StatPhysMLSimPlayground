@@ -39,4 +39,3 @@ __all__ = [
     "subspace_principal_angles",
     "two_template_decomposition",
 ]
-

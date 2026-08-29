@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import math
 import traceback
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 import numpy as np
 
@@ -59,19 +60,19 @@ def build_dataset(run: RunSpec) -> Any:
     from .data import PositionalSemanticDataConfig, PositionalSemanticDataset
 
     scale = run.phase.scaling
-    common = dict(
-        d_model=scale.d_model,
-        omega=_omega(run),
-        ensemble=_ensemble_name(run.phase.data),
-        teacher_seed=run.seeds.seed("teacher"),
-        data_seed=run.seeds.seed("data"),
-        init_seed=run.seeds.seed("initialization"),
-        device="cpu",
-        dtype=_torch_dtype(run.training.precision),
-        attention_temperature=run.phase.temperature,
-        elliptical_condition_number=run.phase.covariance_condition,
-        student_t_df=run.phase.tail_degrees_freedom,
-    )
+    common = {
+        "d_model": scale.d_model,
+        "omega": _omega(run),
+        "ensemble": _ensemble_name(run.phase.data),
+        "teacher_seed": run.seeds.seed("teacher"),
+        "data_seed": run.seeds.seed("data"),
+        "init_seed": run.seeds.seed("initialization"),
+        "device": "cpu",
+        "dtype": _torch_dtype(run.training.precision),
+        "attention_temperature": run.phase.temperature,
+        "elliptical_condition_number": run.phase.covariance_condition,
+        "student_t_df": run.phase.tail_degrees_freedom,
+    }
     exact = scale.sequence_length == 2 and scale.teacher_rank == 1
     if exact:
         config = PositionalSemanticDataConfig.exact_paper_bridge(**common)
@@ -182,7 +183,9 @@ def _weight_metrics(model: Any, dataset: Any) -> tuple[dict[str, Any], dict[str,
     positional_vector = vh[0]
     positional_operator = np.outer(positional_vector, positional_vector)
     templates = np.concatenate((positional_operator[None], semantic_operators), axis=0)
-    overlap = latent_overlap_matrix(flattened, templates.reshape(templates.shape[0], -1), absolute=True)
+    overlap = latent_overlap_matrix(
+        flattened, templates.reshape(templates.shape[0], -1), absolute=True
+    )
     specialization = head_specialization_metrics(overlap)
     invariant = permutation_invariant_head_spectrum(overlap)
 
@@ -201,7 +204,9 @@ def _weight_metrics(model: Any, dataset: Any) -> tuple[dict[str, Any], dict[str,
             spectra.append(singular)
             spectral_norms.append(float(singular[0]))
             outlier_ratios.append(
-                float(singular[0] / singular[1]) if singular.size > 1 and singular[1] > 0 else math.inf
+                float(singular[0] / singular[1])
+                if singular.size > 1 and singular[1] > 0
+                else math.inf
             )
     else:
         for matrix in qk.reshape(-1, qk.shape[-2], qk.shape[-1]):
@@ -232,7 +237,9 @@ def _weight_metrics(model: Any, dataset: Any) -> tuple[dict[str, Any], dict[str,
     }
 
 
-def _final_diagnostics(model: Any, heldout: Any, dataset: Any) -> tuple[dict[str, Any], dict[str, np.ndarray]]:
+def _final_diagnostics(
+    model: Any, heldout: Any, dataset: Any
+) -> tuple[dict[str, Any], dict[str, np.ndarray]]:
     import torch
 
     from .analysis import classify_phase
@@ -264,7 +271,9 @@ def _final_diagnostics(model: Any, heldout: Any, dataset: Any) -> tuple[dict[str
     interventions = intervention_loss_deltas(
         baseline,
         {
-            "remove_attention": float(bridge_loss(no_attention, loss_targets) / batch.targets.shape[0]),
+            "remove_attention": float(
+                bridge_loss(no_attention, loss_targets) / batch.targets.shape[0]
+            ),
             "remove_mlp": float(bridge_loss(no_mlp, loss_targets) / batch.targets.shape[0]),
         },
     )
@@ -283,9 +292,7 @@ def _final_diagnostics(model: Any, heldout: Any, dataset: Any) -> tuple[dict[str
         "representation_effective_rank": representation["effective_rank"],
         "representation_anisotropy": representation["anisotropy"],
         "representation_top_fraction": representation["top_explained_fraction"],
-        "correlation_length_integral": float(
-            0.5 + np.nansum(np.maximum(correlations[1:], 0.0))
-        ),
+        "correlation_length_integral": float(0.5 + np.nansum(np.maximum(correlations[1:], 0.0))),
         "remove_attention_delta": interventions["interventions"]["remove_attention"]["delta"],
         "remove_mlp_delta": interventions["interventions"]["remove_mlp"]["delta"],
     }
@@ -323,7 +330,10 @@ def run_experiment(
             seed=(run.seeds.seed("data") + 2_147_483_647) % (2**32),
         )
         model = build_model(run, dataset)
-        probe = lambda current, _step: _functional_probe(current, heldout)
+
+        def probe(current: Any, _step: int) -> dict[str, float]:
+            return _functional_probe(current, heldout)
+
         result = train_bridge(
             model,
             train_batch.inputs,
@@ -372,4 +382,3 @@ def run_experiment(
             traceback="".join(traceback.format_exception(exc))[-12_000:],
         )
         raise
-

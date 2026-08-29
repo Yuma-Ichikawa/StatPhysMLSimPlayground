@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from pathlib import Path
-
 import shlex
 import tomllib
+from dataclasses import dataclass
+from pathlib import Path
 
 from ..schema import Manifest, read_manifest
 

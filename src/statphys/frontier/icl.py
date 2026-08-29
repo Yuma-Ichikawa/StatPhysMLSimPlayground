@@ -41,7 +41,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from statphys.utils.seed import fix_seed
+from statphys.core import SeedStreams
 
 __all__ = ["ICLTransformer", "make_icl_batch", "ridge_predictor", "run_icl", "sweep_icl"]
 
@@ -197,22 +197,44 @@ def run_icl(
         "eps_null", "ridge_alignment", "eps_ridge", and the config.
 
     """
-    fix_seed(seed)
-    pool = torch.randn(n_tasks, d)
-    model = ICLTransformer(d, d_model=d_model, n_layers=n_layers, n_heads=n_heads, max_len=k + 1)
+    streams = SeedStreams(seed)
+    pool = torch.randn(n_tasks, d, generator=streams.torch("teacher"))
+    # Third-party modules initialize from torch's global generator.  Forking
+    # it scopes that implementation detail to the initialization stream and
+    # leaves data, training, and evaluation streams independent.
+    with torch.random.fork_rng():
+        torch.manual_seed(streams.seed("initialization"))
+        model = ICLTransformer(
+            d,
+            d_model=d_model,
+            n_layers=n_layers,
+            n_heads=n_heads,
+            max_len=k + 1,
+        )
     opt = torch.optim.Adam(model.parameters(), lr=lr)
+    train_generator = streams.torch("training")
 
     for _ in range(steps):
-        tokens, y_q, _ = make_icl_batch(pool, batch, d, k, noise_std=noise_std)
+        tokens, y_q, _ = make_icl_batch(
+            pool,
+            batch,
+            d,
+            k,
+            noise_std=noise_std,
+            generator=train_generator,
+        )
         opt.zero_grad()
         loss = ((model(tokens) - y_q) ** 2).mean()
         loss.backward()
         opt.step()
 
     model.eval()
-    gen = torch.Generator().manual_seed(seed + 1)
-    tok_seen, y_seen, _ = make_icl_batch(pool, n_eval, d, k, generator=gen)
-    tok_new, y_new, _ = make_icl_batch(None, n_eval, d, k, generator=gen)
+    tok_seen, y_seen, _ = make_icl_batch(
+        pool, n_eval, d, k, generator=streams.torch("evaluation_seen")
+    )
+    tok_new, y_new, _ = make_icl_batch(
+        None, n_eval, d, k, generator=streams.torch("evaluation_unseen")
+    )
     with torch.no_grad():
         pred_seen = model(tok_seen)
         pred_new = model(tok_new)

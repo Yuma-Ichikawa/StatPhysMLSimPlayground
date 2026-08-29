@@ -7,12 +7,12 @@ import math
 import os
 import tempfile
 import time
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Mapping
+from typing import Any
 
 from .schema import OptimizerName, Precision, TrainingSpec
-
 
 Probe = Callable[[Any, int], Mapping[str, float]]
 
@@ -28,6 +28,9 @@ class TrainingResult:
     converged: bool
     elapsed_seconds: float
     history: dict[str, list[float]] = field(default_factory=dict)
+    stop_reason: str = "budget_exhausted"
+    terminal_loss: float = float("nan")
+    restored_best_checkpoint: bool = False
 
     def summary(self) -> dict[str, Any]:
         return {
@@ -37,6 +40,9 @@ class TrainingResult:
             "steps": self.steps,
             "converged": self.converged,
             "elapsed_seconds": self.elapsed_seconds,
+            "stop_reason": self.stop_reason,
+            "terminal_loss": self.terminal_loss,
+            "restored_best_checkpoint": self.restored_best_checkpoint,
         }
 
 
@@ -82,7 +88,9 @@ def _parameter_norm(model: Any) -> float:
     import torch
 
     with torch.no_grad():
-        squared = sum(float(parameter.detach().float().square().sum()) for parameter in model.parameters())
+        squared = sum(
+            float(parameter.detach().float().square().sum()) for parameter in model.parameters()
+        )
     return math.sqrt(squared)
 
 
@@ -100,7 +108,7 @@ def _update_norm(model: Any, initial: list[Any]) -> float:
     with torch.no_grad():
         squared = sum(
             float((parameter.detach().float() - reference.float()).square().sum())
-            for parameter, reference in zip(model.parameters(), initial)
+            for parameter, reference in zip(model.parameters(), initial, strict=True)
         )
     return math.sqrt(squared)
 
@@ -121,6 +129,17 @@ def save_checkpoint_atomic(path: str | Path, payload: Mapping[str, Any]) -> None
         with contextlib.suppress(FileNotFoundError):
             os.unlink(temporary)
         raise
+
+
+def _model_state_copy(model: Any) -> dict[str, Any]:
+    """Detach model parameters for an in-memory best checkpoint.
+
+    ``state_dict`` tensors share storage with the model.  A direct reference
+    would therefore silently track subsequent optimisation steps and defeat
+    best-checkpoint restoration.
+    """
+
+    return {name: value.detach().clone() for name, value in model.state_dict().items()}
 
 
 def train_supervised(
@@ -146,6 +165,11 @@ def train_supervised(
 
     if l2_coefficient < 0:
         raise ValueError("l2_coefficient must be non-negative")
+    if l2_coefficient > 0.0 and spec.weight_decay > 0.0:
+        raise ValueError(
+            "choose either explicit l2_coefficient or optimizer weight_decay; "
+            "using both applies regularization twice"
+        )
     selected_device = resolve_device(device)
     seed_torch(seed, spec.deterministic)
     model = model.to(selected_device)
@@ -177,17 +201,21 @@ def train_supervised(
     }
     best_loss = float("inf")
     best_step = 0
+    best_state: dict[str, Any] | None = None
     stale = 0
     converged = False
+    stop_reason = "budget_exhausted"
     start = time.perf_counter()
     final_loss = float("nan")
 
     use_amp = spec.precision == Precision.BFLOAT16 and selected_device.startswith("cuda")
-    autocast = (
-        lambda: torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=True)
-        if use_amp
-        else contextlib.nullcontext()
-    )
+
+    def autocast_context() -> Any:
+        return (
+            torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=True)
+            if use_amp
+            else contextlib.nullcontext()
+        )
 
     for step in range(spec.max_steps + 1):
         should_record = step == 0 or step % spec.log_interval == 0 or step == spec.max_steps
@@ -202,7 +230,7 @@ def train_supervised(
                 )
                 batch_inputs, batch_targets = inputs[indices], targets[indices]
             optimizer.zero_grad(set_to_none=True)
-            with autocast():
+            with autocast_context():
                 prediction = model(batch_inputs)
                 if isinstance(prediction, tuple):
                     prediction = prediction[0]
@@ -219,17 +247,19 @@ def train_supervised(
 
         if should_record or should_probe:
             model.eval()
-            with torch.no_grad(), autocast():
+            with torch.no_grad(), autocast_context():
                 full_prediction = model(inputs)
                 if isinstance(full_prediction, tuple):
                     full_prediction = full_prediction[0]
                 full_loss = 0.5 * (full_prediction - targets).square().mean()
-                full_regularizer = sum(
-                    parameter.square().sum() for parameter in model.parameters()
-                )
+                full_regularizer = sum(parameter.square().sum() for parameter in model.parameters())
                 full_objective = full_loss + 0.5 * l2_coefficient * full_regularizer
             final_loss = float(full_loss)
             objective_value = float(full_objective)
+
+            if not math.isfinite(final_loss) or not math.isfinite(objective_value):
+                stop_reason = "numerical_failure"
+                break
 
             if should_record:
                 history["step"].append(float(step))
@@ -245,11 +275,26 @@ def train_supervised(
                     history.setdefault(name, []).append(float(value))
                 history.setdefault("probe_step", []).append(float(step))
 
-            threshold = spec.convergence_rtol * max(1.0, abs(best_loss))
-            if final_loss < best_loss - threshold:
+            threshold = (
+                0.0 if best_state is None else spec.convergence_rtol * max(1.0, abs(best_loss))
+            )
+            if best_state is None or final_loss < best_loss - threshold:
                 best_loss = final_loss
                 best_step = step
+                best_state = _model_state_copy(model)
                 stale = 0
+                if checkpoint_dir is not None:
+                    save_checkpoint_atomic(
+                        Path(checkpoint_dir) / "best.pt",
+                        {
+                            "step": step,
+                            "model": best_state,
+                            "optimizer": optimizer.state_dict(),
+                            "training_spec": spec.to_dict(),
+                            "seed": seed,
+                            "loss": best_loss,
+                        },
+                    )
             elif step >= spec.min_steps:
                 stale += spec.log_interval if should_record else 0
 
@@ -266,12 +311,27 @@ def train_supervised(
                 )
             model.train()
 
+            if (
+                spec.gradient_tolerance is not None
+                and step >= spec.min_steps
+                and math.isfinite(gradient_norm)
+                and gradient_norm <= spec.gradient_tolerance
+            ):
+                converged = True
+                stop_reason = "converged"
+                break
             if spec.patience is not None and step >= spec.min_steps and stale >= spec.patience:
                 converged = True
+                stop_reason = "patience"
                 break
 
     elapsed = time.perf_counter() - start
     steps = step
+    terminal_loss = final_loss
+    restored_best_checkpoint = best_state is not None
+    if best_state is not None:
+        model.load_state_dict(best_state)
+        final_loss = best_loss
     return TrainingResult(
         final_loss=final_loss,
         best_loss=best_loss,
@@ -280,5 +340,7 @@ def train_supervised(
         converged=converged,
         elapsed_seconds=elapsed,
         history=history,
+        stop_reason=stop_reason,
+        terminal_loss=terminal_loss,
+        restored_best_checkpoint=restored_best_checkpoint,
     )
-

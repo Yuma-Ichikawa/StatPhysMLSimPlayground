@@ -25,12 +25,18 @@ class _CausalTokenModel(nn.Module):
             self.attention = nn.MultiheadAttention(width, heads, batch_first=True)
         elif variant == "decoder":
             layer = nn.TransformerEncoderLayer(
-                width, heads, dim_feedforward=4 * width, dropout=0.0,
-                batch_first=True, norm_first=True,
+                width,
+                heads,
+                dim_feedforward=4 * width,
+                dropout=0.0,
+                batch_first=True,
+                norm_first=True,
             )
             self.decoder = nn.TransformerEncoder(layer, num_layers=2)
         elif variant != "linear":
-            raise ValueError(f"learned Transformer variant must be linear, attention, or decoder: {variant}")
+            raise ValueError(
+                f"learned Transformer variant must be linear, attention, or decoder: {variant}"
+            )
         self.readout = nn.Linear(width, vocabulary)
 
     def forward(self, tokens: torch.Tensor) -> torch.Tensor:
@@ -39,11 +45,16 @@ class _CausalTokenModel(nn.Module):
             hidden = self.embedding(tokens)
         else:
             mask = torch.triu(
-                torch.ones(tokens.shape[1], tokens.shape[1], device=tokens.device, dtype=torch.bool),
+                torch.ones(
+                    tokens.shape[1], tokens.shape[1], device=tokens.device, dtype=torch.bool
+                ),
                 diagonal=1,
             )
             if self.variant == "attention":
-                hidden = hidden + self.attention(hidden, hidden, hidden, attn_mask=mask, need_weights=False)[0]
+                hidden = (
+                    hidden
+                    + self.attention(hidden, hidden, hidden, attn_mask=mask, need_weights=False)[0]
+                )
             else:
                 hidden = self.decoder(hidden, mask=mask)
         return self.readout(hidden)

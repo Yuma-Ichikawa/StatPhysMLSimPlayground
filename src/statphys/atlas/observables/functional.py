@@ -15,7 +15,9 @@ def _paired_flatten(left: ArrayLike, right: ArrayLike) -> tuple[np.ndarray, np.n
     a = as_float_array(left, name="left").reshape(-1)
     b = as_float_array(right, name="right").reshape(-1)
     if a.shape != b.shape:
-        raise ValueError(f"left and right must have the same number of values: {a.size} != {b.size}")
+        raise ValueError(
+            f"left and right must have the same number of values: {a.size} != {b.size}"
+        )
     if a.size < 2:
         raise ValueError("functional overlaps require at least two probe values")
     return a, b

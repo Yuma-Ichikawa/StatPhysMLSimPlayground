@@ -35,7 +35,7 @@ def test_aggregate_requires_all_five_runs(tmp_path: Path) -> None:
 
 
 def test_student_t_constant_is_df_four() -> None:
-    assert T95_DF4 == pytest.approx(2.7764451051977987)
+    assert pytest.approx(2.7764451051977987) == T95_DF4
 
 
 def test_student_t_interval_supports_twelve_registered_seeds() -> None:
@@ -63,6 +63,8 @@ def test_aggregate_records_family(tmp_path: Path) -> None:
     }
     for task in manifest.tasks:
         store.begin(task)
-        store.complete(task, common, {"signed_order_samples": [0.5]}, elapsed_seconds=0.1, device="cpu")
+        store.complete(
+            task, common, {"signed_order_samples": [0.5]}, elapsed_seconds=0.1, device="cpu"
+        )
     aggregate = aggregate_manifest(manifest, tmp_path, tmp_path / "aggregate")
     assert aggregate["records"][0]["family"] == "anchor"

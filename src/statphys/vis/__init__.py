@@ -42,9 +42,6 @@ from statphys.vis.animation import (
 )
 from statphys.vis.comparison import ComparisonPlotter
 from statphys.vis.dashboard import plot_order_parameter_dashboard
-from statphys.vis.dynamics import DynamicsPlotter
-from statphys.vis.overlap_matrix import OverlapMatrixPlotter
-from statphys.vis.sweep import SweepPlotter
 from statphys.vis.default_plots import (
     COLORS,
     DEFAULT_FIGSIZE,
@@ -59,9 +56,12 @@ from statphys.vis.default_plots import (
     plot_order_params_alpha,
     plot_order_params_time,
 )
+from statphys.vis.dynamics import DynamicsPlotter
 from statphys.vis.order_params import OrderParamPlotter
+from statphys.vis.overlap_matrix import OverlapMatrixPlotter
 from statphys.vis.phase_diagram import PhaseDiagramPlotter, compute_phase_grid
 from statphys.vis.plotter import PlotStyle, Plotter
+from statphys.vis.sweep import SweepPlotter
 
 __all__ = [
     # Base classes

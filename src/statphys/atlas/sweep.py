@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import itertools
 import json
+from collections.abc import Iterable, Mapping
 from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any
 
-from .schema import RunSpec, SeedPlan, run_spec_from_dict
+from .schema import RunSpec, run_spec_from_dict
 
 
 def _set_dotted(mapping: dict[str, Any], dotted: str, value: Any) -> None:
@@ -43,7 +44,7 @@ def cartesian_specs(
     seen: set[str] = set()
     for values in products:
         expanded = deepcopy(dict(base))
-        for name, value in zip(axes, values):
+        for name, value in zip(axes, values, strict=False):
             _set_dotted(expanded, name, value)
         base_spec = run_spec_from_dict(expanded)
         for replica in range(replicas):
@@ -132,16 +133,15 @@ def refine_numeric_axis(
     confirmatory sweep.
     """
 
-    points = sorted(zip(values, scores), key=lambda pair: pair[0])
+    points = sorted(zip(values, scores, strict=False), key=lambda pair: pair[0])
     if len(points) < 2:
         return [float(point[0]) for point in points]
     intervals = sorted(
         (
             (abs(right[1] - left[1]), index, 0.5 * (left[0] + right[0]))
-            for index, (left, right) in enumerate(zip(points[:-1], points[1:]))
+            for index, (left, right) in enumerate(zip(points[:-1], points[1:], strict=False))
         ),
         reverse=True,
     )
     additions = {midpoint for _, _, midpoint in intervals[:top_intervals]}
     return sorted({float(value) for value, _ in points} | additions)
-

@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
+import json
+import math
+import tomllib
 from collections import defaultdict
 from dataclasses import asdict
 from hashlib import sha256
-import json
-import math
 from pathlib import Path
-import tomllib
-from typing import Any, Iterable
+from typing import Any
 
 import numpy as np
 
@@ -81,10 +81,14 @@ def build_adaptive_manifest(
                 if task.task_id not in existing:
                     existing[task.task_id] = task
                     new_tasks.append(task)
-    return Manifest(schema_version="1.0", study=base.study + "_adaptive", tasks=base.tasks + tuple(new_tasks))
+    return Manifest(
+        schema_version="1.0", study=base.study + "_adaptive", tasks=base.tasks + tuple(new_tasks)
+    )
 
 
-def run_slice(manifest_path: str | Path, output: str | Path, start: int, stop: int, device: str) -> dict[str, int]:
+def run_slice(
+    manifest_path: str | Path, output: str | Path, start: int, stop: int, device: str
+) -> dict[str, int]:
     manifest = Manifest.read(manifest_path)
     root = Path(output)
     completed = skipped = 0
@@ -113,7 +117,9 @@ def run_slice(manifest_path: str | Path, output: str | Path, start: int, stop: i
     return {"completed": completed, "skipped": skipped}
 
 
-def _bootstrap_ci(values: np.ndarray, rng: np.random.Generator, draws: int = 2000) -> tuple[float, float, float]:
+def _bootstrap_ci(
+    values: np.ndarray, rng: np.random.Generator, draws: int = 2000
+) -> tuple[float, float, float]:
     mean = float(values.mean())
     if len(values) < 2:
         return mean, mean, mean
@@ -123,8 +129,8 @@ def _bootstrap_ci(values: np.ndarray, rng: np.random.Generator, draws: int = 200
 
 
 def aggregate(manifest_path: str | Path, runs: str | Path, output: str | Path) -> dict[str, Any]:
-    from concurrent.futures import ThreadPoolExecutor
     import os
+    from concurrent.futures import ThreadPoolExecutor
 
     manifest = Manifest.read(manifest_path)
     root = Path(runs)
@@ -168,7 +174,13 @@ def aggregate(manifest_path: str | Path, runs: str | Path, output: str | Path) -
         raise RuntimeError(f"cannot aggregate with {len(missing)} missing tasks")
     grouped: dict[tuple[Any, ...], list[dict[str, Any]]] = defaultdict(list)
     for record in records:
-        key = (record["domain"], record["variant"], record["size"], record["control"], record["secondary"])
+        key = (
+            record["domain"],
+            record["variant"],
+            record["size"],
+            record["control"],
+            record["secondary"],
+        )
         grouped[key].append(record)
     rng = np.random.default_rng(20260719)
     conditions: list[dict[str, Any]] = []
@@ -181,7 +193,14 @@ def aggregate(manifest_path: str | Path, runs: str | Path, output: str | Path) -
                 outer[int(row["seed"])].append(float(row["metrics"][metric]))
             outer_values = np.asarray([np.mean(values) for values in outer.values()], dtype=float)
             mean, low, high = _bootstrap_ci(outer_values, rng)
-            within = float(np.mean([np.var(values, ddof=1) if len(values) > 1 else 0.0 for values in outer.values()]))
+            within = float(
+                np.mean(
+                    [
+                        np.var(values, ddof=1) if len(values) > 1 else 0.0
+                        for values in outer.values()
+                    ]
+                )
+            )
             metrics[metric] = {
                 "mean": mean,
                 "ci95_low": low,
@@ -253,8 +272,12 @@ def _estimate_boundaries(conditions: list[dict[str, Any]]) -> list[dict[str, Any
         susceptibility = np.asarray([row["metrics"]["susceptibility"]["mean"] for row in rows])
         observed = _quadratic_peak(controls, susceptibility)
         truth = float(np.mean([row["metrics"]["critical_control_truth"]["mean"] for row in rows]))
-        truth_low = float(np.mean([row["metrics"]["critical_control_truth"]["ci95_low"] for row in rows]))
-        truth_high = float(np.mean([row["metrics"]["critical_control_truth"]["ci95_high"] for row in rows]))
+        truth_low = float(
+            np.mean([row["metrics"]["critical_control_truth"]["ci95_low"] for row in rows])
+        )
+        truth_high = float(
+            np.mean([row["metrics"]["critical_control_truth"]["ci95_high"] for row in rows])
+        )
         seed_material = "|".join(map(str, key)).encode()
         rng = np.random.default_rng(int(sha256(seed_material).hexdigest()[:16], 16))
         bootstrap_profiles = np.empty((1000, len(rows)), dtype=float)
@@ -262,16 +285,25 @@ def _estimate_boundaries(conditions: list[dict[str, Any]]) -> list[dict[str, Any
             raw = np.asarray(row["metrics"]["susceptibility"]["raw_outer_means"], dtype=float)
             indices = rng.integers(0, len(raw), size=(1000, len(raw)))
             bootstrap_profiles[:, column] = raw[indices].mean(axis=1)
-        boundary_samples = np.asarray([_quadratic_peak(controls, profile) for profile in bootstrap_profiles])
+        boundary_samples = np.asarray(
+            [_quadratic_peak(controls, profile) for profile in bootstrap_profiles]
+        )
         observed_low, observed_high = np.quantile(boundary_samples, [0.025, 0.975])
         output.append(
             {
-                "domain": key[0], "variant": key[1], "size": key[2], "secondary": key[3],
-                "observed": observed, "observed_ci95_low": float(observed_low),
-                "observed_ci95_high": float(observed_high), "latent_truth": truth,
-                "latent_ci95_low": truth_low, "latent_ci95_high": truth_high,
+                "domain": key[0],
+                "variant": key[1],
+                "size": key[2],
+                "secondary": key[3],
+                "observed": observed,
+                "observed_ci95_low": float(observed_low),
+                "observed_ci95_high": float(observed_high),
+                "latent_truth": truth,
+                "latent_ci95_low": truth_low,
+                "latent_ci95_high": truth_high,
                 "ci95_width": float(observed_high - observed_low),
-                "peak_susceptibility": float(susceptibility.max()), "holdout": key[1] == "holdout",
+                "peak_susceptibility": float(susceptibility.max()),
+                "holdout": key[1] == "holdout",
             }
         )
     return output
@@ -304,9 +336,7 @@ def _split_holdout_rows(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, 
     for identities in identities_by_domain.values():
         ordered = sorted(
             identities,
-            key=lambda identity: sha256(
-                "|".join(map(str, identity)).encode()
-            ).hexdigest(),
+            key=lambda identity: sha256("|".join(map(str, identity)).encode()).hexdigest(),
         )
         cutoff = len(ordered) // 2
         if len(ordered) == 1:
@@ -320,9 +350,7 @@ def _split_holdout_rows(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, 
     return split
 
 
-def _nearest_observed(
-    candidates: list[dict[str, Any]], target: dict[str, Any]
-) -> float:
+def _nearest_observed(candidates: list[dict[str, Any]], target: dict[str, Any]) -> float:
     log_sizes = np.asarray(
         [math.log(float(row["size"])) for row in candidates] + [math.log(float(target["size"]))]
     )
@@ -376,8 +404,7 @@ def _predict_boundaries(
             "source_anchor": np.asarray(
                 [_nearest_observed(anchor_train, row) for row in test], dtype=float
             ),
-            "size_only": size_test_design
-            @ np.linalg.lstsq(size_design, y, rcond=None)[0],
+            "size_only": size_test_design @ np.linalg.lstsq(size_design, y, rcond=None)[0],
             "nearest_calibration": np.asarray(
                 [_nearest_observed(train, row) for row in test], dtype=float
             ),
@@ -396,7 +423,9 @@ def _predict_boundaries(
                         "predicted": float(predicted),
                         "absolute_error": abs(float(predicted) - float(row["observed"])),
                         "holdout_split": split_lookup[_boundary_identity(row)],
-                        "selection_status": "preregistered" if model == "augmented" else "benchmark",
+                        "selection_status": (
+                            "preregistered" if model == "augmented" else "benchmark"
+                        ),
                     }
                 )
     summary: dict[str, Any] = {}
@@ -414,19 +443,26 @@ def _predict_boundaries(
             "median_absolute_error": float(np.median(errors)) if errors else None,
             "mean_absolute_error": float(np.mean(errors)) if errors else None,
             "holdout_a_mean_absolute_error": (
-                float(np.mean([row["absolute_error"] for row in model_rows if row["holdout_split"] == "A"]))
+                float(
+                    np.mean(
+                        [row["absolute_error"] for row in model_rows if row["holdout_split"] == "A"]
+                    )
+                )
                 if any(row["holdout_split"] == "A" for row in model_rows)
                 else None
             ),
             "holdout_b_mean_absolute_error": (
-                float(np.mean([row["absolute_error"] for row in model_rows if row["holdout_split"] == "B"]))
+                float(
+                    np.mean(
+                        [row["absolute_error"] for row in model_rows if row["holdout_split"] == "B"]
+                    )
+                )
                 if any(row["holdout_split"] == "B" for row in model_rows)
                 else None
             ),
         }
     has_intervals = bool(boundaries) and all(
-        "ci95_width" in row
-        or ("observed_ci95_low" in row and "observed_ci95_high" in row)
+        "ci95_width" in row or ("observed_ci95_low" in row and "observed_ci95_high" in row)
         for row in boundaries
     )
     if _propagate_uncertainty and has_intervals:
@@ -450,14 +486,14 @@ def _predict_boundaries(
                 if "ci95_width" in row:
                     width = float(row["ci95_width"])
                 else:
-                    width = float(row["observed_ci95_high"]) - float(
-                        row["observed_ci95_low"]
-                    )
+                    width = float(row["observed_ci95_high"]) - float(row["observed_ci95_low"])
                 standard_error = max(width / (2.0 * 1.96), 1e-12)
-                sampled.append({
-                    **row,
-                    "observed": float(rng.normal(float(row["observed"]), standard_error)),
-                })
+                sampled.append(
+                    {
+                        **row,
+                        "observed": float(rng.normal(float(row["observed"]), standard_error)),
+                    }
+                )
             draw = _predict_boundaries(sampled, _propagate_uncertainty=False)["records"]
             by_model: dict[str, list[float]] = defaultdict(list)
             for row in draw:
@@ -518,7 +554,9 @@ def _compare_transition_models(conditions: list[dict[str, Any]]) -> list[dict[st
             continue
         widths: list[tuple[int, float]] = []
         for size in sorted({row["size"] for row in rows}):
-            series = sorted((row for row in rows if row["size"] == size), key=lambda row: row["control"])
+            series = sorted(
+                (row for row in rows if row["size"] == size), key=lambda row: row["control"]
+            )
             x = np.asarray([row["control"] for row in series], dtype=float)
             y = np.asarray([row["metrics"][metric]["mean"] for row in series], dtype=float)
             slope = np.max(np.abs(np.gradient(y, x)))
@@ -530,9 +568,11 @@ def _compare_transition_models(conditions: list[dict[str, Any]]) -> list[dict[st
         train_sizes, test_size = sizes[:-1], sizes[-1:]
         train_y, test_y = observed[:-1], observed[-1]
         designs = {
-            "continuous": lambda values: np.column_stack([values ** -0.5]),
-            "first_order_like": lambda values: np.column_stack([values ** -1.0]),
-            "smooth_crossover": lambda values: np.column_stack([np.ones_like(values), values ** -0.5]),
+            "continuous": lambda values: np.column_stack([values**-0.5]),
+            "first_order_like": lambda values: np.column_stack([values**-1.0]),
+            "smooth_crossover": lambda values: np.column_stack(
+                [np.ones_like(values), values**-0.5]
+            ),
         }
         fits: dict[str, Any] = {}
         for name, design in designs.items():
@@ -547,8 +587,15 @@ def _compare_transition_models(conditions: list[dict[str, Any]]) -> list[dict[st
             }
         selected = min(fits, key=lambda name: fits[name]["largest_size_absolute_error"])
         comparisons.append(
-            {"domain": key[0], "variant": key[1], "secondary": key[2], "selected": selected,
-             "n_sizes": len(sizes), "widths": [{"size": int(n), "width": width} for n, width in widths], "models": fits}
+            {
+                "domain": key[0],
+                "variant": key[1],
+                "secondary": key[2],
+                "selected": selected,
+                "n_sizes": len(sizes),
+                "widths": [{"size": int(n), "width": width} for n, width in widths],
+                "models": fits,
+            }
         )
     return comparisons
 
@@ -556,12 +603,16 @@ def _compare_transition_models(conditions: list[dict[str, Any]]) -> list[dict[st
 def _assumption_interactions(boundaries: list[dict[str, Any]]) -> list[dict[str, Any]]:
     grouped: dict[tuple[str, int, float], dict[str, float]] = defaultdict(dict)
     for row in boundaries:
-        grouped[(row["domain"], row["size"], row["secondary"])][row["variant"]] = float(row["observed"])
+        grouped[(row["domain"], row["size"], row["secondary"])][row["variant"]] = float(
+            row["observed"]
+        )
     output = []
     for key, values in sorted(grouped.items()):
         if {"anchor", "single", "augmented"}.issubset(values):
             delta = values["augmented"] - 2.0 * values["single"] + values["anchor"]
-            output.append({"domain": key[0], "size": key[1], "secondary": key[2], "delta_ij_gc": float(delta)})
+            output.append(
+                {"domain": key[0], "size": key[1], "secondary": key[2], "delta_ij_gc": float(delta)}
+            )
     return output
 
 
@@ -571,7 +622,9 @@ def _intervention_summary(conditions: list[dict[str, Any]]) -> dict[str, Any]:
         rows = [row for row in conditions if row["domain"] == domain and row["holdout"]]
         if not rows:
             continue
-        target_fraction = float(np.mean([row["metrics"]["window_compute_fraction"]["mean"] for row in rows]))
+        target_fraction = float(
+            np.mean([row["metrics"]["window_compute_fraction"]["mean"] for row in rows])
+        )
         curves: dict[tuple[int, float], list[dict[str, Any]]] = defaultdict(list)
         for row in rows:
             curves[(int(row["size"]), float(row["secondary"]))].append(row)
@@ -584,7 +637,9 @@ def _intervention_summary(conditions: list[dict[str, Any]]) -> dict[str, Any]:
                     float(row["control"]) - float(row["metrics"]["critical_control_truth"]["mean"])
                 ),
             )
-            selected.update((curve_key[0], curve_key[1], float(row["control"])) for row in ranked[:count])
+            selected.update(
+                (curve_key[0], curve_key[1], float(row["control"])) for row in ranked[:count]
+            )
         compute_fraction = len(selected) / len(rows)
         off: list[float] = []
         on: list[float] = []
@@ -595,7 +650,11 @@ def _intervention_summary(conditions: list[dict[str, Any]]) -> dict[str, Any]:
             boundary = float(row["metrics"]["critical_control_truth"]["mean"])
             distance = abs(float(row["control"]) - boundary)
             benefit = 0.12 * math.exp(-0.5 * (distance / 0.12) ** 2)
-            in_window = (int(row["size"]), float(row["secondary"]), float(row["control"])) in selected
+            in_window = (
+                int(row["size"]),
+                float(row["secondary"]),
+                float(row["control"]),
+            ) in selected
             off.append(baseline)
             on.append(baseline + benefit)
             critical.append(baseline + (benefit if in_window else 0.0))
@@ -626,26 +685,47 @@ def audit_aggregate(aggregate_path: str | Path, output: str | Path) -> dict[str,
     statistics: list[dict[str, Any]] = []
     grouped: dict[tuple[str, str, str], list[float]] = defaultdict(list)
     zero_ci: dict[tuple[str, str, str], int] = defaultdict(int)
-    for record in data["records"]:
+    # Predictive aggregation emits condition summaries, not per-run records.
+    # Keep pre-schema artifacts readable, but make the current schema primary.
+    rows = data.get("conditions", data.get("records", []))
+    if not rows:
+        raise ValueError("aggregate contains no conditions to audit")
+    for record in rows:
         for metric, interval in record["metrics"].items():
-            key = (record["domain"], record["family"], metric)
+            if not isinstance(interval, dict) or "mean" not in interval:
+                continue
+            key = (
+                record["domain"],
+                record.get("family", record.get("variant", "unknown")),
+                metric,
+            )
             grouped[key].append(float(interval["mean"]))
-            zero_ci[key] += int(float(interval.get("ci95", 0.0)) == 0.0)
+            ci_width = interval.get("ci95")
+            if ci_width is None and {"ci95_low", "ci95_high"} <= set(interval):
+                ci_width = float(interval["ci95_high"]) - float(interval["ci95_low"])
+            zero_ci[key] += int(float(ci_width or 0.0) == 0.0)
     for key, values in sorted(grouped.items()):
         array = np.asarray(values)
         statistics.append(
             {
-                "domain": key[0], "family": key[1], "metric": key[2], "count": len(values),
-                "min": float(array.min()), "max": float(array.max()),
+                "domain": key[0],
+                "family": key[1],
+                "metric": key[2],
+                "count": len(values),
+                "min": float(array.min()),
+                "max": float(array.max()),
                 "unique_rounded_1e8": int(len(np.unique(np.round(array, 8)))),
                 "fraction_at_zero": float(np.mean(np.isclose(array, 0.0))),
                 "fraction_at_one": float(np.mean(np.isclose(array, 1.0))),
                 "fraction_zero_ci": zero_ci[key] / len(values),
-                "flag_saturated": bool(np.mean(np.isclose(array, 0.0) | np.isclose(array, 1.0)) > 0.5),
+                "flag_saturated": bool(
+                    np.mean(np.isclose(array, 0.0) | np.isclose(array, 1.0)) > 0.5
+                ),
             }
         )
     result = {
-        "source": str(aggregate_path), "records": len(data["records"]),
+        "source_schema": data.get("schema_version", "unknown"),
+        "conditions": len(rows),
         "statistics": statistics,
         "saturated_metrics": [row for row in statistics if row["flag_saturated"]],
     }
@@ -665,18 +745,37 @@ def write_paper_results(
     base = float(data["predictions"]["summary"]["base"]["median_absolute_error"])
     augmented = float(data["predictions"]["summary"]["augmented"]["median_absolute_error"])
     improvement = 100.0 * (1.0 - augmented / max(base, 1e-12))
-    anchor_errors = [abs(float(row["observed"]) - float(row["latent_truth"])) for row in data["boundaries"] if row["variant"] == "anchor"]
+    anchor_errors = [
+        abs(float(row["observed"]) - float(row["latent_truth"]))
+        for row in data["boundaries"]
+        if row["variant"] == "anchor"
+    ]
     interactions = [abs(float(row["delta_ij_gc"])) for row in data["assumption_interactions"]]
-    compute_savings = [float(row["mean_compute_saving"]) for row in data["critical_window_intervention"].values()]
-    quality_retentions = [float(row["quality_retention"]) for row in data["critical_window_intervention"].values()]
-    random_gains = [float(row["gain_over_random_matched"]) for row in data["critical_window_intervention"].values()]
+    compute_savings = [
+        float(row["mean_compute_saving"]) for row in data["critical_window_intervention"].values()
+    ]
+    quality_retentions = [
+        float(row["quality_retention"]) for row in data["critical_window_intervention"].values()
+    ]
+    random_gains = [
+        float(row["gain_over_random_matched"])
+        for row in data["critical_window_intervention"].values()
+    ]
     rows = []
     for domain in sorted(data["critical_window_intervention"]):
-        domain_predictions = [row for row in data["predictions"]["records"] if row["domain"] == domain]
-        base_error = np.median([row["absolute_error"] for row in domain_predictions if row["model"] == "base"])
-        augmented_error = np.median([row["absolute_error"] for row in domain_predictions if row["model"] == "augmented"])
+        domain_predictions = [
+            row for row in data["predictions"]["records"] if row["domain"] == domain
+        ]
+        base_error = np.median(
+            [row["absolute_error"] for row in domain_predictions if row["model"] == "base"]
+        )
+        augmented_error = np.median(
+            [row["absolute_error"] for row in domain_predictions if row["model"] == "augmented"]
+        )
         saving = 100.0 * data["critical_window_intervention"][domain]["mean_compute_saving"]
-        rows.append(f"{domain.capitalize()} & {base_error:.3f} & {augmented_error:.3f} & {saving:.1f}\\% \\\\")
+        rows.append(
+            f"{domain.capitalize()} & {base_error:.3f} & {augmented_error:.3f} & {saving:.1f}\\% \\\\"
+        )
     lines = [
         "% Generated from immutable predictive aggregate; do not edit.",
         "\\newcommand{\\ResultsReady}{1}",
@@ -722,9 +821,7 @@ def plot_results(aggregate_path: str | Path, output: str | Path) -> list[Path]:
                 axis.tick_params(which="both", top=True, right=True, labelsize=8)
         figure.tight_layout(pad=1.0)
         figure.savefig(path, facecolor="white", transparent=False)
-        figure.savefig(
-            path.with_suffix(".png"), facecolor="white", transparent=False
-        )
+        figure.savefig(path.with_suffix(".png"), facecolor="white", transparent=False)
         plt.close(figure)
         paths.append(path)
 
@@ -781,7 +878,9 @@ def plot_results(aggregate_path: str | Path, output: str | Path) -> list[Path]:
             },
         )
     for x in (0.23, 0.47, 0.71):
-        ax.annotate("", xy=(x + 0.04, 0.36), xytext=(x, 0.36), arrowprops={"arrowstyle": "->", "lw": 1.4})
+        ax.annotate(
+            "", xy=(x + 0.04, 0.36), xytext=(x, 0.36), arrowprops={"arrowstyle": "->", "lw": 1.4}
+        )
     ax.text(
         0.5,
         0.10,
@@ -793,33 +892,65 @@ def plot_results(aggregate_path: str | Path, output: str | Path) -> list[Path]:
 
     # Figure 2: anchor calibration and finite-size residuals.
     anchor = [row for row in data["boundaries"] if row["variant"] == "anchor"]
-    fig, (ax, residual_ax) = plt.subplots(2, 1, figsize=FIGSIZE, height_ratios=(3.0, 1.25), sharex=True)
+    fig, (ax, residual_ax) = plt.subplots(
+        2, 1, figsize=FIGSIZE, height_ratios=(3.0, 1.25), sharex=True
+    )
     for index, domain in enumerate(sorted({row["domain"] for row in anchor})):
         rows = [row for row in anchor if row["domain"] == domain]
         for row_index, row in enumerate(rows):
-            xerr = [[row["latent_truth"] - row["latent_ci95_low"]], [row["latent_ci95_high"] - row["latent_truth"]]]
-            yerr = [[row["observed"] - row["observed_ci95_low"]], [row["observed_ci95_high"] - row["observed"]]]
-            ax.errorbar(row["latent_truth"], row["observed"], xerr=xerr, yerr=yerr,
-                        marker=MARKERS[index], color=COLORS[index], linestyle="none", markersize=5.5,
-                        capsize=2.0, markeredgecolor="black", markeredgewidth=0.4,
-                        label=domain if row_index == 0 else None)
-            residual_ax.errorbar(row["latent_truth"], row["observed"] - row["latent_truth"],
-                                 yerr=yerr, marker=MARKERS[index], color=COLORS[index], linestyle="none",
-                                 markersize=4.5, capsize=2.0, markeredgecolor="black", markeredgewidth=0.35)
+            xerr = [
+                [row["latent_truth"] - row["latent_ci95_low"]],
+                [row["latent_ci95_high"] - row["latent_truth"]],
+            ]
+            yerr = [
+                [row["observed"] - row["observed_ci95_low"]],
+                [row["observed_ci95_high"] - row["observed"]],
+            ]
+            ax.errorbar(
+                row["latent_truth"],
+                row["observed"],
+                xerr=xerr,
+                yerr=yerr,
+                marker=MARKERS[index],
+                color=COLORS[index],
+                linestyle="none",
+                markersize=5.5,
+                capsize=2.0,
+                markeredgecolor="black",
+                markeredgewidth=0.4,
+                label=domain if row_index == 0 else None,
+            )
+            residual_ax.errorbar(
+                row["latent_truth"],
+                row["observed"] - row["latent_truth"],
+                yerr=yerr,
+                marker=MARKERS[index],
+                color=COLORS[index],
+                linestyle="none",
+                markersize=4.5,
+                capsize=2.0,
+                markeredgecolor="black",
+                markeredgewidth=0.35,
+            )
     all_values = [row[key] for row in anchor for key in ("latent_truth", "observed")]
     low, high = min(all_values) - 0.03, max(all_values) + 0.03
     ax.plot([low, high], [low, high], "--", color="black", linewidth=1.2, label="oracle")
     residual_ax.axhline(0.0, color="black", linestyle="--", linewidth=1.0)
-    ax.set_ylabel(r"Observed $g_c$"); residual_ax.set_ylabel("Residual"); residual_ax.set_xlabel(r"Latent $g_c$")
-    ax.legend(frameon=False, ncol=2); ax.set_title("Anchor calibration and boundary uncertainty")
-    for axis in (ax, residual_ax): axis.tick_params(which="both", top=True, right=True)
+    ax.set_ylabel(r"Observed $g_c$")
+    residual_ax.set_ylabel("Residual")
+    residual_ax.set_xlabel(r"Latent $g_c$")
+    ax.legend(frameon=False, ncol=2)
+    ax.set_title("Anchor calibration and boundary uncertainty")
+    for axis in (ax, residual_ax):
+        axis.tick_params(which="both", top=True, right=True)
     save(fig, "figure2_anchor_validation")
 
     def finite_size_figure(domain: str, name: str, ylabel: str, metric: str) -> None:
         candidates = [
             row
             for row in data["conditions"]
-            if row["domain"] == domain and row["variant"] == "holdout"
+            if row["domain"] == domain
+            and row["variant"] == "holdout"
             and metric in row["metrics"]
             and "susceptibility" in row["metrics"]
         ]
@@ -922,22 +1053,42 @@ def plot_results(aggregate_path: str | Path, output: str | Path) -> list[Path]:
             comparison = min(comparisons, key=lambda row: abs(float(row["secondary"]) - secondary))
             model_names = ["continuous", "first_order_like", "smooth_crossover"]
             model_labels = [r"$N^{-1/2}$", r"$N^{-1}$", "crossover"]
-            predictions = [comparison["models"][model]["largest_size_prediction"] for model in model_names]
+            predictions = [
+                comparison["models"][model]["largest_size_prediction"] for model in model_names
+            ]
             held_out = comparison["models"][model_names[0]]["largest_size_observed"]
             positions = np.arange(len(model_names))
             width_ax.scatter(positions, predictions, color=COLORS[:3], s=28, zorder=3)
-            width_ax.axhline(held_out, color="black", linestyle="--", linewidth=1.0, label="held-out width")
+            width_ax.axhline(
+                held_out, color="black", linestyle="--", linewidth=1.0, label="held-out width"
+            )
             for position, value, model in zip(positions, predictions, model_names, strict=True):
                 error = comparison["models"][model]["largest_size_absolute_error"]
-                width_ax.annotate(rf"$|e|={error:.2g}$", (position, value), xytext=(0, 6), textcoords="offset points", ha="center", fontsize=6.5)
+                width_ax.annotate(
+                    rf"$|e|={error:.2g}$",
+                    (position, value),
+                    xytext=(0, 6),
+                    textcoords="offset points",
+                    ha="center",
+                    fontsize=6.5,
+                )
             width_ax.set_xticks(positions, model_labels, rotation=15)
             width_ax.set_ylabel("Transition width")
             width_ax.legend(frameon=False, fontsize=7)
         else:
-            width_ax.text(0.5, 0.5, "No three-size width comparison", ha="center", va="center", transform=width_ax.transAxes)
+            width_ax.text(
+                0.5,
+                0.5,
+                "No three-size width comparison",
+                ha="center",
+                va="center",
+                transform=width_ax.transAxes,
+            )
             width_ax.set_xticks([])
         width_ax.set_title("Largest-size width held out", fontsize=10)
-        fig.suptitle(rf"{domain.capitalize()}: finite-size evidence at $\eta={secondary:g}$", fontsize=12)
+        fig.suptitle(
+            rf"{domain.capitalize()}: finite-size evidence at $\eta={secondary:g}$", fontsize=12
+        )
         save(fig, name)
 
     # Figures 3 and 4: the two deep cases.
@@ -949,7 +1100,9 @@ def plot_results(aggregate_path: str | Path, output: str | Path) -> list[Path]:
     )
     finite_size_figure("diffusion", "figure4_diffusion", "Speciation order", metric="speciation")
 
-    def metric_grid(rows: list[dict[str, Any]], metric: str) -> tuple[list[float], list[float], np.ndarray]:
+    def metric_grid(
+        rows: list[dict[str, Any]], metric: str
+    ) -> tuple[list[float], list[float], np.ndarray]:
         controls = sorted({float(row["control"]) for row in rows})
         secondaries = sorted({float(row["secondary"]) for row in rows})
         grid = np.full((len(secondaries), len(controls)), np.nan)
@@ -961,16 +1114,18 @@ def plot_results(aggregate_path: str | Path, output: str | Path) -> list[Path]:
             )
         return controls, secondaries, grid
 
-    def heatmap(axis: Any, rows: list[dict[str, Any]], metric: str, title: str) -> tuple[Any, list[float], list[float], np.ndarray]:
+    def heatmap(
+        axis: Any, rows: list[dict[str, Any]], metric: str, title: str
+    ) -> tuple[Any, list[float], list[float], np.ndarray]:
         controls, secondaries, grid = metric_grid(rows, metric)
         uncertainty = np.full_like(grid, np.nan)
         x_lookup = {value: index for index, value in enumerate(controls)}
         y_lookup = {value: index for index, value in enumerate(secondaries)}
         for row in rows:
             estimate = row["metrics"][metric]
-            uncertainty[
-                y_lookup[float(row["secondary"])], x_lookup[float(row["control"])]
-            ] = 0.5 * (float(estimate["ci95_high"]) - float(estimate["ci95_low"]))
+            uncertainty[y_lookup[float(row["secondary"])], x_lookup[float(row["control"])]] = (
+                0.5 * (float(estimate["ci95_high"]) - float(estimate["ci95_low"]))
+            )
         image = axis.imshow(grid, origin="lower", aspect="auto", cmap="viridis")
         axis.set_xticks(np.arange(len(controls)), [f"{value:g}" for value in controls])
         axis.set_yticks(np.arange(len(secondaries)), [f"{value:g}" for value in secondaries])
@@ -1004,18 +1159,44 @@ def plot_results(aggregate_path: str | Path, output: str | Path) -> list[Path]:
     rl_size = max(int(row["size"]) for row in rl_candidates)
     rl = [row for row in rl_candidates if int(row["size"]) == rl_size]
     fig, (reward_ax, diagnostic_ax) = plt.subplots(1, 2, figsize=FIGSIZE)
-    reward_image, controls, noises, reward_grid = heatmap(reward_ax, rl, "gold_reward", "Gold reward")
-    if len(controls) > 1 and len(noises) > 1 and float(np.nanmax(reward_grid)) > float(np.nanmin(reward_grid)):
+    reward_image, controls, noises, reward_grid = heatmap(
+        reward_ax, rl, "gold_reward", "Gold reward"
+    )
+    if (
+        len(controls) > 1
+        and len(noises) > 1
+        and float(np.nanmax(reward_grid)) > float(np.nanmin(reward_grid))
+    ):
         reward_ax.contour(reward_grid, levels=4, colors="white", linewidths=0.8)
     fig.colorbar(reward_image, ax=reward_ax, fraction=0.046, pad=0.04)
-    diagnostic_metric = "goodhart_gap" if all("goodhart_gap" in row["metrics"] for row in rl) else "strategy_entropy"
+    diagnostic_metric = (
+        "goodhart_gap"
+        if all("goodhart_gap" in row["metrics"] for row in rl)
+        else "strategy_entropy"
+    )
     diagnostic_title = "Goodhart gap" if diagnostic_metric == "goodhart_gap" else "Strategy entropy"
-    diagnostic_image, _, _, diagnostic_grid = heatmap(diagnostic_ax, rl, diagnostic_metric, diagnostic_title)
-    if all("strategy_entropy" in row["metrics"] for row in rl) and len(controls) > 1 and len(noises) > 1:
+    diagnostic_image, _, _, diagnostic_grid = heatmap(
+        diagnostic_ax, rl, diagnostic_metric, diagnostic_title
+    )
+    if (
+        all("strategy_entropy" in row["metrics"] for row in rl)
+        and len(controls) > 1
+        and len(noises) > 1
+    ):
         _, _, entropy_grid = metric_grid(rl, "strategy_entropy")
         if float(np.nanmax(entropy_grid)) > float(np.nanmin(entropy_grid)):
-            diagnostic_ax.contour(entropy_grid, levels=4, colors="white", linestyles="--", linewidths=0.7)
-            diagnostic_ax.text(0.02, 0.98, "dashed: entropy", transform=diagnostic_ax.transAxes, va="top", color="white", fontsize=7)
+            diagnostic_ax.contour(
+                entropy_grid, levels=4, colors="white", linestyles="--", linewidths=0.7
+            )
+            diagnostic_ax.text(
+                0.02,
+                0.98,
+                "dashed: entropy",
+                transform=diagnostic_ax.transAxes,
+                va="top",
+                color="white",
+                fontsize=7,
+            )
     fig.colorbar(diagnostic_image, ax=diagnostic_ax, fraction=0.046, pad=0.04)
     fig.suptitle(rf"RL holdout landscape, $N={rl_size}$", fontsize=12)
     save(fig, "figure5_reinforcement")
@@ -1038,12 +1219,21 @@ def plot_results(aggregate_path: str | Path, output: str | Path) -> list[Path]:
     ax.set_xlabel(r"Social coupling $J$")
     ax.set_ylabel(r"External field $h$")
     boundary_rows = [
-        row for row in data["boundaries"] if row["domain"] == "multiagent" and row["variant"] == "holdout"
+        row
+        for row in data["boundaries"]
+        if row["domain"] == "multiagent" and row["variant"] == "holdout"
     ]
     for index, size in enumerate(sorted({int(row["size"]) for row in boundary_rows})):
-        series = sorted((row for row in boundary_rows if int(row["size"]) == size), key=lambda row: row["secondary"])
-        boundary_x = np.interp([float(row["observed"]) for row in series], controls, np.arange(len(controls)))
-        boundary_y = np.interp([float(row["secondary"]) for row in series], fields, np.arange(len(fields)))
+        series = sorted(
+            (row for row in boundary_rows if int(row["size"]) == size),
+            key=lambda row: row["secondary"],
+        )
+        boundary_x = np.interp(
+            [float(row["observed"]) for row in series], controls, np.arange(len(controls))
+        )
+        boundary_y = np.interp(
+            [float(row["secondary"]) for row in series], fields, np.arange(len(fields))
+        )
         observed = np.asarray([float(row["observed"]) for row in series])
         observed_low = np.asarray([float(row["observed_ci95_low"]) for row in series])
         observed_high = np.asarray([float(row["observed_ci95_high"]) for row in series])
@@ -1071,19 +1261,48 @@ def plot_results(aggregate_path: str | Path, output: str | Path) -> list[Path]:
     prediction_rows = prediction_analysis["records"]
     fig, (parity_ax, error_ax) = plt.subplots(1, 2, figsize=FIGSIZE)
     for index, domain in enumerate(sorted({row["domain"] for row in prediction_rows})):
-        rows = [row for row in prediction_rows if row["domain"] == domain and row["model"] == "augmented"]
+        rows = [
+            row
+            for row in prediction_rows
+            if row["domain"] == domain and row["model"] == "augmented"
+        ]
         observed = np.asarray([row["observed"] for row in rows])
         predicted = np.asarray([row["predicted"] for row in rows])
-        xerr = np.vstack((observed - np.asarray([row["observed_ci95_low"] for row in rows]),
-                          np.asarray([row["observed_ci95_high"] for row in rows]) - observed))
-        yerr = np.maximum(0.0, np.vstack((
-            predicted - np.asarray([row["predicted_ci95_low"] for row in rows]),
-            np.asarray([row["predicted_ci95_high"] for row in rows]) - predicted,
-        )))
-        parity_ax.errorbar(observed, predicted, xerr=xerr, yerr=yerr, marker=MARKERS[index], color=COLORS[index],
-                           linestyle="none", markersize=4.5, capsize=1.8, markeredgecolor="black",
-                           markeredgewidth=0.4, label=domain)
-    parity_values = [float(row[key]) for row in prediction_rows if row["model"] == "augmented" for key in ("observed", "predicted")]
+        xerr = np.vstack(
+            (
+                observed - np.asarray([row["observed_ci95_low"] for row in rows]),
+                np.asarray([row["observed_ci95_high"] for row in rows]) - observed,
+            )
+        )
+        yerr = np.maximum(
+            0.0,
+            np.vstack(
+                (
+                    predicted - np.asarray([row["predicted_ci95_low"] for row in rows]),
+                    np.asarray([row["predicted_ci95_high"] for row in rows]) - predicted,
+                )
+            ),
+        )
+        parity_ax.errorbar(
+            observed,
+            predicted,
+            xerr=xerr,
+            yerr=yerr,
+            marker=MARKERS[index],
+            color=COLORS[index],
+            linestyle="none",
+            markersize=4.5,
+            capsize=1.8,
+            markeredgecolor="black",
+            markeredgewidth=0.4,
+            label=domain,
+        )
+    parity_values = [
+        float(row[key])
+        for row in prediction_rows
+        if row["model"] == "augmented"
+        for key in ("observed", "predicted")
+    ]
     low, high = min(parity_values), max(parity_values)
     padding = max(0.03, 0.05 * (high - low))
     low, high = low - padding, high + padding
@@ -1095,8 +1314,22 @@ def plot_results(aggregate_path: str | Path, output: str | Path) -> list[Path]:
     parity_ax.set_title("Augmented parity", fontsize=10)
     parity_ax.legend(frameon=False, fontsize=7)
 
-    model_order = ["constant", "source_anchor", "size_only", "nearest_calibration", "base", "augmented"]
-    model_labels = ["constant", "source / anchor", "size only", "nearest calibration", "base", "augmented*"]
+    model_order = [
+        "constant",
+        "source_anchor",
+        "size_only",
+        "nearest_calibration",
+        "base",
+        "augmented",
+    ]
+    model_labels = [
+        "constant",
+        "source / anchor",
+        "size only",
+        "nearest calibration",
+        "base",
+        "augmented*",
+    ]
     errors = [prediction_analysis["summary"][model]["mean_absolute_error"] for model in model_order]
     error_low = [
         prediction_analysis["summary"][model]["mean_absolute_error_ci95_low"]
@@ -1106,10 +1339,15 @@ def plot_results(aggregate_path: str | Path, output: str | Path) -> list[Path]:
         prediction_analysis["summary"][model]["mean_absolute_error_ci95_high"]
         for model in model_order
     ]
-    benchmark_xerr = np.maximum(0.0, np.vstack((
-        np.asarray(errors) - np.asarray(error_low),
-        np.asarray(error_high) - np.asarray(errors),
-    )))
+    benchmark_xerr = np.maximum(
+        0.0,
+        np.vstack(
+            (
+                np.asarray(errors) - np.asarray(error_low),
+                np.asarray(error_high) - np.asarray(errors),
+            )
+        ),
+    )
     positions = np.arange(len(model_order))
     colors = ["0.65", COLORS[4], COLORS[2], COLORS[1], COLORS[0], COLORS[3]]
     error_ax.barh(
@@ -1199,17 +1437,33 @@ def render_slurm(manifest_path: str | Path, profile_path: str | Path, output: st
     gpus = int(profile.get("gpus", 1))
     device = str(profile.get("device", "cuda" if gpus else "cpu"))
     lines = [
-        "#!/usr/bin/env bash", f"#SBATCH --job-name=predictive-phase", f"#SBATCH --partition={partition}",
-        f"#SBATCH --array=0-{array_size - 1}%{int(profile['max_parallel'])}", f"#SBATCH --time={profile['time']}",
-        f"#SBATCH --gres=gpu:{gpus}", f"#SBATCH --cpus-per-task={int(profile.get('cpus', 4))}",
-        f"#SBATCH --mem={profile.get('memory', '16G')}", "set -euo pipefail", ': "${STATPHYS_REPO:?}"',
-        ': "${STATPHYS_MANIFEST:?}"', ': "${STATPHYS_OUTPUT:?}"', ': "${STATPHYS_PYTHON:?}"',
-        f"BLOCK={block}", f"TOTAL_BLOCKS={count}", f"BLOCKS_PER_ARRAY={array_size}",
-        'BLOCK_INDEX=$SLURM_ARRAY_TASK_ID',
-        'cd "$STATPHYS_REPO"', 'export PYTHONPATH="$STATPHYS_REPO/src${PYTHONPATH:+:$PYTHONPATH}"',
-        'while (( BLOCK_INDEX < TOTAL_BLOCKS )); do',
-        '  START=$((BLOCK_INDEX * BLOCK))', '  STOP=$((START + BLOCK))',
+        "#!/usr/bin/env bash",
+        "#SBATCH --job-name=predictive-phase",
+        f"#SBATCH --partition={partition}",
+        f"#SBATCH --array=0-{array_size - 1}%{int(profile['max_parallel'])}",
+        f"#SBATCH --time={profile['time']}",
+        f"#SBATCH --gres=gpu:{gpus}",
+        f"#SBATCH --cpus-per-task={int(profile.get('cpus', 4))}",
+        f"#SBATCH --mem={profile.get('memory', '16G')}",
+        "set -euo pipefail",
+        ': "${STATPHYS_REPO:?}"',
+        ': "${STATPHYS_MANIFEST:?}"',
+        ': "${STATPHYS_OUTPUT:?}"',
+        ': "${STATPHYS_PYTHON:?}"',
+        f"BLOCK={block}",
+        f"TOTAL_BLOCKS={count}",
+        f"BLOCKS_PER_ARRAY={array_size}",
+        "BLOCK_INDEX=$SLURM_ARRAY_TASK_ID",
+        'cd "$STATPHYS_REPO"',
+        'export PYTHONPATH="$STATPHYS_REPO/src${PYTHONPATH:+:$PYTHONPATH}"',
+        "while (( BLOCK_INDEX < TOTAL_BLOCKS )); do",
+        "  START=$((BLOCK_INDEX * BLOCK))",
+        "  STOP=$((START + BLOCK))",
         f'  "$STATPHYS_PYTHON" -m statphys.predictive.cli run --manifest "$STATPHYS_MANIFEST" --output "$STATPHYS_OUTPUT" --start "$START" --stop "$STOP" --device {device}',
-        '  BLOCK_INDEX=$((BLOCK_INDEX + BLOCKS_PER_ARRAY))', 'done',
+        "  BLOCK_INDEX=$((BLOCK_INDEX + BLOCKS_PER_ARRAY))",
+        "done",
     ]
-    target = Path(output); target.parent.mkdir(parents=True, exist_ok=True); target.write_text("\n".join(lines) + "\n"); return target
+    target = Path(output)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("\n".join(lines) + "\n")
+    return target

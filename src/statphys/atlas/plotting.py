@@ -21,7 +21,6 @@ import numpy as np
 from .aggregate import AtlasAggregate, build_ensemble_table
 from .analysis import data_collapse_score, fit_finite_size_scaling_grid
 
-
 _PAPER_RC: dict[str, Any] = {
     "font.size": 9,
     "axes.labelsize": 9,
@@ -152,7 +151,7 @@ def _series(
             )
             points.append((control, mean, interval, n_teacher))
         points.sort(key=lambda item: item[0])
-        result[group] = tuple(np.asarray(values) for values in zip(*points))  # type: ignore[assignment]
+        result[group] = tuple(np.asarray(values) for values in zip(*points, strict=False))  # type: ignore[assignment]
     return result
 
 
@@ -258,7 +257,11 @@ def plot_phase_map(
         paths = save_figure(figure, output_dir, stem)
     return FigureOutput(
         paths,
-        {"n_cells": len(expected_points), "n_missing": len(missing_points), "labels": labels_present},
+        {
+            "n_cells": len(expected_points),
+            "n_missing": len(missing_points),
+            "labels": labels_present,
+        },
     )
 
 
@@ -302,7 +305,9 @@ def plot_order_parameters(
                     label=label if group_column is None else f"{label}, N={group}",
                 )
                 finite_error = np.where(np.isfinite(interval), interval, 0.0)
-                axis.fill_between(x, mean - finite_error, mean + finite_error, color=color, alpha=0.12)
+                axis.fill_between(
+                    x, mean - finite_error, mean + finite_error, color=color, alpha=0.12
+                )
                 n_series += 1
         if n_series == 0:
             plt.close(figure)
@@ -551,7 +556,9 @@ def plot_spectral_specialization(
                 for group in sorted(series, key=_sort_key):
                     x, mean, _, _ = series[group]
                     component_label = label if component is None else f"{label} {component + 1}"
-                    full_label = component_label if group_column is None else f"{component_label}, N={group}"
+                    full_label = (
+                        component_label if group_column is None else f"{component_label}, N={group}"
+                    )
                     axes[0].plot(
                         x,
                         mean,
@@ -588,13 +595,15 @@ def plot_spectral_specialization(
         axes[0].set_ylabel("spectral observable")
         axes[1].set_title("Head specialization")
         axes[1].set_ylabel("specialization observable")
-        for axis, count in zip(axes, (n_spectral, n_specialization)):
+        for axis, count in zip(axes, (n_spectral, n_specialization), strict=False):
             axis.set_xlabel(control_column.split(".")[-1].replace("_", " "))
             axis.grid(alpha=0.2, linewidth=0.5, linestyle="--")
             if count:
                 axis.legend(frameon=False, ncol=2 if count > 5 else 1)
             else:
-                axis.text(0.5, 0.5, "not available", ha="center", va="center", transform=axis.transAxes)
+                axis.text(
+                    0.5, 0.5, "not available", ha="center", va="center", transform=axis.transAxes
+                )
         paths = save_figure(figure, output_dir, stem)
     return FigureOutput(
         paths,
@@ -690,9 +699,7 @@ def generate_paper_figures(
             "spec.phase.scaling.d_model",
             "mean_m_sem",
         )
-        critical_grid = np.unique(
-            np.concatenate((controls, 0.5 * (controls[:-1] + controls[1:])))
-        )
+        critical_grid = np.unique(np.concatenate((controls, 0.5 * (controls[:-1] + controls[1:]))))
         fit = fit_finite_size_scaling_grid(
             controls,
             sizes,
@@ -735,4 +742,3 @@ __all__ = [
     "plot_spectral_specialization",
     "save_figure",
 ]
-

@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import os
 import shlex
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 from statphys.utils.slurm import SlurmConfig, SlurmLauncher
 
@@ -37,7 +38,7 @@ class ClusterProfile:
     environment: Mapping[str, str] = field(default_factory=dict)
 
     @classmethod
-    def from_mapping(cls, raw: Mapping[str, Any]) -> "ClusterProfile":
+    def from_mapping(cls, raw: Mapping[str, Any]) -> ClusterProfile:
         values = dict(raw)
         for key in ("modules", "extra_directives"):
             if key in values:
@@ -96,7 +97,7 @@ def container_command(
         f"cd {shlex.quote(profile.container_workdir)} && "
         f"PYTHONPATH={shlex.quote(profile.container_workdir + '/src')} "
         f"{shlex.quote(profile.python)} -m statphys.atlas.cli run "
-        f"--manifest {manifest_arg} --index \"$SLURM_ARRAY_TASK_ID\" "
+        f'--manifest {manifest_arg} --index "$SLURM_ARRAY_TASK_ID" '
         f"--output-root {output_arg} --device {shlex.quote(device)}"
     )
     bind = f'"$PWD:{profile.container_workdir}"'
@@ -153,4 +154,3 @@ def submit_manifest(
         profile, manifest=manifest_arg, output_root=output_arg, device="auto"
     )
     return launcher.submit(command, profile.slurm(job_name), array=array, dry_run=dry_run)
-

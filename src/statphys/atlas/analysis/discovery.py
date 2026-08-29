@@ -39,9 +39,9 @@ def adjacent_js_divergence(
         first, second = normalized[index], normalized[index + 1]
         mixture = 0.5 * (first + second)
 
-        def kl(left: np.ndarray) -> float:
+        def kl(left: np.ndarray, reference: np.ndarray = mixture) -> float:
             positive = left > 0
-            return float(np.sum(left[positive] * np.log(left[positive] / mixture[positive])))
+            return float(np.sum(left[positive] * np.log(left[positive] / reference[positive])))
 
         divergences[index] = max(0.0, 0.5 * (kl(first) + kl(second)) / log_base)
     return divergences
@@ -56,7 +56,10 @@ def adjacent_histogram_js(
 ) -> dict[str, Any]:
     """Histogram multiple controls on shared edges before adjacent JS analysis."""
 
-    samples = [as_float_array(value, name=f"samples_by_control[{index}]").ravel() for index, value in enumerate(samples_by_control)]
+    samples = [
+        as_float_array(value, name=f"samples_by_control[{index}]").ravel()
+        for index, value in enumerate(samples_by_control)
+    ]
     if len(samples) < 2 or any(sample.size == 0 for sample in samples):
         raise ValueError("at least two non-empty sample groups are required")
     if isinstance(bins, int):
@@ -152,4 +155,3 @@ def change_point_candidates(
         "feature_scale": feature_scale,
         "z_threshold": float(z_threshold),
     }
-

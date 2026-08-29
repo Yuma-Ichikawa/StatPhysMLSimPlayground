@@ -27,8 +27,12 @@ class _AgentPopulation(nn.Module):
         elif variant == "attention_pool":
             heads = 4 if width % 4 == 0 else 2 if width % 2 == 0 else 1
             layer = nn.TransformerEncoderLayer(
-                width, heads, dim_feedforward=4 * width, dropout=0.0,
-                batch_first=True, norm_first=True,
+                width,
+                heads,
+                dim_feedforward=4 * width,
+                dropout=0.0,
+                batch_first=True,
+                norm_first=True,
             )
             self.attention = nn.TransformerEncoder(layer, num_layers=2)
             self.position = nn.Parameter(torch.zeros(1, agents, width))
@@ -47,7 +51,9 @@ class _AgentPopulation(nn.Module):
             local = self.message(torch.cat((local, message.expand_as(local)), dim=2))
         elif self.variant == "attention_pool":
             local = self.attention(local + self.position[:, : local.shape[1]] * communication_keep)
-            local = communication_keep * local + (1.0 - communication_keep) * self.local(observations)
+            local = communication_keep * local + (1.0 - communication_keep) * self.local(
+                observations
+            )
         agent_logits = self.readout(local)
         collective_logits = agent_logits.mean(dim=1)
         return collective_logits, agent_logits
@@ -84,7 +90,9 @@ def run_learned_agents(
     targets = torch.as_tensor(train_hidden, device=device)
 
     model = _AgentPopulation(task.variant, width, agents).to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=float(task.parameters.get("learning_rate", 3e-3)))
+    optimizer = torch.optim.AdamW(
+        model.parameters(), lr=float(task.parameters.get("learning_rate", 3e-3))
+    )
     steps = max(1, int(task.parameters.get("steps", 72)))
     individual_weight = float(task.parameters.get("individual_weight", 0.2))
     losses: list[float] = []
@@ -134,7 +142,9 @@ def run_learned_agents(
     effective_agents = float(effective_count(influence))
     observed_majority = (test_obs_t.squeeze(-1).sum(dim=1) > 0).long()
     oracle_accuracy = float(observed_majority.eq(hidden_t).float().mean())
-    initial_error = float((test_obs_t.squeeze(-1).sign() != (2 * hidden_t[:, None] - 1)).float().mean())
+    initial_error = float(
+        (test_obs_t.squeeze(-1).sign() != (2 * hidden_t[:, None] - 1)).float().mean()
+    )
     collective_error = 1.0 - accuracy
     signed = 2.0 * success.detach().cpu().numpy().astype(np.float64) - 1.0
     metrics, arrays = common_coordinates(

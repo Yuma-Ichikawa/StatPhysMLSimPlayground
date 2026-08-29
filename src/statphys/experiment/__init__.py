@@ -63,12 +63,6 @@ from statphys.experiment.metrics import (
     weight_overlap,
 )
 from statphys.experiment.mixture import GaussianMixtureDataset, bayes_error
-from statphys.experiment.online_committee import (
-    committee_generalization_error,
-    escape_time,
-    simulate_online_committee,
-    specialization_gap,
-)
 from statphys.experiment.observables import (
     binder_cumulant,
     function_order_params,
@@ -79,6 +73,12 @@ from statphys.experiment.observables import (
     subspace_overlap,
     susceptibility,
     vector_overlap,
+)
+from statphys.experiment.online_committee import (
+    committee_generalization_error,
+    escape_time,
+    simulate_online_committee,
+    specialization_gap,
 )
 from statphys.experiment.phase import PhaseDiagramResult, run_phase_diagram
 from statphys.experiment.presets import PRESETS, get_preset

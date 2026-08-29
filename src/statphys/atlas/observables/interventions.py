@@ -24,14 +24,18 @@ def intervention_loss_deltas(
     """
 
     baseline = as_float_array(baseline_loss, name="baseline_loss")
-    results: dict[str, Any] = {"baseline_loss": float(baseline) if baseline.ndim == 0 else baseline.copy()}
+    results: dict[str, Any] = {
+        "baseline_loss": float(baseline) if baseline.ndim == 0 else baseline.copy()
+    }
     deltas: dict[str, dict[str, Any]] = {}
     for name, value in intervention_losses.items():
         intervened = as_float_array(value, name=f"intervention_losses[{name!r}]")
         try:
             delta = intervened - baseline
         except ValueError as exc:
-            raise ValueError(f"intervention {name!r} is not broadcast-compatible with baseline") from exc
+            raise ValueError(
+                f"intervention {name!r} is not broadcast-compatible with baseline"
+            ) from exc
         relative = np.divide(
             delta,
             np.abs(baseline),
@@ -49,4 +53,3 @@ def intervention_loss_deltas(
         }
     results["interventions"] = deltas
     return results
-

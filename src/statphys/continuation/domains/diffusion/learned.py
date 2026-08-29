@@ -49,8 +49,12 @@ class _MLPDenoiser(nn.Module):
         super().__init__()
         pixels = image_size * image_size
         self.network = nn.Sequential(
-            nn.Flatten(), nn.Linear(pixels, 4 * width), nn.SiLU(),
-            nn.Linear(4 * width, 4 * width), nn.SiLU(), nn.Linear(4 * width, pixels),
+            nn.Flatten(),
+            nn.Linear(pixels, 4 * width),
+            nn.SiLU(),
+            nn.Linear(4 * width, 4 * width),
+            nn.SiLU(),
+            nn.Linear(4 * width, pixels),
         )
         self.image_size = image_size
 
@@ -63,15 +67,20 @@ class _TinyUNet(nn.Module):
         super().__init__()
         channels = max(8, min(width, 64))
         self.encoder = nn.Sequential(
-            nn.Conv2d(1, channels, 3, padding=1), nn.SiLU(),
-            nn.Conv2d(channels, channels, 3, padding=1), nn.SiLU(),
+            nn.Conv2d(1, channels, 3, padding=1),
+            nn.SiLU(),
+            nn.Conv2d(channels, channels, 3, padding=1),
+            nn.SiLU(),
         )
         self.middle = nn.Sequential(
-            nn.Conv2d(channels, 2 * channels, 3, padding=1), nn.SiLU(),
-            nn.Conv2d(2 * channels, channels, 3, padding=1), nn.SiLU(),
+            nn.Conv2d(channels, 2 * channels, 3, padding=1),
+            nn.SiLU(),
+            nn.Conv2d(2 * channels, channels, 3, padding=1),
+            nn.SiLU(),
         )
         self.decoder = nn.Sequential(
-            nn.Conv2d(2 * channels, channels, 3, padding=1), nn.SiLU(),
+            nn.Conv2d(2 * channels, channels, 3, padding=1),
+            nn.SiLU(),
             nn.Conv2d(channels, 1, 3, padding=1),
         )
 
@@ -92,8 +101,12 @@ class _TinyDiT(nn.Module):
         self.patch = nn.Conv2d(1, dimension, kernel_size=2, stride=2)
         self.position = nn.Parameter(torch.zeros(1, patches, dimension))
         layer = nn.TransformerEncoderLayer(
-            dimension, 4, dim_feedforward=4 * dimension, dropout=0.0,
-            batch_first=True, norm_first=True,
+            dimension,
+            4,
+            dim_feedforward=4 * dimension,
+            dropout=0.0,
+            batch_first=True,
+            norm_first=True,
         )
         self.transformer = nn.TransformerEncoder(layer, num_layers=2)
         self.unpatch = nn.ConvTranspose2d(dimension, 1, kernel_size=2, stride=2)
@@ -116,9 +129,7 @@ def _model(variant: str, width: int, image_size: int) -> nn.Module:
     raise ValueError(f"learned diffusion variant must be mlp, unet, or dit: {variant}")
 
 
-def _mode_probabilities(
-    prediction: torch.Tensor, prototypes: torch.Tensor
-) -> torch.Tensor:
+def _mode_probabilities(prediction: torch.Tensor, prototypes: torch.Tensor) -> torch.Tensor:
     distance = (prediction[:, None] - prototypes[None]).square().flatten(2).mean(dim=2)
     return (-distance).softmax(dim=1)
 
@@ -141,7 +152,9 @@ def run_learned_diffusion(
     clean = torch.as_tensor(train_clean, device=device)
 
     model = _model(task.variant, width, image_size).to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=float(task.parameters.get("learning_rate", 2e-3)))
+    optimizer = torch.optim.AdamW(
+        model.parameters(), lr=float(task.parameters.get("learning_rate", 2e-3))
+    )
     steps = max(1, int(task.parameters.get("steps", 64)))
     losses: list[float] = []
     model.train()
@@ -170,7 +183,9 @@ def run_learned_diffusion(
         ood_prediction = model(ood_noisy_t)
         ablated_prediction = model(ablated)
         mode_probabilities = _mode_probabilities(prediction, prototypes_t)
-        ood_probabilities = _mode_probabilities(ood_prediction, torch.roll(prototypes_t, 1, dims=-1))
+        ood_probabilities = _mode_probabilities(
+            ood_prediction, torch.roll(prototypes_t, 1, dims=-1)
+        )
         oracle_probabilities = _mode_probabilities(test_noisy_t, prototypes_t)
         predicted_labels = mode_probabilities.argmax(dim=1)
         ood_predicted = ood_probabilities.argmax(dim=1)
@@ -184,7 +199,8 @@ def run_learned_diffusion(
     oracle_error = (oracle_clean - test_clean_t).square().flatten(1).mean(dim=1)
     distant_response = float(
         (prediction[:, :, :, image_size // 2 :] - ablated_prediction[:, :, :, image_size // 2 :])
-        .abs().mean()
+        .abs()
+        .mean()
     )
     signed = 2.0 * correct.detach().cpu().numpy().astype(np.float64) - 1.0
     marginal = mode_probabilities.mean(dim=0).detach().cpu().numpy()

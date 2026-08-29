@@ -125,6 +125,28 @@ statphys study grokking                              # ready-made studies
 statphys study all --output-dir phase_results
 ```
 
+### Guided, portable workflow
+
+Start with the scientific question rather than an implementation namespace.
+The guided interface creates a portable study file, validates its evidence
+level before computation, and produces a self-contained HTML evidence report:
+
+```bash
+statphys catalog
+statphys new --kind order_parameters --output study.toml
+statphys validate study.toml
+statphys run study.toml --output results
+statphys inspect results/result.json
+statphys report results/result.json --output results/report.html
+```
+
+The report includes an uncertainty-aware phase explorer and an evidence panel
+that records the available seed count, theory status, and permitted strength of
+wording. `statphys resume results` reuses the immutable `study.toml`; `compare`
+compares condition-level results; and `doctor` checks optional dependencies.
+All paths stored in an artifact are relative names, and reports require no
+local server. See [the guided workflow](docs/guided_workflow.md) for details.
+
 Ready-made studies cover the classic and the modern phenomenology:
 committee specialization, sparse-recovery finite-size scaling, 2D phase
 diagrams, hidden-manifold data, tiny GPT, **grokking** (delayed

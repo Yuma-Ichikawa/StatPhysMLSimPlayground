@@ -71,9 +71,11 @@ def _heads(task: TaskSpec) -> tuple[dict[str, float], dict[str, Any]]:
         intervention_response=full_recovery - ablated_recovery,
         extras={
             "head_specialization": float(np.mean(specialization)),
-            "head_redundancy": float(np.mean(np.max(heads.T @ heads - np.eye(n_heads), axis=1)))
-            if n_heads > 1
-            else 0.0,
+            "head_redundancy": (
+                float(np.mean(np.max(heads.T @ heads - np.eye(n_heads), axis=1)))
+                if n_heads > 1
+                else 0.0
+            ),
             "effective_heads": float(np.exp(entropy(np.maximum(top, 0.0) / max(top.sum(), 1e-12)))),
             "teacher_rank": float(rank),
             "n_heads": float(n_heads),
@@ -127,7 +129,9 @@ def _attention_mlp(task: TaskSpec) -> tuple[dict[str, float], dict[str, Any]]:
             "composition_gap": float(np.mean(np.abs(attention_prediction - mlp_prediction))),
         },
     )
-    return _with_arrays(result, attention_weights=weights.astype(np.float32), retrieval_distance=distances)
+    return _with_arrays(
+        result, attention_weights=weights.astype(np.float32), retrieval_distance=distances
+    )
 
 
 def _icl(task: TaskSpec) -> tuple[dict[str, float], dict[str, Any]]:
@@ -158,7 +162,10 @@ def _icl(task: TaskSpec) -> tuple[dict[str, float], dict[str, Any]]:
         errors.append((prediction - target) ** 2)
         oracle_errors.append((oracle - target) ** 2)
         alignments.append(
-            float(np.dot(oracle_weights, teacher) / max(np.linalg.norm(oracle_weights) * np.linalg.norm(teacher), 1e-12))
+            float(
+                np.dot(oracle_weights, teacher)
+                / max(np.linalg.norm(oracle_weights) * np.linalg.norm(teacher), 1e-12)
+            )
         )
     errors_array = np.asarray(errors)
     oracle_array = np.asarray(oracle_errors)
@@ -235,12 +242,16 @@ def _lora(task: TaskSpec) -> tuple[dict[str, float], dict[str, Any]]:
     match = re.search(r"(\d+)", task.variant)
     adapter_rank = int(match.group(1)) if match else max(1, int(round(task.control * true_rank)))
     adapter_rank = min(adapter_rank, true_rank)
-    spectrum = np.exp(-np.arange(true_rank) / max(float(task.parameters.get("spectral_decay", 4.0)), 1e-3))
+    spectrum = np.exp(
+        -np.arange(true_rank) / max(float(task.parameters.get("spectral_decay", 4.0)), 1e-3)
+    )
     recovered_energy = float(np.sum(spectrum[:adapter_rank] ** 2) / np.sum(spectrum**2))
     probes = max(64, int(task.parameters.get("n_probe", 128)))
     fluctuations = rng.normal(recovered_energy, 1.0 / math.sqrt(max(task.size, 1)), size=probes)
     signed = np.clip(2.0 * fluctuations - 1.0, -1.0, 1.0)
-    principal_angles = np.arccos(np.clip(np.sqrt(recovered_energy) + 0.03 * rng.normal(size=adapter_rank), 0, 1))
+    principal_angles = np.arccos(
+        np.clip(np.sqrt(recovered_energy) + 0.03 * rng.normal(size=adapter_rank), 0, 1)
+    )
     error = 1.0 - recovered_energy
     result = common_coordinates(
         signed,
@@ -250,7 +261,9 @@ def _lora(task: TaskSpec) -> tuple[dict[str, float], dict[str, Any]]:
         effective_multiplicity=float(adapter_rank),
         interaction_range=float(adapter_rank / true_rank),
         oracle_gap=error,
-        intervention_response=float(spectrum[min(adapter_rank, true_rank - 1)] ** 2 / np.sum(spectrum**2)),
+        intervention_response=float(
+            spectrum[min(adapter_rank, true_rank - 1)] ** 2 / np.sum(spectrum**2)
+        ),
         extras={
             "adapter_rank": float(adapter_rank),
             "target_rank": float(true_rank),
@@ -291,7 +304,9 @@ def _glass(task: TaskSpec) -> tuple[dict[str, float], dict[str, Any]]:
             "energy_variance": float(np.var(energy[samples])),
         },
     )
-    return _with_arrays(result, energies=energy, state_probabilities=probabilities, replica_overlap=overlap)
+    return _with_arrays(
+        result, energies=energy, state_probabilities=probabilities, replica_overlap=overlap
+    )
 
 
 def _optimizer(task: TaskSpec) -> tuple[dict[str, float], dict[str, Any]]:
@@ -322,9 +337,16 @@ def _optimizer(task: TaskSpec) -> tuple[dict[str, float], dict[str, Any]]:
             weights *= 1.0 - learning_rate * float(task.parameters.get("weight_decay", 1e-3))
         delta = weights - target
         losses.append(0.5 * float(np.sum(eigenvalues * delta**2)))
-        overlaps.append(float(np.dot(weights, target) / max(np.linalg.norm(weights) * np.linalg.norm(target), 1e-12)))
+        overlaps.append(
+            float(
+                np.dot(weights, target)
+                / max(np.linalg.norm(weights) * np.linalg.norm(target), 1e-12)
+            )
+        )
         gradient_norms.append(float(np.linalg.norm(gradient)))
-    coordinate_order = 1.0 - 2.0 * np.minimum(np.abs(weights - target) / (np.abs(target) + 1e-6), 1.0)
+    coordinate_order = 1.0 - 2.0 * np.minimum(
+        np.abs(weights - target) / (np.abs(target) + 1e-6), 1.0
+    )
     final_error = float(np.mean((weights - target) ** 2))
     response = float(np.mean(1.0 / (eigenvalues + 1e-8)))
     fluctuation = float(np.var(np.diff(losses))) if len(losses) > 2 else 0.0
@@ -342,7 +364,11 @@ def _optimizer(task: TaskSpec) -> tuple[dict[str, float], dict[str, Any]]:
             "hessian_max": float(eigenvalues.max()),
             "hessian_condition": float(eigenvalues.max() / eigenvalues.min()),
             "gradient_noise_scale": noise,
-            "relaxation_time": float(np.argmax(np.asarray(losses) <= losses[0] / math.e) if losses[-1] <= losses[0] / math.e else steps),
+            "relaxation_time": float(
+                np.argmax(np.asarray(losses) <= losses[0] / math.e)
+                if losses[-1] <= losses[0] / math.e
+                else steps
+            ),
             "effective_temperature": fluctuation / max(response, 1e-12),
         },
     )
@@ -396,7 +422,9 @@ def _data_bridge(task: TaskSpec) -> tuple[dict[str, float], dict[str, Any]]:
     signed = np.tanh(functional / (np.std(functional) + 1e-12))
     covariance = x.T @ x / n
     eigenvalues = np.linalg.eigvalsh(covariance)
-    alignment = float(np.dot(estimate, teacher) / max(np.linalg.norm(estimate) * np.linalg.norm(teacher), 1e-12))
+    alignment = float(
+        np.dot(estimate, teacher) / max(np.linalg.norm(estimate) * np.linalg.norm(teacher), 1e-12)
+    )
     result = common_coordinates(
         signed,
         size=task.size,
@@ -444,7 +472,9 @@ def _cot(task: TaskSpec) -> tuple[dict[str, float], dict[str, Any]]:
         size=task.size,
         generalization_error=1.0 - accuracy,
         ood_generalization_error=min(1.0, 1.0 - accuracy + 0.5 * flip),
-        effective_multiplicity=float(np.exp(entropy(np.bincount((prediction > 0).astype(int), minlength=2) / worlds))),
+        effective_multiplicity=float(
+            np.exp(entropy(np.bincount((prediction > 0).astype(int), minlength=2) / worlds))
+        ),
         interaction_range=float(np.mean(np.abs(trajectory[:, -1] - trajectory[:, 0]))),
         oracle_gap=float(1.0 - accuracy),
         intervention_response=float(accuracy - direct_accuracy),

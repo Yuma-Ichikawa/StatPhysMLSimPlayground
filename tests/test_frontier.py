@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 import torch
 
+from statphys.experiment import Teacher
 from statphys.frontier import (
     bon_kl,
     correlated_teacher,
@@ -19,7 +20,6 @@ from statphys.frontier import (
     run_weak_to_strong,
     train_regression,
 )
-from statphys.experiment import Teacher
 
 
 class TestCommon:

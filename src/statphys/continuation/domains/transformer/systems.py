@@ -9,7 +9,7 @@ import numpy as np
 import torch
 
 from ...core.schema import TaskSpec
-from ..common import common_coordinates, effective_count, entropy, ridge, softmax, task_rng
+from ..common import common_coordinates, entropy, ridge, softmax, task_rng
 
 
 def _finish(result, **arrays):
@@ -23,10 +23,22 @@ def _moe(task: TaskSpec):
     experts = max(2, int(task.parameters.get("experts", 8)))
     latent_dim = max(4, min(int(task.parameters.get("latent_dim", 32)), int(task.size)))
     tokens = max(128, int(task.parameters.get("tokens", min(4096, task.size * 8))))
-    topk = max(1, min(int(task.variant.replace("top", "")) if task.variant.startswith("top") and task.variant[3:].isdigit() else int(task.parameters.get("topk", 2)), experts))
+    topk = max(
+        1,
+        min(
+            (
+                int(task.variant.replace("top", ""))
+                if task.variant.startswith("top") and task.variant[3:].isdigit()
+                else int(task.parameters.get("topk", 2))
+            ),
+            experts,
+        ),
+    )
     centroids = rng.normal(size=(experts, latent_dim))
     labels = rng.integers(0, experts, size=tokens)
-    inputs = centroids[labels] + max(float(task.control), 1e-3) * rng.normal(size=(tokens, latent_dim))
+    inputs = centroids[labels] + max(float(task.control), 1e-3) * rng.normal(
+        size=(tokens, latent_dim)
+    )
     logits = inputs @ centroids.T / math.sqrt(latent_dim)
     selected = np.argpartition(logits, -topk, axis=1)[:, -topk:]
     weights = np.zeros_like(logits)
@@ -42,7 +54,9 @@ def _moe(task: TaskSpec):
         signed,
         size=task.size,
         generalization_error=1.0 - float(np.mean(success)),
-        ood_generalization_error=min(1.0, 1.0 - float(np.mean(success)) + 0.1 * float(task.control)),
+        ood_generalization_error=min(
+            1.0, 1.0 - float(np.mean(success)) + 0.1 * float(task.control)
+        ),
         effective_multiplicity=float(np.exp(entropy(load))),
         interaction_range=float(topk / experts),
         oracle_gap=1.0 - float(np.mean(success)),
@@ -51,7 +65,9 @@ def _moe(task: TaskSpec):
             "routing_specialization": float(np.mean(success)),
             "load_balance_entropy": float(entropy(load)),
             "expert_utilization": float(np.count_nonzero(load > 1e-4) / experts),
-            "router_margin": float(np.mean(np.sort(logits, axis=1)[:, -1] - np.sort(logits, axis=1)[:, -2])),
+            "router_margin": float(
+                np.mean(np.sort(logits, axis=1)[:, -1] - np.sort(logits, axis=1)[:, -2])
+            ),
         },
     )
     return _finish(result, router_probabilities=weights, expert_load=load)
@@ -88,7 +104,9 @@ def _retrieval(task: TaskSpec):
         signed,
         size=task.size,
         generalization_error=float(np.mean(error) / scale),
-        ood_generalization_error=float(np.mean((prediction - (truth + 0.2 * query[:, 0])) ** 2) / scale),
+        ood_generalization_error=float(
+            np.mean((prediction - (truth + 0.2 * query[:, 0])) ** 2) / scale
+        ),
         effective_multiplicity=float(np.exp(entropy(retrieval_load))),
         interaction_range=float(np.mean(np.sqrt(np.min(distances, axis=1))) / math.sqrt(d)),
         oracle_gap=float(np.mean(error) / scale),
@@ -100,7 +118,9 @@ def _retrieval(task: TaskSpec):
             "retrieval_gate": gate,
         },
     )
-    return _finish(result, retrieval_distance=np.sqrt(np.min(distances, axis=1)), memory_load=retrieval_load)
+    return _finish(
+        result, retrieval_distance=np.sqrt(np.min(distances, axis=1)), memory_load=retrieval_load
+    )
 
 
 def _multimodal(task: TaskSpec):
@@ -176,15 +196,21 @@ def _compression(task: TaskSpec):
         effective_multiplicity=float(np.count_nonzero(nonzero)),
         interaction_range=float(np.count_nonzero(nonzero) / d),
         oracle_gap=float(np.mean(error) / scale),
-        intervention_response=float(np.linalg.norm(compressed - weights) / max(np.linalg.norm(weights), 1e-12)),
+        intervention_response=float(
+            np.linalg.norm(compressed - weights) / max(np.linalg.norm(weights), 1e-12)
+        ),
         extras={
             "compression_ratio": float(1.0 - np.count_nonzero(nonzero) / d),
             "weight_distortion": float(np.mean((compressed - weights) ** 2)),
             "functional_fidelity": float(1.0 - np.mean(error) / scale),
-            "compressed_norm_ratio": float(np.linalg.norm(compressed) / max(np.linalg.norm(weights), 1e-12)),
+            "compressed_norm_ratio": float(
+                np.linalg.norm(compressed) / max(np.linalg.norm(weights), 1e-12)
+            ),
         },
     )
-    return _finish(result, original_weights=weights, compressed_weights=compressed, prediction_error=error)
+    return _finish(
+        result, original_weights=weights, compressed_weights=compressed, prediction_error=error
+    )
 
 
 def _lifecycle(task: TaskSpec):
@@ -204,7 +230,11 @@ def _lifecycle(task: TaskSpec):
             threshold = np.quantile(np.abs(state), min(0.9, pressure / (1.0 + pressure)))
             state[np.abs(state) < threshold] = 0.0
         state += step + 0.01 * rng.normal(size=width)
-        overlaps.append(float(np.dot(state, teacher) / max(np.linalg.norm(state) * np.linalg.norm(teacher), 1e-12)))
+        overlaps.append(
+            float(
+                np.dot(state, teacher) / max(np.linalg.norm(state) * np.linalg.norm(teacher), 1e-12)
+            )
+        )
         drifts.append(float(np.linalg.norm(state - previous) / math.sqrt(width)))
         mass = np.abs(state) / max(np.abs(state).sum(), 1e-12)
         entropies.append(float(entropy(mass)))
@@ -226,16 +256,23 @@ def _lifecycle(task: TaskSpec):
             "lifecycle_entropy_change": entropies[-1] - entropies[0],
         },
     )
-    return _finish(result, stage_overlap=np.asarray(overlaps), stage_drift=np.asarray(drifts), stage_entropy=np.asarray(entropies))
+    return _finish(
+        result,
+        stage_overlap=np.asarray(overlaps),
+        stage_drift=np.asarray(drifts),
+        stage_entropy=np.asarray(entropies),
+    )
 
 
 def _js(left: np.ndarray, right: np.ndarray) -> float:
     left = left / max(left.sum(), 1e-12)
     right = right / max(right.sum(), 1e-12)
     middle = 0.5 * (left + right)
+
     def kl(p, q):
         mask = p > 0
         return float(np.sum(p[mask] * np.log(p[mask] / np.maximum(q[mask], 1e-12))))
+
     return 0.5 * kl(left, middle) + 0.5 * kl(right, middle)
 
 
@@ -244,15 +281,19 @@ def _discovery(task: TaskSpec):
     probes = max(128, int(task.parameters.get("n_probe", 512)))
     delta = float(task.parameters.get("delta", 0.05))
     controls = np.asarray([task.control - delta, task.control, task.control + delta])
-    samples = np.stack([
-        np.tanh(control * math.sqrt(max(task.size, 1)) + rng.normal(size=probes))
-        for control in controls
-    ])
+    samples = np.stack(
+        [
+            np.tanh(control * math.sqrt(max(task.size, 1)) + rng.normal(size=probes))
+            for control in controls
+        ]
+    )
     edges = np.linspace(-1, 1, 33)
     histograms = np.stack([np.histogram(row, bins=edges)[0] + 1e-9 for row in samples])
     js_left = _js(histograms[0], histograms[1])
     js_right = _js(histograms[1], histograms[2])
-    score = np.gradient(np.log(histograms / histograms.sum(axis=1, keepdims=True)), controls, axis=0)
+    score = np.gradient(
+        np.log(histograms / histograms.sum(axis=1, keepdims=True)), controls, axis=0
+    )
     fisher = float(np.sum((histograms[1] / histograms[1].sum()) * score[1] ** 2))
     change = float(abs(js_right - js_left) / max(delta, 1e-12))
     result = common_coordinates(
@@ -274,7 +315,9 @@ def _discovery(task: TaskSpec):
     return _finish(result, local_controls=controls, local_histograms=histograms, fisher_score=score)
 
 
-def run_transformer_system(task: TaskSpec, device: torch.device) -> tuple[dict[str, float], dict[str, Any]]:
+def run_transformer_system(
+    task: TaskSpec, device: torch.device
+) -> tuple[dict[str, float], dict[str, Any]]:
     del device
     runners = {
         "moe": _moe,

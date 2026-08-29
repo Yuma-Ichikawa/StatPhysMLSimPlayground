@@ -108,8 +108,7 @@ def test_fss_plot_rejects_missing_grid_instead_of_extrapolating(tmp_path: Path) 
         row
         for row in _rows()
         if not (
-            row["spec.phase.scaling.d_model"] == 9
-            and row["spec.phase.semantic_mixture"] == 0.5
+            row["spec.phase.scaling.d_model"] == 9 and row["spec.phase.semantic_mixture"] == 0.5
         )
     ]
     with pytest.raises(ValueError, match="complete grid"):
@@ -147,4 +146,3 @@ def test_generate_paper_figures_loads_cli_bundle_and_reports_outputs(tmp_path: P
     assert Path(report["manifest"]).is_file()
     for figure in report["generated"].values():
         assert set(figure["paths"]) == {"pdf", "png"}
-

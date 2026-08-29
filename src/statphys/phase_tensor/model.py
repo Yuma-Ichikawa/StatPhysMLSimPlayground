@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import math
+from dataclasses import dataclass
 from typing import Any
 
 import torch
@@ -69,7 +69,10 @@ class CausalAttention(nn.Module):
     def forward(self, inputs: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         batch, length, width = inputs.shape
         query, key, value = self.qkv(inputs).chunk(3, dim=-1)
-        reshape = lambda tensor: tensor.view(batch, length, self.heads, self.head_dim).transpose(1, 2)
+
+        def reshape(tensor: torch.Tensor) -> torch.Tensor:
+            return tensor.view(batch, length, self.heads, self.head_dim).transpose(1, 2)
+
         query, key, value = map(reshape, (query, key, value))
         scores = query @ key.transpose(-2, -1) / math.sqrt(self.head_dim)
         causal = torch.ones(length, length, dtype=torch.bool, device=inputs.device).triu(1)
@@ -118,7 +121,9 @@ class TransformerBlock(nn.Module):
     ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
         attention_input = self.norm1(inputs) if self.is_pre_norm else inputs
         attention_branch, attention_map = self.attention(attention_input)
-        applied_attention = torch.zeros_like(attention_branch) if ablate_attention else attention_branch
+        applied_attention = (
+            torch.zeros_like(attention_branch) if ablate_attention else attention_branch
+        )
         hidden = inputs + self.residual_scale * applied_attention
         if not self.is_pre_norm and self.normalization != "none":
             hidden = self.norm1(hidden)
@@ -157,7 +162,9 @@ class PhaseTensorTransformer(nn.Module):
     def __init__(self, config: TransformerConfig) -> None:
         super().__init__()
         self.config = config
-        hidden = 0 if config.activation == "none" else max(1, int(round(config.ff_ratio * config.width)))
+        hidden = (
+            0 if config.activation == "none" else max(1, int(round(config.ff_ratio * config.width)))
+        )
         self.token_embedding = nn.Embedding(config.vocabulary, config.width)
         self.position_embedding = nn.Parameter(torch.zeros(1, config.sequence_length, config.width))
         self.blocks = nn.ModuleList(

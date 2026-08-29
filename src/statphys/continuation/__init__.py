@@ -5,9 +5,9 @@ every domain emits the same scalar phase card plus domain-specific arrays.
 """
 
 from .schema import (
+    REQUIRED_SEED_COUNT,
     Domain,
     Manifest,
-    REQUIRED_SEED_COUNT,
     TaskSpec,
     expand_config,
     read_manifest,

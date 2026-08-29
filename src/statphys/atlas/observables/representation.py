@@ -136,4 +136,3 @@ def correlation_length(
         slope = float(np.polyfit(lags, np.log(normalized[:end]), 1)[0])
         return float(-1.0 / slope) if slope < -eps else float("nan")
     raise ValueError("method must be 'integral' or 'exponential'")
-

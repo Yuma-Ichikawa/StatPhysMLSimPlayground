@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
+import json
+import re
+import tomllib
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import Enum
 from hashlib import sha256
 from itertools import product
-import json
 from pathlib import Path
-import re
-import tomllib
 from types import MappingProxyType
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 REQUIRED_SEED_COUNT = 5
 SCHEMA_VERSION = "1.1"
@@ -25,7 +26,7 @@ class Domain(str, Enum):
     CROSS = "cross_domain"
 
     @classmethod
-    def parse(cls, value: str | "Domain") -> "Domain":
+    def parse(cls, value: str | Domain) -> Domain:
         if isinstance(value, cls):
             return value
         aliases = {
@@ -66,16 +67,14 @@ def _slug(value: str) -> str:
 def validate_seed_set(seeds: Sequence[int]) -> None:
     normalized = tuple(int(seed) for seed in seeds)
     if len(normalized) < REQUIRED_SEED_COUNT or len(set(normalized)) != len(normalized):
-        raise ValueError(
-            f"every study must use at least {REQUIRED_SEED_COUNT} distinct seeds"
-        )
+        raise ValueError(f"every study must use at least {REQUIRED_SEED_COUNT} distinct seeds")
     if any(seed < 0 for seed in normalized):
         raise ValueError("seeds must be non-negative")
 
 
 def derive_seed(root: int, namespace: str, index: int = 0) -> int:
     """Derive stable nested seeds without depending on Python's randomized hash."""
-    payload = f"{int(root)}:{namespace}:{int(index)}".encode("utf-8")
+    payload = f"{int(root)}:{namespace}:{int(index)}".encode()
     return int.from_bytes(sha256(payload).digest()[:8], "big") % (2**31 - 1)
 
 
@@ -162,7 +161,7 @@ class TaskSpec:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "TaskSpec":
+    def from_dict(cls, payload: Mapping[str, Any]) -> TaskSpec:
         data = dict(payload)
         data.pop("nested_seeds", None)
         data["domain"] = Domain.parse(data["domain"])
@@ -212,7 +211,7 @@ class Manifest:
         }
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "Manifest":
+    def from_dict(cls, payload: Mapping[str, Any]) -> Manifest:
         return cls(
             study=str(payload["study"]),
             seeds=tuple(int(seed) for seed in payload["seeds"]),
@@ -229,7 +228,9 @@ def _parameter_combinations(experiment: Mapping[str, Any]) -> list[dict[str, Any
     if not grid:
         return [base]
     keys = sorted(grid)
-    values = [value if isinstance(value, list) else [value] for value in (grid[key] for key in keys)]
+    values = [
+        value if isinstance(value, list) else [value] for value in (grid[key] for key in keys)
+    ]
     return [{**base, **dict(zip(keys, items, strict=True))} for items in product(*values)]
 
 
@@ -289,7 +290,9 @@ def compose_manifests(manifests: Sequence[Manifest | str | Path], study: str) ->
     # Preserve component task identities so composed manifests can aggregate artifacts
     # produced from the immutable component manifests.
     tasks = tuple(task for manifest in loaded for task in manifest.tasks)
-    digest = sha256("".join(manifest.config_hash for manifest in loaded).encode("ascii")).hexdigest()
+    digest = sha256(
+        "".join(manifest.config_hash for manifest in loaded).encode("ascii")
+    ).hexdigest()
     return Manifest(
         study=study,
         seeds=seeds,

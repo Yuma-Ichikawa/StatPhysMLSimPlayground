@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import math
 from typing import Any
 
 import numpy as np
@@ -36,7 +35,9 @@ def _soft_value_iteration(transition, reward, temperature, gamma=0.95, iteration
     temperature = max(float(temperature), 1e-4)
     for _ in range(iterations):
         q_value = reward + gamma * np.einsum("sak,k->sa", transition, value)
-        updated = temperature * np.log(np.exp((q_value - q_value.max(axis=1, keepdims=True)) / temperature).sum(axis=1)) + q_value.max(axis=1)
+        updated = temperature * np.log(
+            np.exp((q_value - q_value.max(axis=1, keepdims=True)) / temperature).sum(axis=1)
+        ) + q_value.max(axis=1)
         if np.max(np.abs(updated - value)) < 1e-10:
             value = updated
             break
@@ -65,18 +66,29 @@ def _rollouts(rng, transition, reward, policy, worlds=128, horizon=64):
     for step in range(horizon):
         actions = np.array([rng.choice(policy.shape[1], p=policy[state]) for state in states])
         returns += (0.95**step) * reward[states, actions]
-        path_hash = path_hash * np.uint64(1099511628211) ^ (states.astype(np.uint64) * 31 + actions.astype(np.uint64))
+        path_hash = path_hash * np.uint64(1099511628211) ^ (
+            states.astype(np.uint64) * 31 + actions.astype(np.uint64)
+        )
         entropy_flow[step] = float(np.mean(entropy(policy[states], axis=1)))
-        states = np.array([rng.choice(transition.shape[0], p=transition[state, action]) for state, action in zip(states, actions, strict=True)])
+        states = np.array(
+            [
+                rng.choice(transition.shape[0], p=transition[state, action])
+                for state, action in zip(states, actions, strict=True)
+            ]
+        )
     return returns, path_hash, entropy_flow
 
 
-def run_reinforcement_program(task: TaskSpec, device: torch.device) -> tuple[dict[str, float], dict[str, Any]]:
+def run_reinforcement_program(
+    task: TaskSpec, device: torch.device
+) -> tuple[dict[str, float], dict[str, Any]]:
     del device
     rng, transition, true_reward, proxy_feature = _problem(task)
     pressure = max(float(task.control), 0.0)
     reward_noise = float(task.parameters.get("reward_noise", 0.15))
-    proxy_reward = true_reward + pressure * proxy_feature + reward_noise * rng.normal(size=true_reward.shape)
+    proxy_reward = (
+        true_reward + pressure * proxy_feature + reward_noise * rng.normal(size=true_reward.shape)
+    )
     temperature = float(task.parameters.get("policy_temperature", 0.25))
     oracle_policy, _, _ = _soft_value_iteration(transition, true_reward, temperature)
     if task.family == "entropy_flow":
@@ -95,7 +107,9 @@ def run_reinforcement_program(task: TaskSpec, device: torch.device) -> tuple[dic
         learned_temperature = temperature
     policy, _, q_value = _soft_value_iteration(transition, learned_reward, learned_temperature)
     if task.family == "optimizer":
-        iterations = max(1, int(task.parameters.get("optimization_steps", round(5 + 20 * pressure))))
+        iterations = max(
+            1, int(task.parameters.get("optimization_steps", round(5 + 20 * pressure)))
+        )
         approximate = np.full_like(policy, 1.0 / policy.shape[1])
         rate = 0.2 if task.variant in {"policy_gradient", "reinforce"} else 0.5
         for _ in range(iterations):

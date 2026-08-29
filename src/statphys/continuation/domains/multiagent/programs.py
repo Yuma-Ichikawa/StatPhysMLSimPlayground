@@ -35,7 +35,9 @@ def _network(rng: np.random.Generator, agents: int, variant: str) -> np.ndarray:
     return adjacency / np.maximum(row_sum, 1.0)
 
 
-def run_multiagent_program(task: TaskSpec, device: torch.device) -> tuple[dict[str, float], dict[str, Any]]:
+def run_multiagent_program(
+    task: TaskSpec, device: torch.device
+) -> tuple[dict[str, float], dict[str, Any]]:
     del device
     rng = task_rng(task, "multiagent")
     agents = max(4, min(int(task.size), int(task.parameters.get("agent_cap", 512))))

@@ -83,7 +83,11 @@ def _greedy_assignment(scores: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     matched_columns: list[int] = []
     while available_rows and available_columns:
         best = max(
-            ((scores[row, column], row, column) for row in available_rows for column in available_columns),
+            (
+                (scores[row, column], row, column)
+                for row in available_rows
+                for column in available_columns
+            ),
             key=lambda item: item[0],
         )
         _, row, column = best
@@ -164,9 +168,7 @@ def permutation_invariant_head_spectrum(overlap_matrix: ArrayLike) -> dict[str, 
     singular_values = np.linalg.svd(overlap, compute_uv=False)
     gram_eigenvalues = np.square(singular_values)
     energy = float(gram_eigenvalues.sum())
-    normalized = (
-        gram_eigenvalues / energy if energy > 0 else np.zeros_like(gram_eigenvalues)
-    )
+    normalized = gram_eigenvalues / energy if energy > 0 else np.zeros_like(gram_eigenvalues)
     effective_rank = (
         float(1.0 / np.square(normalized).sum()) if np.square(normalized).sum() > 0 else 0.0
     )
@@ -221,7 +223,9 @@ def head_specialization_metrics(
     probabilities[active_rows] = squared[active_rows] / activities[active_rows, None]
     entropies = np.zeros(n_heads, dtype=np.float64)
     positive = probabilities > 0
-    entropies = -np.sum(np.where(positive, probabilities * np.log(probabilities + eps), 0.0), axis=1)
+    entropies = -np.sum(
+        np.where(positive, probabilities * np.log(probabilities + eps), 0.0), axis=1
+    )
     entropy_normalizer = np.log(n_latents) if n_latents > 1 else 1.0
     normalized_entropies = entropies / entropy_normalizer
 
@@ -247,7 +251,9 @@ def head_specialization_metrics(
     spectrum = permutation_invariant_head_spectrum(overlap)
     return {
         "specialization_strength": strength,
-        "specialization_entropy": float(entropies[active_rows].mean()) if active_rows.any() else 0.0,
+        "specialization_entropy": (
+            float(entropies[active_rows].mean()) if active_rows.any() else 0.0
+        ),
         "normalized_specialization_entropy": (
             float(normalized_entropies[active_rows].mean()) if active_rows.any() else 0.0
         ),

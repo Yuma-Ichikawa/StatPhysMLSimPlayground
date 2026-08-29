@@ -196,9 +196,7 @@ class OverlapMatrixPlotter(Plotter):
         vabs = max(max(np.abs(np.asarray(m)).max() for m in matrices), 1e-12)
 
         for ax, idx in zip(axes, indices, strict=False):
-            title = (
-                f"t = {t_values[idx]:.2f}" if t_values is not None else f"snapshot {idx}"
-            )
+            title = f"t = {t_values[idx]:.2f}" if t_values is not None else f"snapshot {idx}"
             self.plot_matrix(
                 np.asarray(matrices[idx]),
                 ax=ax,

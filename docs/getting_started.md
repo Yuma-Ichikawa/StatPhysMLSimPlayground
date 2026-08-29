@@ -58,6 +58,28 @@ Or, without writing any Python:
 statphys order-params random_mlp --alphas 0.5 1 2 4 8 16
 ```
 
+## Guided workflow and visual evidence report
+
+For a reusable study with a validated configuration, start with the guided
+interface instead of constructing objects directly:
+
+```bash
+statphys catalog
+statphys new --kind order_parameters --output study.toml
+statphys validate study.toml
+statphys run study.toml --output results
+statphys report results/result.json --output results/report.html
+```
+
+The resulting report is a self-contained HTML file. Its phase explorer shows
+condition-level means and recorded uncertainty intervals; its evidence panel
+shows the theory status, independent seed count, and the strength of wording
+permitted by the study's evidence tier. Use `statphys inspect` to examine an
+artifact, `statphys compare` for condition-level comparisons, `statphys resume`
+to deterministically rerun the immutable study in a result directory, and
+`statphys doctor` to check optional dependencies. See
+[guided_workflow.md](guided_workflow.md) for the full command reference.
+
 ## Full workflow: Replica simulation vs theory
 
 ```python

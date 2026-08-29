@@ -2,7 +2,6 @@ from pathlib import Path
 
 from statphys.continuation.analysis.coverage import validate_coverage
 
-
 ROOT = Path(__file__).resolve().parents[2]
 EXPERIMENT = ROOT / "experiments" / "phase_continuation"
 

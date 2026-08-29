@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from hashlib import sha256
 import math
-from typing import Any, Mapping
+from collections.abc import Mapping
+from hashlib import sha256
 
 import numpy as np
 
@@ -27,7 +27,9 @@ def entropy(probabilities: np.ndarray, axis: int = -1) -> np.ndarray:
     p = np.asarray(probabilities, dtype=np.float64)
     p = np.clip(p, 0.0, None)
     p = p / np.maximum(p.sum(axis=axis, keepdims=True), np.finfo(float).tiny)
-    return -np.sum(np.where(p > 0.0, p * np.log(np.maximum(p, np.finfo(float).tiny)), 0.0), axis=axis)
+    return -np.sum(
+        np.where(p > 0.0, p * np.log(np.maximum(p, np.finfo(float).tiny)), 0.0), axis=axis
+    )
 
 
 def effective_count(probabilities: np.ndarray, axis: int = -1) -> np.ndarray:

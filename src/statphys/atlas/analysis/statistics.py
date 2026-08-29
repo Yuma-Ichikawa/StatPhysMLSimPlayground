@@ -270,4 +270,3 @@ def rate_function(
     if shift_minimum and result.size:
         result = result - result.min()
     return result
-

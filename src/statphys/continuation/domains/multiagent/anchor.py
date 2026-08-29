@@ -53,9 +53,7 @@ def _step(
         heterogeneity=heterogeneity,
     )
     probability = torch.sigmoid(2.0 * field / temperature)
-    uniforms = torch.rand(
-        states.shape, generator=generator, device=states.device
-    )
+    uniforms = torch.rand(states.shape, generator=generator, device=states.device)
     return torch.where(uniforms < probability, 1.0, -1.0)
 
 

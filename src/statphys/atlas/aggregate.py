@@ -8,6 +8,7 @@ checksums must all validate before a run contributes to ensemble claims.
 
 from __future__ import annotations
 
+import contextlib
 import csv
 import json
 import math
@@ -33,7 +34,6 @@ from .analysis import (
 )
 from .artifacts import sha256_file
 from .schema import RunSpec, run_spec_from_dict
-
 
 _BASE_TRAJECTORIES = {
     "data_loss",
@@ -108,10 +108,8 @@ def _atomic_text(path: Path, text: str) -> None:
             os.fsync(handle.fileno())
         os.replace(temporary, path)
     except BaseException:
-        try:
+        with contextlib.suppress(FileNotFoundError):
             os.unlink(temporary)
-        except FileNotFoundError:
-            pass
         raise
 
 
@@ -177,7 +175,11 @@ def _artifact_events(
         run_ids.add(run_id)
         checksum = record.get("sha256")
         artifact_path = record.get("path")
-        if record.get("event") == "artifact" and isinstance(checksum, str) and isinstance(artifact_path, str):
+        if (
+            record.get("event") == "artifact"
+            and isinstance(checksum, str)
+            and isinstance(artifact_path, str)
+        ):
             checksums[(run_id, Path(artifact_path).name)] = checksum.lower()
     return run_ids, checksums, warnings
 
@@ -283,7 +285,9 @@ def _diagnostic_fields(arrays: Mapping[str, np.ndarray]) -> dict[str, Any]:
     if spectra is not None and spectra.ndim == 2 and spectra.size:
         finite_count = np.sum(np.isfinite(spectra), axis=0)
         total = np.nansum(spectra, axis=0)
-        mean = np.divide(total, finite_count, out=np.full(spectra.shape[1], np.nan), where=finite_count > 0)
+        mean = np.divide(
+            total, finite_count, out=np.full(spectra.shape[1], np.nan), where=finite_count > 0
+        )
         maximum = np.max(np.where(np.isfinite(spectra), spectra, -np.inf), axis=0)
         maximum[~np.isfinite(maximum)] = np.nan
         fields["diagnostics.qk_singular_values_mean"] = _json_value(mean)
@@ -322,9 +326,7 @@ def _state_signature(row: Mapping[str, Any]) -> tuple[tuple[str, str], ...]:
     )
 
 
-def _teacher_samples(
-    rows: Sequence[Mapping[str, Any]], extractor: Any
-) -> np.ndarray:
+def _teacher_samples(rows: Sequence[Mapping[str, Any]], extractor: Any) -> np.ndarray:
     hierarchy: dict[Any, dict[Any, list[float]]] = defaultdict(lambda: defaultdict(list))
     for row in rows:
         value = extractor(row)
@@ -373,7 +375,9 @@ def build_ensemble_table(rows: Sequence[Mapping[str, Any]]) -> list[dict[str, An
         }
         size = _number(first.get("spec.phase.scaling.d_model"))
         n_eff_values = [
-            _number(row.get("summary.n_eff")) for row in eligible if _number(row.get("summary.n_eff"))
+            _number(row.get("summary.n_eff"))
+            for row in eligible
+            if _number(row.get("summary.n_eff"))
         ]
         n_eff = float(np.median(n_eff_values)) if n_eff_values else size
         ensemble["n_eff"] = n_eff
@@ -383,8 +387,7 @@ def build_ensemble_table(rows: Sequence[Mapping[str, Any]]) -> list[dict[str, An
             "m_sem": lambda row: _summary_order(row, "sem"),
             "competition": lambda row: (
                 _summary_order(row, "sem") - _summary_order(row, "pos")
-                if _summary_order(row, "sem") is not None
-                and _summary_order(row, "pos") is not None
+                if _summary_order(row, "sem") is not None and _summary_order(row, "pos") is not None
                 else None
             ),
         }
@@ -407,7 +410,9 @@ def build_ensemble_table(rows: Sequence[Mapping[str, Any]]) -> list[dict[str, An
             ensemble["phase_label"] = classify_phase(mean_pos, mean_sem)["label"]
         else:
             ensemble["phase_label"] = "unresolved"
-        ensemble["eligible_for_transition"] = bool(ensemble["complete"] and ensemble["n_teachers"] >= 2)
+        ensemble["eligible_for_transition"] = bool(
+            ensemble["complete"] and ensemble["n_teachers"] >= 2
+        )
         ensembles.append(ensemble)
     return ensembles
 
@@ -417,7 +422,9 @@ def _claim_key(row: Mapping[str, Any]) -> tuple[Any, ...]:
 
 
 def _power_growth(sizes: Sequence[float], peaks: Sequence[float]) -> float | None:
-    valid = [(size, peak) for size, peak in zip(sizes, peaks) if size > 0 and peak > 0]
+    valid = [
+        (size, peak) for size, peak in zip(sizes, peaks, strict=False) if size > 0 and peak > 0
+    ]
     if len(valid) < 3:
         return None
     x, y = np.log(np.asarray(valid, dtype=float)).T
@@ -432,7 +439,10 @@ def _rectangular_metric(
     if len(controls) < 2 or len(sizes) < 2:
         return None
     lookup = {
-        (_number(row.get("spec.phase.scaling.d_model")), _number(row.get("spec.phase.semantic_mixture"))): _number(row.get(metric))
+        (
+            _number(row.get("spec.phase.scaling.d_model")),
+            _number(row.get("spec.phase.semantic_mixture")),
+        ): _number(row.get(metric))
         for row in rows
     }
     matrix = np.full((len(sizes), len(controls)), np.nan)
@@ -463,12 +473,16 @@ def evaluate_claims(
         run_group = run_groups.get(key, [])
         group = ensemble_groups.get(key, [])
         eligible = [row for row in group if row.get("eligible_for_transition")]
-        sizes = sorted({_number(row.get("spec.phase.scaling.d_model")) for row in eligible} - {None})
+        sizes = sorted(
+            {_number(row.get("spec.phase.scaling.d_model")) for row in eligible} - {None}
+        )
         susceptibility_peaks: list[float] = []
         response_peaks: list[float] = []
         peak_sizes: list[float] = []
         for size in sizes:
-            size_rows = [row for row in eligible if _number(row.get("spec.phase.scaling.d_model")) == size]
+            size_rows = [
+                row for row in eligible if _number(row.get("spec.phase.scaling.d_model")) == size
+            ]
             susceptibilities = [_number(row.get("susceptibility_competition")) for row in size_rows]
             finite_susceptibilities = [value for value in susceptibilities if value is not None]
             grid = _rectangular_metric(size_rows, "mean_competition")
@@ -479,10 +493,14 @@ def evaluate_claims(
                     sorted(_number(row.get("spec.phase.semantic_mixture")) for row in size_rows)
                 )
                 values_by_control = {
-                    _number(row.get("spec.phase.semantic_mixture")): _number(row.get("mean_competition"))
+                    _number(row.get("spec.phase.semantic_mixture")): _number(
+                        row.get("mean_competition")
+                    )
                     for row in size_rows
                 }
-                values = np.asarray([values_by_control[control] for control in controls], dtype=float)
+                values = np.asarray(
+                    [values_by_control[control] for control in controls], dtype=float
+                )
                 response = finite_difference_response(controls, values)
                 response_peaks.append(float(np.max(response["absolute_response"])))
             del grid
@@ -528,7 +546,7 @@ def evaluate_claims(
         complete = bool(run_group) and all(row.get("eligible_for_claims") for row in run_group)
         enough_teachers = bool(group) and all(row.get("n_teachers", 0) >= 2 for row in group)
         label = transition["label"] if complete and enough_teachers else "insufficient_evidence"
-        identifying = dict(zip(_CLAIM_GROUP_COLUMNS, key))
+        identifying = dict(zip(_CLAIM_GROUP_COLUMNS, key, strict=False))
         claims.append(
             {
                 **identifying,
@@ -711,7 +729,8 @@ def aggregate_artifacts(
         "n_trajectory_rows": len(trajectories),
         "n_ensemble_rows": len(ensembles),
         "require_trajectories": require_trajectories,
-        "claim_requirements": list(_REQUIRED_FILES) + [f"sha256:{name}" for name in _CHECKSUM_FILES],
+        "claim_requirements": list(_REQUIRED_FILES)
+        + [f"sha256:{name}" for name in _CHECKSUM_FILES],
         "manifest_warnings": manifest_warnings,
     }
     aggregate = AtlasAggregate(run_rows, trajectories, ensembles, claims, metadata)
@@ -808,4 +827,3 @@ __all__ = [
     "evaluate_claims",
     "write_tidy_aggregate",
 ]
-

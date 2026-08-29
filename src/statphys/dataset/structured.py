@@ -65,7 +65,9 @@ class StructuredDataset(BaseDataset):
         # Set covariance matrix
         if cov_matrix is not None:
             if cov_matrix.shape != (d, d):
-                raise ValueError(f"cov_matrix must have shape ({d}, {d}), got {tuple(cov_matrix.shape)}")
+                raise ValueError(
+                    f"cov_matrix must have shape ({d}, {d}), got {tuple(cov_matrix.shape)}"
+                )
             self.cov_matrix = cov_matrix.to(device=self.device, dtype=self.dtype)
         else:
             self.cov_matrix = torch.eye(d, device=self.device, dtype=self.dtype)
@@ -154,7 +156,9 @@ class CorrelatedGaussianDataset(BaseDataset):
             raise ValueError("Specify only one of teacher_rho and rho.")
 
         self.correlation = correlation
-        self.teacher_rho = teacher_rho if teacher_rho is not None else (rho if rho is not None else 1.0)
+        self.teacher_rho = (
+            teacher_rho if teacher_rho is not None else (rho if rho is not None else 1.0)
+        )
         self.rho = self.teacher_rho
         self.eta = eta
 

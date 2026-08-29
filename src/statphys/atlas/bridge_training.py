@@ -12,13 +12,14 @@ import contextlib
 import math
 import time
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 from .schema import OptimizerName, Precision, TrainingSpec
 from .training import (
     Probe,
     TrainingResult,
     _gradient_norm,
+    _model_state_copy,
     _parameter_norm,
     _update_norm,
     resolve_device,
@@ -97,11 +98,14 @@ def train_bridge(
     initial = [parameter.detach().clone() for parameter in model.parameters()]
     initial_norm = max(_parameter_norm(model), 1e-30)
     use_amp = spec.precision == Precision.BFLOAT16 and selected_device.startswith("cuda")
-    autocast = (
-        lambda: torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=True)
-        if use_amp
-        else contextlib.nullcontext()
-    )
+
+    def autocast_context() -> Any:
+        return (
+            torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=True)
+            if use_amp
+            else contextlib.nullcontext()
+        )
+
     history: dict[str, list[float]] = {
         "step": [],
         "data_loss": [],
@@ -112,8 +116,10 @@ def train_bridge(
     }
     best_loss, final_loss = float("inf"), float("nan")
     best_step = 0
+    best_state: dict[str, Any] | None = None
     stale = 0
     converged = False
+    stop_reason = "budget_exhausted"
     started = time.perf_counter()
 
     for step in range(spec.max_steps + 1):
@@ -121,7 +127,7 @@ def train_bridge(
         if step > 0:
             model.train()
             optimizer.zero_grad(set_to_none=True)
-            with autocast():
+            with autocast_context():
                 prediction = model(inputs)
                 if isinstance(prediction, tuple):
                     prediction = prediction[0]
@@ -140,7 +146,7 @@ def train_bridge(
         if not (record or checkpoint):
             continue
         model.eval()
-        with torch.no_grad(), autocast():
+        with torch.no_grad(), autocast_context():
             prediction = model(inputs)
             if isinstance(prediction, tuple):
                 prediction = prediction[0]
@@ -149,8 +155,13 @@ def train_bridge(
                 prediction, loss_targets = pair_transform(prediction, targets)
             loss = bridge_loss(prediction, loss_targets)
         final_loss = float(loss)
-        l2 = 0.5 * spec.weight_decay * sum(
-            float(parameter.detach().square().sum()) for parameter in model.parameters()
+        if not math.isfinite(final_loss):
+            stop_reason = "numerical_failure"
+            break
+        l2 = (
+            0.5
+            * spec.weight_decay
+            * sum(float(parameter.detach().square().sum()) for parameter in model.parameters())
         )
         if record:
             history["step"].append(float(step))
@@ -176,15 +187,44 @@ def train_bridge(
                 },
             )
 
-        threshold = spec.convergence_rtol * max(1.0, abs(best_loss))
-        if final_loss < best_loss - threshold:
+        threshold = 0.0 if best_state is None else spec.convergence_rtol * max(1.0, abs(best_loss))
+        if best_state is None or final_loss < best_loss - threshold:
             best_loss, best_step, stale = final_loss, step, 0
+            best_state = _model_state_copy(model)
+            if checkpoint_dir is not None:
+                save_checkpoint_atomic(
+                    Path(checkpoint_dir) / "best.pt",
+                    {
+                        "step": step,
+                        "model": best_state,
+                        "optimizer": optimizer.state_dict(),
+                        "training_spec": spec.to_dict(),
+                        "objective_normalization": "sum_squared_error_over_2d",
+                        "seed": seed,
+                        "loss": best_loss,
+                    },
+                )
         elif record and step >= spec.min_steps:
             stale += spec.log_interval
+        if (
+            spec.gradient_tolerance is not None
+            and step >= spec.min_steps
+            and math.isfinite(gradient_norm)
+            and gradient_norm <= spec.gradient_tolerance
+        ):
+            converged = True
+            stop_reason = "converged"
+            break
         if spec.patience is not None and step >= spec.min_steps and stale >= spec.patience:
             converged = True
+            stop_reason = "patience"
             break
 
+    terminal_loss = final_loss
+    restored_best_checkpoint = best_state is not None
+    if best_state is not None:
+        model.load_state_dict(best_state)
+        final_loss = best_loss
     return TrainingResult(
         final_loss=final_loss,
         best_loss=best_loss,
@@ -193,5 +233,7 @@ def train_bridge(
         converged=converged,
         elapsed_seconds=time.perf_counter() - started,
         history=history,
+        stop_reason=stop_reason,
+        terminal_loss=terminal_loss,
+        restored_best_checkpoint=restored_best_checkpoint,
     )
-

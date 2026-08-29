@@ -38,9 +38,12 @@ class LinearSelfAttention(BaseModel):
     descent for linear regression in-context.
 
     Architecture:
-        q_i = W_Q h_i / √d
-        k_j = W_K h_j / √d
-        v_j = W_V h_j / √d
+        q_i = W_Q h_i
+        k_j = W_K h_j
+        v_j = W_V h_j
+
+    Projection matrices carry the fan-in normalization at initialization;
+    their forward pass is intentionally unscaled.
 
         Attention: A_i = Σ_j (q_i^T k_j) v_j  (no softmax!)
 
@@ -79,30 +82,24 @@ class LinearSelfAttention(BaseModel):
         self.W_q = nn.Parameter(torch.randn(self.d_model, d, device=device) * std)
         self.W_k = nn.Parameter(torch.randn(self.d_model, d, device=device) * std)
         self.W_v = nn.Parameter(torch.randn(self.d_model, d, device=device) * std)
+        self.context_label_embedding = nn.Parameter(torch.randn(d, device=device) * std)
+        self.query_marker_embedding = nn.Parameter(torch.randn(d, device=device) * std)
 
         if use_output_proj:
-            self.W_o = nn.Parameter(torch.randn(d, self.d_model, device=device) * std)
+            output_std = init_scale / np.sqrt(self.d_model)
+            self.W_o = nn.Parameter(torch.randn(d, self.d_model, device=device) * output_std)
         else:
             self.register_parameter("W_o", None)
 
-    def forward(self, x: torch.Tensor, return_attention: bool = False) -> torch.Tensor:
-        """
-        Forward pass through linear self-attention.
+    def _attention_sequence(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Return tokenwise outputs and unnormalized linear-attention scores."""
+        _, seq_len, _ = x.shape
 
-        Args:
-            x: (batch, seq_len, d) input sequence
-            return_attention: Whether to return attention weights
-
-        Returns:
-            output: (batch, seq_len, d) or (batch, d) if mean pooling
-
-        """
-        batch_size, seq_len, d = x.shape
-
-        # Compute Q, K, V with 1/√d scaling
-        Q = x @ self.W_q.T / np.sqrt(d)  # (batch, seq_len, d_model)
-        K = x @ self.W_k.T / np.sqrt(d)  # (batch, seq_len, d_model)
-        V = x @ self.W_v.T / np.sqrt(d)  # (batch, seq_len, d_model)
+        # Fan-in normalization is part of the parameter initialization.  The
+        # previous additional 1/sqrt(d) factors caused signal loss at width.
+        Q = x @ self.W_q.T  # (batch, seq_len, d_model)
+        K = x @ self.W_k.T  # (batch, seq_len, d_model)
+        V = x @ self.W_v.T  # (batch, seq_len, d_model)
 
         # Linear attention: A_i = Σ_j (q_i^T k_j) v_j
         # (batch, seq_len, d_model) @ (batch, d_model, seq_len) @ (batch, seq_len, d_model)
@@ -122,6 +119,11 @@ class LinearSelfAttention(BaseModel):
         else:
             output = A
 
+        return output, attn_scores
+
+    def forward(self, x: torch.Tensor, return_attention: bool = False) -> torch.Tensor:
+        """Forward pass through linear self-attention with mean pooling."""
+        output, attn_scores = self._attention_sequence(x)
         if return_attention:
             return output, attn_scores
 
@@ -150,41 +152,31 @@ class LinearSelfAttention(BaseModel):
         batch_size = context_x.shape[0]
         context_len = context_x.shape[1]
 
-        # Construct sequence: interleave x and y
-        # Simple format: [x_1, x_2, ..., x_ℓ, query_x] with y as additional features
-        # For LSA ICL, we use the canonical embedding:
-        # h_t = [x_t; y_t; 0] for context, h_{ℓ+1} = [x_{ℓ+1}; 0; 1] for query
+        if context_y.shape != (batch_size, context_len):
+            raise ValueError("context_y must have shape (batch, context_len)")
+        if query_x.shape != (batch_size, self.d):
+            raise ValueError("query_x must have shape (batch, d)")
 
-        # Augmented dimension
-        d_aug = self.d + 2
-
-        # Context embeddings
-        h_context = torch.zeros(batch_size, context_len, d_aug, device=_get_device(self))
-        h_context[:, :, : self.d] = context_x
-        h_context[:, :, self.d] = context_y
-        # h_context[:, :, self.d+1] = 0 (context marker)
-
-        # Query embedding
-        h_query = torch.zeros(batch_size, 1, d_aug, device=_get_device(self))
-        h_query[:, 0, : self.d] = query_x
-        # h_query[:, 0, self.d] = 0 (unknown y)
-        h_query[:, 0, self.d + 1] = 1  # query marker
-
-        # Concatenate
-        h = torch.cat([h_context, h_query], dim=1)  # (batch, context_len+1, d_aug)
-
-        # Need to adjust W_q, W_k, W_v for augmented dimension
-        # For simplicity, project back to d and use stored weights
-        h_proj = h[:, :, : self.d]  # Use only x part
-
-        # Apply attention
-        output = self.forward(h_proj, return_attention=False)
-
-        return output[:, 0]  # Return first output component as prediction
+        # A label and query marker are embedded into the model's input space;
+        # unlike the previous augmented-then-sliced path, no context label is
+        # discarded before attention is applied.
+        label_embedding = self.context_label_embedding.to(dtype=context_x.dtype)
+        query_embedding = self.query_marker_embedding.to(dtype=context_x.dtype)
+        context = context_x + context_y.unsqueeze(-1) * label_embedding
+        query = query_x + query_embedding
+        sequence = torch.cat([context, query.unsqueeze(1)], dim=1)
+        output, _ = self._attention_sequence(sequence)
+        return output[:, -1, 0]
 
     def get_weight_vector(self) -> torch.Tensor:
         """Return flattened weights."""
-        params = [self.W_q.flatten(), self.W_k.flatten(), self.W_v.flatten()]
+        params = [
+            self.W_q.flatten(),
+            self.W_k.flatten(),
+            self.W_v.flatten(),
+            self.context_label_embedding,
+            self.query_marker_embedding,
+        ]
         if self.W_o is not None:
             params.append(self.W_o.flatten())
         return torch.cat(params)
@@ -285,7 +277,9 @@ class StateSpaceModel(BaseModel):
         device = u.device
         dt = torch.exp(self.log_dt)
 
-        # Discretize: A_d = exp(A * dt) ≈ I + A * dt for small dt
+        # Forward and convolution implementations use the same Euler
+        # discretization.  This keeps the parallel method an exact algebraic
+        # reformulation of the recurrent one.
         A = self._get_A()
         A_d = torch.eye(self.state_dim, device=device) + A * dt
         B_d = self.B * dt  # B_d ≈ B * dt
@@ -318,15 +312,17 @@ class StateSpaceModel(BaseModel):
         dt = torch.exp(self.log_dt)
 
         A = self._get_A()
+        A_d = torch.eye(self.state_dim, device=device) + A * dt
+        B_d = self.B * dt
 
-        # Build convolution kernel
-        # K[t] = C A^t B
+        # Build convolution kernel for h_{t+1}=A_d h_t+B_d u_t:
+        # K[t] = C A_d^t B_d.
         kernel = torch.zeros(seq_len, d, d, device=device)
         A_power = torch.eye(self.state_dim, device=device)
 
         for t in range(seq_len):
-            kernel[t] = self.C @ A_power @ self.B * (dt ** (t + 1)) / np.sqrt(self.state_dim * d)
-            A_power = A_power @ A
+            kernel[t] = self.C @ A_power @ B_d / np.sqrt(self.state_dim * d)
+            A_power = A_power @ A_d
 
         # Convolve: y = K * u
         # Simple implementation (can be made faster with FFT)

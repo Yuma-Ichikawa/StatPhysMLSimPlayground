@@ -115,6 +115,7 @@ def validate_metrics(metrics: dict[str, Any]) -> dict[str, float]:
 
 __all__ = [
     "COMMON_METRICS",
+    "EPS",
     "binary_entropy",
     "binder_cumulant",
     "categorical_entropy",

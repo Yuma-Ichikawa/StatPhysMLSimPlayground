@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import asdict, dataclass
 from hashlib import sha256
-import json
 from pathlib import Path
 from typing import Any
 
@@ -23,7 +23,7 @@ class Task:
     parameters: dict[str, Any]
     task_id: str = ""
 
-    def finalized(self) -> "Task":
+    def finalized(self) -> Task:
         payload = asdict(self)
         payload.pop("task_id")
         digest = sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:20]
@@ -48,7 +48,7 @@ class Manifest:
         return target
 
     @classmethod
-    def read(cls, path: str | Path) -> "Manifest":
+    def read(cls, path: str | Path) -> Manifest:
         payload = json.loads(Path(path).read_text())
         return cls(
             schema_version=str(payload["schema_version"]),

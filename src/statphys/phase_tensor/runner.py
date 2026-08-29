@@ -25,8 +25,8 @@ from .observables import (
     normalized_activation_entropy,
     normalized_attention_entropy,
     normalized_participation_ratio,
-    residual_stream_statistics,
     relative_update_statistics,
+    residual_stream_statistics,
 )
 from .optimizers import build_optimizer, set_learning_rate
 
@@ -54,10 +54,22 @@ def _family_configuration(task: TaskSpec) -> dict[str, Any]:
 def _model_dimensions(task: TaskSpec, parameters: dict[str, Any]) -> tuple[int, int, int]:
     path = str(parameters.get("scaling_path", "width"))
     if path == "depth":
-        return int(parameters.get("width", parameters.get("d_model", 64))), int(task.size), int(parameters.get("sequence_length", 64))
+        return (
+            int(parameters.get("width", parameters.get("d_model", 64))),
+            int(task.size),
+            int(parameters.get("sequence_length", 64)),
+        )
     if path == "context":
-        return int(parameters.get("width", parameters.get("d_model", 64))), int(parameters.get("depth", parameters.get("layers", 2))), int(task.size)
-    return int(task.size), int(parameters.get("depth", parameters.get("layers", 2))), int(parameters.get("sequence_length", 64))
+        return (
+            int(parameters.get("width", parameters.get("d_model", 64))),
+            int(parameters.get("depth", parameters.get("layers", 2))),
+            int(task.size),
+        )
+    return (
+        int(task.size),
+        int(parameters.get("depth", parameters.get("layers", 2))),
+        int(parameters.get("sequence_length", 64)),
+    )
 
 
 def _heads(width: int, requested: int) -> int:
@@ -72,7 +84,9 @@ def _training_example_budget(
     return requested, min(requested, train_cap), requested > train_cap
 
 
-def _batch(dataset: TokenDataset, indices: torch.Tensor, device: torch.device) -> tuple[torch.Tensor, ...]:
+def _batch(
+    dataset: TokenDataset, indices: torch.Tensor, device: torch.device
+) -> tuple[torch.Tensor, ...]:
     cpu_indices = indices.cpu()
     return (
         dataset.inputs[cpu_indices].to(device, non_blocking=True),
@@ -111,7 +125,9 @@ def _evaluate(
     return {name: float(value) for name, value in losses.items()}, diagnostics
 
 
-def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, float], dict[str, Any]]:
+def run_phase_tensor(
+    task: TaskSpec, device: torch.device
+) -> tuple[dict[str, float], dict[str, Any]]:
     parameters = _family_configuration(task)
     nested = task.nested_seeds
     torch.manual_seed(nested["initialization"])
@@ -156,7 +172,10 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
         count=heldout_examples,
         length=sequence_length,
         seed=nested["evaluation"] + 1,
-        noise=min(0.45, noise + float(parameters.get("ood_shift", parameters.get("ood_noise_shift", 0.15)))),
+        noise=min(
+            0.45,
+            noise + float(parameters.get("ood_shift", parameters.get("ood_noise_shift", 0.15))),
+        ),
         data_root=data_root,
         corpus_split="ood" if disjoint_corpus_splits else None,
     )
@@ -174,7 +193,9 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
             tie_embeddings=bool(parameters.get("tie_embeddings", True)),
         )
     ).to(device)
-    initial = {name: parameter.detach().cpu().clone() for name, parameter in model.named_parameters()}
+    initial = {
+        name: parameter.detach().cpu().clone() for name, parameter in model.named_parameters()
+    }
     optimizer_name = str(parameters.get("optimizer", "adamw"))
     base_lr = float(parameters.get("learning_rate", 3e-4))
     optimizer = build_optimizer(
@@ -220,7 +241,9 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
             losses = intensive_losses(logits, targets, mask, objective_lambda)
             loss = losses["objective"]
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), float(parameters.get("gradient_clip", 1.0)))
+        torch.nn.utils.clip_grad_norm_(
+            model.parameters(), float(parameters.get("gradient_clip", 1.0))
+        )
         optimizer.step()
         tokens_seen += int(mask.sum().item())
         interval = int(parameters.get("record_interval", max(1, steps // 10)))
@@ -248,7 +271,11 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
     train_probe["objective"].backward()
     gradient_metrics = block_gradient_statistics(model)
     first_gradient = torch.cat(
-        [parameter.grad.detach().float().reshape(-1) for parameter in model.parameters() if parameter.grad is not None]
+        [
+            parameter.grad.detach().float().reshape(-1)
+            for parameter in model.parameters()
+            if parameter.grad is not None
+        ]
     )
     second_indices = (torch.arange(batch_size) + batch_size) % train_data.size
     inputs, targets, mask = _batch(train_data, second_indices, device)
@@ -256,7 +283,11 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
     second_logits = model(inputs)
     intensive_losses(second_logits, targets, mask, objective_lambda)["objective"].backward()
     second_gradient = torch.cat(
-        [parameter.grad.detach().float().reshape(-1) for parameter in model.parameters() if parameter.grad is not None]
+        [
+            parameter.grad.detach().float().reshape(-1)
+            for parameter in model.parameters()
+            if parameter.grad is not None
+        ]
     )
     gradient_noise = gradient_noise_scale(first_gradient, second_gradient)
     update_metrics = relative_update_statistics(model, initial)
@@ -267,9 +298,7 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
     )
     full, diagnostics = _evaluate(model, test_data, objective_lambda, device)
     ood, _ = _evaluate(model, ood_data, objective_lambda, device)
-    no_attention, _ = _evaluate(
-        model, test_data, objective_lambda, device, ablate_attention=True
-    )
+    no_attention, _ = _evaluate(model, test_data, objective_lambda, device, ablate_attention=True)
     no_mlp, _ = _evaluate(model, test_data, objective_lambda, device, ablate_mlp=True)
     neither, _ = _evaluate(
         model,
@@ -297,7 +326,9 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
     parameter_count = sum(parameter.numel() for parameter in model.parameters())
     approximate_flops = 6.0 * parameter_count * tokens_seen
     semantic_order = 1.0 - full["objective"]
-    signed_phase_samples = np.clip(2.0 * np.asarray(history_order, dtype=np.float64) - 1.0, -1.0, 1.0)
+    signed_phase_samples = np.clip(
+        2.0 * np.asarray(history_order, dtype=np.float64) - 1.0, -1.0, 1.0
+    )
     phase_second = float(np.mean(signed_phase_samples**2))
     phase_fourth = float(np.mean(signed_phase_samples**4))
     positive_fraction = float(np.mean(signed_phase_samples > 0.0))
@@ -305,14 +336,19 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
         macrostate_entropy = 0.0
     else:
         macrostate_entropy = float(
-            -(positive_fraction * math.log(positive_fraction) + (1.0 - positive_fraction) * math.log(1.0 - positive_fraction))
+            -(
+                positive_fraction * math.log(positive_fraction)
+                + (1.0 - positive_fraction) * math.log(1.0 - positive_fraction)
+            )
             / math.log(2.0)
         )
     effective_ff_width = max(1.0, ff_ratio * width)
     metrics = {
         "order_parameter": float(abs(np.mean(signed_phase_samples))),
         "susceptibility": float(np.var(signed_phase_samples)),
-        "binder_cumulant": float(0.0 if phase_second <= 1e-12 else 1.0 - phase_fourth / (3.0 * phase_second**2)),
+        "binder_cumulant": float(
+            0.0 if phase_second <= 1e-12 else 1.0 - phase_fourth / (3.0 * phase_second**2)
+        ),
         "macrostate_entropy": macrostate_entropy,
         "generalization_error": full["objective"],
         "normalized_generalization_error": full["objective"],
@@ -380,11 +416,7 @@ def run_phase_tensor(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
         "train_dataset_sample_hash": np.asarray(
             [int(train_data.metadata["sample_sha256"][:15], 16)]
         ),
-        "test_dataset_sample_hash": np.asarray(
-            [int(test_data.metadata["sample_sha256"][:15], 16)]
-        ),
-        "ood_dataset_sample_hash": np.asarray(
-            [int(ood_data.metadata["sample_sha256"][:15], 16)]
-        ),
+        "test_dataset_sample_hash": np.asarray([int(test_data.metadata["sample_sha256"][:15], 16)]),
+        "ood_dataset_sample_hash": np.asarray([int(ood_data.metadata["sample_sha256"][:15], 16)]),
     }
     return metrics, arrays

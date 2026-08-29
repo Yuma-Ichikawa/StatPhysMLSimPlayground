@@ -343,7 +343,9 @@ class OrderParameterCalculator:
 
         return TaskType.REGRESSION
 
-    def _extract_student_params(self, model: nn.Module, d: int | None = None) -> dict[str, torch.Tensor]:
+    def _extract_student_params(
+        self, model: nn.Module, d: int | None = None
+    ) -> dict[str, torch.Tensor]:
         """
         Extract all weight parameters from student model.
 

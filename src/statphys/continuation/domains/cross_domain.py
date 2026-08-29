@@ -12,7 +12,9 @@ from ..core.schema import TaskSpec
 from .common import common_coordinates, entropy, softmax, task_rng
 
 
-def run_cross_domain(task: TaskSpec, device: torch.device) -> tuple[dict[str, float], dict[str, Any]]:
+def run_cross_domain(
+    task: TaskSpec, device: torch.device
+) -> tuple[dict[str, float], dict[str, Any]]:
     del device
     rng = task_rng(task, "cross_domain")
     states = max(8, min(int(task.size), int(task.parameters.get("state_cap", 256))))
@@ -55,7 +57,9 @@ def run_cross_domain(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
         generalization_error=regret,
         ood_generalization_error=float(np.std(reward)),
         effective_multiplicity=float(np.exp(entropy(load))),
-        interaction_range=float(np.mean(np.abs(chosen[:, None] - chosen[None, :])) / max(states - 1, 1)),
+        interaction_range=float(
+            np.mean(np.abs(chosen[:, None] - chosen[None, :])) / max(states - 1, 1)
+        ),
         oracle_gap=regret,
         intervention_response=float(abs(np.mean(reward) - np.median(latent))),
         extras={
@@ -68,5 +72,10 @@ def run_cross_domain(task: TaskSpec, device: torch.device) -> tuple[dict[str, fl
         },
     )
     metrics, arrays = result
-    arrays.update(chosen_state=chosen, reward=reward.astype(np.float32), state_load=load.astype(np.float32), latent=latent.astype(np.float32))
+    arrays.update(
+        chosen_state=chosen,
+        reward=reward.astype(np.float32),
+        state_load=load.astype(np.float32),
+        latent=latent.astype(np.float32),
+    )
     return metrics, arrays

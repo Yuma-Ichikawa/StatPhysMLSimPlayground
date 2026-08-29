@@ -120,18 +120,12 @@ def run_diffusion(
     separation = float(task.parameters.get("separation", 3.0))
     data_sigma = float(task.parameters.get("data_sigma", 0.25))
     noise = max(float(task.control), 1e-3)
-    means, signs = _hierarchical_means(
-        components, dimension, separation, generator, device
-    )
+    means, signs = _hierarchical_means(components, dimension, separation, generator, device)
     n_probe = int(task.parameters.get("n_probe", 4096))
     clean, _ = _sample(means, n_probe, data_sigma, generator)
-    observations = clean + noise * torch.randn(
-        clean.shape, generator=generator, device=device
-    )
+    observations = clean + noise * torch.randn(clean.shape, generator=generator, device=device)
     true_variance = data_sigma**2 + noise**2
-    exact_probabilities, exact_score = _posterior_score(
-        observations, means, true_variance
-    )
+    exact_probabilities, exact_score = _posterior_score(observations, means, true_variance)
 
     variant = task.variant.lower()
     model_centers = means
@@ -171,13 +165,9 @@ def run_diffusion(
     ood_observations = ood_clean + noise * torch.randn(
         ood_clean.shape, generator=generator, device=device
     )
-    _, ood_exact_score = _posterior_score(
-        ood_observations, shifted_means, true_variance
-    )
+    _, ood_exact_score = _posterior_score(ood_observations, shifted_means, true_variance)
     if variant == "oracle":
-        _, ood_model_score = _posterior_score(
-            ood_observations, means, true_variance
-        )
+        _, ood_model_score = _posterior_score(ood_observations, means, true_variance)
     elif variant == "topk":
         _, ood_model_score = _posterior_score(
             ood_observations,

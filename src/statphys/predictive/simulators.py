@@ -7,9 +7,9 @@ controlled Tier-B benchmark, not a claim about natural-data endpoints.
 
 from __future__ import annotations
 
+import math
 from dataclasses import asdict
 from hashlib import sha256
-import math
 from typing import Any
 
 import numpy as np
@@ -60,7 +60,9 @@ def _critical_control(task: Task, disorder: float) -> float:
     )
 
 
-def _langevin(task: Task, generator: torch.Generator, critical: float, device: torch.device) -> torch.Tensor:
+def _langevin(
+    task: Task, generator: torch.Generator, critical: float, device: torch.device
+) -> torch.Tensor:
     chains = int(task.parameters.get("chains", 512))
     steps = int(task.parameters.get("steps", 160))
     dt = float(task.parameters.get("dt", 0.035))
@@ -68,7 +70,9 @@ def _langevin(task: Task, generator: torch.Generator, critical: float, device: t
     reduced = float(task.control - critical)
     symmetry_field = 0.0
     if task.domain == "multiagent":
-        symmetry_field = float(task.parameters.get("field_sign", 1.0)) * 0.10 * float(task.secondary)
+        symmetry_field = (
+            float(task.parameters.get("field_sign", 1.0)) * 0.10 * float(task.secondary)
+        )
     cubic = 0.16 if task.variant == "holdout" else 0.0
     temperature = 1.0 / math.sqrt(max(float(task.size), 1.0))
     for _ in range(steps):
@@ -81,7 +85,6 @@ def _langevin(task: Task, generator: torch.Generator, critical: float, device: t
 def _domain_metrics(task: Task, m: torch.Tensor, critical: float) -> dict[str, float]:
     signed = float(m.mean().item())
     absolute = float(m.abs().mean().item())
-    variance = float(m.var(unbiased=True).item())
     second = float(m.pow(2).mean().item())
     fourth = float(m.pow(4).mean().item())
     connected = max(0.0, second - absolute * absolute)
@@ -157,7 +160,11 @@ def _domain_metrics(task: Task, m: torch.Tensor, critical: float) -> dict[str, f
 
 
 def run_task(task: Task, device: str = "auto") -> dict[str, Any]:
-    resolved = torch.device("cuda" if device == "auto" and torch.cuda.is_available() else device if device != "auto" else "cpu")
+    resolved = torch.device(
+        "cuda"
+        if device == "auto" and torch.cuda.is_available()
+        else device if device != "auto" else "cpu"
+    )
     replicates: list[dict[str, float]] = []
     for inner in range(task.inner_replicates):
         seed = _seed(task, inner)
@@ -170,5 +177,14 @@ def run_task(task: Task, device: str = "auto") -> dict[str, Any]:
         metrics["inner_seed"] = float(seed)
         replicates.append(metrics)
     keys = sorted(set.intersection(*(set(item) for item in replicates)))
-    means = {key: float(np.mean([item[key] for item in replicates])) for key in keys if key != "inner_seed"}
-    return {"task": asdict(task), "device": str(resolved), "metrics": means, "replicates": replicates}
+    means = {
+        key: float(np.mean([item[key] for item in replicates]))
+        for key in keys
+        if key != "inner_seed"
+    }
+    return {
+        "task": asdict(task),
+        "device": str(resolved),
+        "metrics": means,
+        "replicates": replicates,
+    }

@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, Iterable, Mapping
+from collections.abc import Iterable, Mapping
+from typing import Any
 
 import numpy as np
 
@@ -44,8 +45,12 @@ def binder_crossing_spread(rows: Iterable[Mapping[str, Any]]) -> float:
     crossings = []
     sizes = sorted(grouped)
     for left_size, right_size in zip(sizes[:-1], sizes[1:], strict=True):
-        left = {float(row["control"]): float(row["binder_cumulant_mean"]) for row in grouped[left_size]}
-        right = {float(row["control"]): float(row["binder_cumulant_mean"]) for row in grouped[right_size]}
+        left = {
+            float(row["control"]): float(row["binder_cumulant_mean"]) for row in grouped[left_size]
+        }
+        right = {
+            float(row["control"]): float(row["binder_cumulant_mean"]) for row in grouped[right_size]
+        }
         controls = sorted(set(left) & set(right))
         if not controls:
             continue

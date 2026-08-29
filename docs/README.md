@@ -7,6 +7,7 @@ Documentation is organized by role: the top-level [README](../README.md) covers 
 | Document | Contents |
 |---|---|
 | [getting_started.md](getting_started.md) | Installation, one-liner API, full replica/online workflows, running tests |
+| [guided_workflow.md](guided_workflow.md) | Portable study files, validation, visual evidence reports, comparison, and deterministic reruns |
 | [components.md](components.md) | Full catalog: 22 datasets, 19 models, 16 losses, 12 theory scenarios, utilities |
 | [experiments.md](experiments.md) | General (theory-free) teacher-student experiments: `Teacher`, input distributions, metrics, presets, architecture zoo (linear → tiny GPT) |
 | [visualization.md](visualization.md) | Plotters (comparison, phase diagrams, dynamics, overlap matrices, sweeps) and GIF/MP4 animations |

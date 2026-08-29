@@ -7,7 +7,6 @@ from typing import Any
 import torch
 
 from ...metrics import (
-    EPS,
     categorical_entropy,
     effective_multiplicity,
     phase_statistics,
@@ -36,16 +35,12 @@ def run_reinforcement(
     action_groups = (torch.arange(actions, device=device) % groups).long()[None, :]
     context_groups = (torch.arange(contexts, device=device) % groups).long()
     matching = (action_groups == context_groups[:, None]).float()
-    local_reward = 0.25 * torch.randn(
-        (contexts, actions), generator=generator, device=device
-    )
+    local_reward = 0.25 * torch.randn((contexts, actions), generator=generator, device=device)
     true_reward = matching + local_reward
     true_reward = true_reward - true_reward.mean(dim=1, keepdim=True)
 
     correlation = float(task.parameters.get("proxy_correlation", 0.75))
-    proxy_noise = torch.randn(
-        true_reward.shape, generator=generator, device=device
-    )
+    proxy_noise = torch.randn(true_reward.shape, generator=generator, device=device)
     exploit = torch.zeros_like(true_reward)
     exploit[:, 0] = float(task.parameters.get("exploit_bonus", 1.25))
     proxy_reward = correlation * true_reward + (1.0 - correlation) * proxy_noise + exploit
@@ -55,15 +50,12 @@ def run_reinforcement(
     variant = task.variant.lower()
     if variant == "oracle":
         policy = oracle_policy
-        optimized_reward = true_reward
     elif variant == "proxy":
         policy = torch.softmax(pressure * proxy_reward, dim=1)
-        optimized_reward = proxy_reward
     elif variant in {"kl_regularized", "regularized"}:
         coefficient = float(task.parameters.get("kl_coefficient", 0.5))
         effective_pressure = pressure / (1.0 + coefficient * pressure)
         policy = torch.softmax(effective_pressure * proxy_reward, dim=1)
-        optimized_reward = proxy_reward
     else:
         raise ValueError(f"unknown RL variant: {task.variant}")
 
@@ -84,12 +76,10 @@ def run_reinforcement(
     group_policy = _group_probabilities(policy, action_groups, groups)
     macro_entropy = categorical_entropy(group_policy)
     group_positions = torch.arange(groups, device=device, dtype=torch.float32)
-    group_distance = (
-        group_positions[:, None] - group_positions[None, :]
-    ).abs() / max(1, groups - 1)
-    interaction = torch.einsum(
-        "bi,ij,bj->b", group_policy, group_distance, group_policy
+    group_distance = (group_positions[:, None] - group_positions[None, :]).abs() / max(
+        1, groups - 1
     )
+    interaction = torch.einsum("bi,ij,bj->b", group_policy, group_distance, group_policy)
     collapsed_mass = policy[:, 0]
     low_pressure = max(0.25, min(pressure, 1.0))
     reference_policy = torch.softmax(low_pressure * proxy_reward, dim=1)

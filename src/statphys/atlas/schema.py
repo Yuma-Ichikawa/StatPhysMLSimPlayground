@@ -7,13 +7,13 @@ a content hash rather than a mutable experiment name.
 
 from __future__ import annotations
 
+import json
+import math
+from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
 from enum import Enum
 from hashlib import sha256
-from typing import Any, Mapping
-
-import json
-import math
+from typing import Any
 
 
 class _ValueEnum(str, Enum):
@@ -184,6 +184,7 @@ class TrainingSpec:
     log_interval: int = 20
     patience: int = 400
     convergence_rtol: float = 1e-7
+    gradient_tolerance: float | None = None
     gradient_clip: float | None = None
     precision: Precision = Precision.FLOAT32
     deterministic: bool = True
@@ -205,6 +206,8 @@ class TrainingSpec:
                 raise ValueError(f"{name} must be positive")
         if self.convergence_rtol < 0:
             raise ValueError("convergence_rtol must be non-negative")
+        if self.gradient_tolerance is not None:
+            _positive("gradient_tolerance", float(self.gradient_tolerance))
         if self.gradient_clip is not None:
             _positive("gradient_clip", float(self.gradient_clip))
 
@@ -222,7 +225,12 @@ class ObservableSpec:
     save_attention: bool = False
 
     def __post_init__(self) -> None:
-        for name in ("heldout_size", "trajectory_interval", "spectrum_interval", "intervention_interval"):
+        for name in (
+            "heldout_size",
+            "trajectory_interval",
+            "spectrum_interval",
+            "intervention_interval",
+        ):
             if getattr(self, name) < 1:
                 raise ValueError(f"{name} must be positive")
 
@@ -284,11 +292,23 @@ class SeedPlan:
             "minibatch": self.minibatch,
         }
         resolved.update({name: int(value) for name, value in explicit.items() if value != 0})
-        resolved["dropout"] = int(self.dropout) if self.dropout != 0 else (self.seed("minibatch") ^ self.seed("intervention"))
+        resolved["dropout"] = (
+            int(self.dropout)
+            if self.dropout != 0
+            else (self.seed("minibatch") ^ self.seed("intervention"))
+        )
         return resolved
 
     def to_dict(self) -> dict[str, Any]:
-        return {"root": self.root, "replica": self.replica, "teacher": self.teacher, "data": self.data, "initialization": self.initialization, "minibatch": self.minibatch, "dropout": self.dropout}
+        return {
+            "root": self.root,
+            "replica": self.replica,
+            "teacher": self.teacher,
+            "data": self.data,
+            "initialization": self.initialization,
+            "minibatch": self.minibatch,
+            "dropout": self.dropout,
+        }
 
 
 @dataclass(frozen=True)
@@ -323,7 +343,19 @@ class RunSpec:
         if self.replica < 0:
             raise ValueError("replica must be non-negative")
         if self.seeds.replica != self.replica:
-            object.__setattr__(self, "seeds", SeedPlan(root=self.seeds.root, replica=self.replica, teacher=self.seeds.teacher, data=self.seeds.data, initialization=self.seeds.initialization, minibatch=self.seeds.minibatch, dropout=self.seeds.dropout))
+            object.__setattr__(
+                self,
+                "seeds",
+                SeedPlan(
+                    root=self.seeds.root,
+                    replica=self.replica,
+                    teacher=self.seeds.teacher,
+                    data=self.seeds.data,
+                    initialization=self.seeds.initialization,
+                    minibatch=self.seeds.minibatch,
+                    dropout=self.seeds.dropout,
+                ),
+            )
 
     def to_dict(self) -> dict[str, Any]:
         return _encode_dataclass(self)

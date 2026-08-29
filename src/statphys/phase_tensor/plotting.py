@@ -2,30 +2,51 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
 import json
 import math
-from pathlib import Path
 import re
-from typing import Any, Callable
 import warnings
+from collections import defaultdict
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
 
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
-import numpy as np
-
 
 FIGURE_SIZE = (6.4, 4.8)
 LINE_STYLES = ["-", "--", "-.", ":"]
 MARKERS = ["o", "s", "^", "D", "v", "<", ">", "P", "X", "h"]
 COLORS = ["#176B87", "#D97706", "#2F855A", "#B8323C", "#6B5B95", "#8C5A3C", "#C44569", "#536878"]
 STYLE_ORDER = (
-    "none", "linear", "relu", "gelu", "geglu", "swiglu",
-    "sgd_m", "adamw", "muon", "soap", "lion", "galore",
-    "tinystories", "simplestories", "dolma", "fineweb_edu",
-    "width", "depth", "context", "data",
-    "mlp", "optimizer", "objective", "scaling", "realdata", "residual",
+    "none",
+    "linear",
+    "relu",
+    "gelu",
+    "geglu",
+    "swiglu",
+    "sgd_m",
+    "adamw",
+    "muon",
+    "soap",
+    "lion",
+    "galore",
+    "tinystories",
+    "simplestories",
+    "dolma",
+    "fineweb_edu",
+    "width",
+    "depth",
+    "context",
+    "data",
+    "mlp",
+    "optimizer",
+    "objective",
+    "scaling",
+    "realdata",
+    "residual",
 )
 _VARIANT_LABELS = {
     "none": "no MLP",
@@ -48,28 +69,30 @@ _VARIANT_LABELS = {
 
 
 def _style() -> None:
-    plt.rcParams.update({
-        "font.family": "sans-serif",
-        "font.size": 12.5,
-        "axes.labelsize": 15,
-        "axes.titlesize": 13.5,
-        "xtick.labelsize": 12.5,
-        "ytick.labelsize": 12.5,
-        "legend.fontsize": 9,
-        "xtick.direction": "in",
-        "ytick.direction": "in",
-        "xtick.major.width": 1.0,
-        "ytick.major.width": 1.0,
-        "axes.linewidth": 1.0,
-        "axes.xmargin": 0.01,
-        "axes.ymargin": 0.01,
-        "mathtext.fontset": "stix",
-        "figure.facecolor": "white",
-        "axes.facecolor": "white",
-        "savefig.facecolor": "white",
-        "savefig.edgecolor": "white",
-        "savefig.transparent": False,
-    })
+    plt.rcParams.update(
+        {
+            "font.family": "sans-serif",
+            "font.size": 12.5,
+            "axes.labelsize": 15,
+            "axes.titlesize": 13.5,
+            "xtick.labelsize": 12.5,
+            "ytick.labelsize": 12.5,
+            "legend.fontsize": 9,
+            "xtick.direction": "in",
+            "ytick.direction": "in",
+            "xtick.major.width": 1.0,
+            "ytick.major.width": 1.0,
+            "axes.linewidth": 1.0,
+            "axes.xmargin": 0.01,
+            "axes.ymargin": 0.01,
+            "mathtext.fontset": "stix",
+            "figure.facecolor": "white",
+            "axes.facecolor": "white",
+            "savefig.facecolor": "white",
+            "savefig.edgecolor": "white",
+            "savefig.transparent": False,
+        }
+    )
 
 
 def _subplots(*args: Any, **kwargs: Any) -> tuple[Any, Any]:
@@ -127,7 +150,9 @@ def _ordered_items(series: dict[str, Any]) -> list[tuple[str, Any]]:
     return sorted(series.items(), key=lambda item: (_style_index(item[0]), item[0]))
 
 
-def _errorbar(ax: Any, label: str, x: np.ndarray, y: np.ndarray, error: np.ndarray, fallback: int) -> None:
+def _errorbar(
+    ax: Any, label: str, x: np.ndarray, y: np.ndarray, error: np.ndarray, fallback: int
+) -> None:
     index = _style_index(label, fallback)
     ax.errorbar(
         x,
@@ -152,7 +177,8 @@ def _series(
     size: int | None = None,
 ) -> dict[str, tuple[np.ndarray, np.ndarray, np.ndarray]]:
     chosen = [
-        item for item in conditions
+        item
+        for item in conditions
         if item["family"] == family and (size is None or item["size"] == size)
     ]
     buckets: dict[str, list[tuple[float, float, float]]] = defaultdict(list)
@@ -199,7 +225,9 @@ def _phase_splitting_figure(
 ) -> Path:
     size = max((item["size"] for item in selected), default=None)
     chosen = [item for item in selected if item["size"] == size]
-    series = _series(chosen, "tensor_mlp", "semantic_order", lambda item: item["variant"], size=size)
+    series = _series(
+        chosen, "tensor_mlp", "semantic_order", lambda item: item["variant"], size=size
+    )
     figure, ax = _subplots()
     for fallback, (label, (x, y, error)) in enumerate(_ordered_items(series)):
         _errorbar(ax, label, x, y, error, fallback)
@@ -238,7 +266,11 @@ def _phase_splitting_figure(
             if status not in censor_labels:
                 continue
             marker = "<" if status == "left_censored" else ">"
-            wording = "left-censored threshold" if status == "left_censored" else "right-censored threshold"
+            wording = (
+                "left-censored threshold"
+                if status == "left_censored"
+                else "right-censored threshold"
+            )
             ax.scatter(
                 [float(estimate["value"])],
                 [0.5 + 0.008 * (offset - (len(estimates) - 1) / 2.0)],
@@ -288,15 +320,22 @@ def _bounded_causal_metric(condition: dict[str, Any], branch: str) -> tuple[floa
 
 def _causal_effect_figure(conditions: list[dict[str, Any]], destination: Path) -> Path | None:
     selected = [
-        item for item in conditions
+        item
+        for item in conditions
         if item["family"] == "tensor_mlp"
         and item["parameters"].get("data_kind") == "synthetic_retrieval"
     ]
     size = max((item["size"] for item in selected), default=None)
     selected = [item for item in selected if item["size"] == size]
     panels = (
-        ("attention", r"$\eta_{\mathcal{A}}=\Delta R_{\mathcal{A}}/(|\Delta R_{\mathcal{A}}|+R_{\rm full}+\epsilon)$"),
-        ("mlp", r"$\eta_{\mathcal{F}}=\Delta R_{\mathcal{F}}/(|\Delta R_{\mathcal{F}}|+R_{\rm full}+\epsilon)$"),
+        (
+            "attention",
+            r"$\eta_{\mathcal{A}}=\Delta R_{\mathcal{A}}/(|\Delta R_{\mathcal{A}}|+R_{\rm full}+\epsilon)$",
+        ),
+        (
+            "mlp",
+            r"$\eta_{\mathcal{F}}=\Delta R_{\mathcal{F}}/(|\Delta R_{\mathcal{F}}|+R_{\rm full}+\epsilon)$",
+        ),
     )
     panel_series: list[dict[str, tuple[np.ndarray, np.ndarray, np.ndarray]]] = []
     for branch, _ in panels:
@@ -308,7 +347,9 @@ def _causal_effect_figure(conditions: list[dict[str, Any]], destination: Path) -
         prepared = {}
         for label, points in buckets.items():
             points.sort()
-            prepared[label] = tuple(np.asarray(component) for component in zip(*points, strict=True))
+            prepared[label] = tuple(
+                np.asarray(component) for component in zip(*points, strict=True)
+            )
         panel_series.append(prepared)
     if not any(panel_series):
         if selected:
@@ -336,7 +377,8 @@ def _causal_effect_figure(conditions: list[dict[str, Any]], destination: Path) -
 
 def _optimizer_response_figure(conditions: list[dict[str, Any]], destination: Path) -> Path | None:
     selected = [
-        item for item in conditions
+        item
+        for item in conditions
         if item["family"] == "tensor_optimizer"
         and item["parameters"].get("normalization") == "pre_rmsnorm"
     ]
@@ -344,11 +386,18 @@ def _optimizer_response_figure(conditions: list[dict[str, Any]], destination: Pa
         return None
     size = max(item["size"] for item in selected)
     selected = [item for item in selected if item["size"] == size]
-    variants = sorted({item["variant"] for item in selected}, key=lambda value: (_style_index(value), value))
+    variants = sorted(
+        {item["variant"] for item in selected}, key=lambda value: (_style_index(value), value)
+    )
     columns = 2
     rows = max(1, math.ceil(len(variants) / columns))
     figure, axes = _subplots(rows, columns, squeeze=False, sharex=True, sharey=True)
-    risks = [estimate[0] for item in selected for estimate in [_risk_metric(item)] if estimate is not None]
+    risks = [
+        estimate[0]
+        for item in selected
+        for estimate in [_risk_metric(item)]
+        if estimate is not None
+    ]
     if not risks:
         plt.close(figure)
         return None
@@ -381,16 +430,20 @@ def _optimizer_response_figure(conditions: list[dict[str, Any]], destination: Pa
         ax.set_ylabel(r"learning rate $\eta$")
         ax.set_title(_label(variant))
         _decorate(ax)
-    for ax in axes.flat[len(variants):]:
+    for ax in axes.flat[len(variants) :]:
         ax.set_visible(False)
     if mesh is not None:
-        figure.colorbar(mesh, ax=list(axes.flat[:len(variants)]), label=r"$R_{\rm test}$", shrink=0.88)
+        figure.colorbar(
+            mesh, ax=list(axes.flat[: len(variants)]), label=r"$R_{\rm test}$", shrink=0.88
+        )
     figure.savefig(destination)
     plt.close(figure)
     return destination
 
 
-def _gradient_correlation_figure(conditions: list[dict[str, Any]], destination: Path) -> Path | None:
+def _gradient_correlation_figure(
+    conditions: list[dict[str, Any]], destination: Path
+) -> Path | None:
     selected = [item for item in conditions if item["family"] == "tensor_optimizer"]
     if not selected:
         return None
@@ -400,7 +453,9 @@ def _gradient_correlation_figure(conditions: list[dict[str, Any]], destination: 
     plotted = False
     groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for item in selected:
-        groups[f"{item['variant']} ({item['parameters'].get('normalization', 'default')})"].append(item)
+        groups[f"{item['variant']} ({item['parameters'].get('normalization', 'default')})"].append(
+            item
+        )
     for fallback, (label, items) in enumerate(_ordered_items(groups)):
         index = _style_index(label, fallback)
         first = True
@@ -410,9 +465,15 @@ def _gradient_correlation_figure(conditions: list[dict[str, Any]], destination: 
             if geometry is None or risk is None:
                 continue
             ax.errorbar(
-                geometry[0], risk[0], xerr=geometry[1], yerr=risk[1],
-                color=COLORS[index % len(COLORS)], marker=MARKERS[index % len(MARKERS)],
-                linestyle="none", capsize=2.0, markersize=5.2,
+                geometry[0],
+                risk[0],
+                xerr=geometry[1],
+                yerr=risk[1],
+                color=COLORS[index % len(COLORS)],
+                marker=MARKERS[index % len(MARKERS)],
+                linestyle="none",
+                capsize=2.0,
+                markersize=5.2,
                 label=_label(label) if first else None,
             )
             first = False
@@ -441,7 +502,9 @@ def _scaling_figure(conditions: list[dict[str, Any]], destination: Path) -> Path
         ("data", "train_examples", r"training examples $N_{\rm train}$"),
     )
     figure, axes = _subplots(2, 2)
-    for panel_index, (ax, (variant, xmetric, xlabel)) in enumerate(zip(axes.flat, panels, strict=True)):
+    for panel_index, (ax, (variant, xmetric, xlabel)) in enumerate(
+        zip(axes.flat, panels, strict=True)
+    ):
         subset = [item for item in selected if item["variant"] == variant]
         target_control = max((float(item["control"]) for item in subset), default=None)
         subset = [item for item in subset if float(item["control"]) == target_control]
@@ -477,21 +540,28 @@ def _natural_bridge_figure(conditions: list[dict[str, Any]], destination: Path) 
     if not selected:
         return None
     size = max(item["size"] for item in selected)
-    group = lambda item: f"{item['variant']} ({item['parameters'].get('activation', 'default')})"
+
+    def group(item: dict[str, Any]) -> str:
+        return f"{item['variant']} ({item['parameters'].get('activation', 'default')})"
+
     panels = (
-        ("semantic_order", r"natural-carrier order $m_{\rm task}=1-R_{\rm test}$", "semantic carrier"),
-        ("bits_per_byte", r"transport $\ell_{\rm test}/\log 2$ [bits byte$^{-1}$]", "corpus protocol"),
+        (
+            "semantic_order",
+            r"natural-carrier order $m_{\rm task}=1-R_{\rm test}$",
+            "semantic carrier",
+        ),
+        (
+            "bits_per_byte",
+            r"transport $\ell_{\rm test}/\log 2$ [bits byte$^{-1}$]",
+            "corpus protocol",
+        ),
     )
     figure, axes = _subplots(1, 2, sharex=True)
     for ax, (metric, ylabel, title) in zip(axes, panels, strict=True):
         if metric == "semantic_order":
-            metric_conditions = [
-                item for item in selected if item["variant"] == "natural_injected"
-            ]
+            metric_conditions = [item for item in selected if item["variant"] == "natural_injected"]
         else:
-            metric_conditions = [
-                item for item in selected if item["variant"] != "natural_injected"
-            ]
+            metric_conditions = [item for item in selected if item["variant"] != "natural_injected"]
         series = _series(metric_conditions, "tensor_realdata", metric, group, size=size)
         for fallback, (label, (x, y, error)) in enumerate(_ordered_items(series)):
             _errorbar(ax, label, x, y, error, fallback)
@@ -519,7 +589,14 @@ def _compute_regret_series(
     conditions: list[dict[str, Any]],
 ) -> dict[str, tuple[np.ndarray, np.ndarray, np.ndarray]]:
     output: dict[str, tuple[np.ndarray, np.ndarray, np.ndarray]] = {}
-    families = ("tensor_mlp", "tensor_optimizer", "tensor_objective", "tensor_scaling", "tensor_realdata", "tensor_residual")
+    families = (
+        "tensor_mlp",
+        "tensor_optimizer",
+        "tensor_objective",
+        "tensor_scaling",
+        "tensor_realdata",
+        "tensor_residual",
+    )
     for family in families:
         subset = [item for item in conditions if item["family"] == family]
         if not subset:
@@ -539,7 +616,11 @@ def _compute_regret_series(
         maximum = max(item[1] for item in raw)
         span = maximum - minimum
         normalized = [
-            (compute, 0.0 if span <= 1e-12 else (risk - minimum) / span, 0.0 if span <= 1e-12 else interval / span)
+            (
+                compute,
+                0.0 if span <= 1e-12 else (risk - minimum) / span,
+                0.0 if span <= 1e-12 else interval / span,
+            )
             for compute, risk, interval in raw
         ]
         normalized.sort()
@@ -551,15 +632,21 @@ def _compute_regret_series(
 
 def _dynamics_figure(aggregate: dict[str, Any], destination: Path) -> Path | None:
     dynamics = [
-        item for item in aggregate.get("dynamics", [])
-        if item["family"] == "tensor_mlp" and item["parameters"].get("data_kind") == "synthetic_retrieval"
+        item
+        for item in aggregate.get("dynamics", [])
+        if item["family"] == "tensor_mlp"
+        and item["parameters"].get("data_kind") == "synthetic_retrieval"
     ]
     if not dynamics:
         return None
     largest_size = max(item["size"] for item in dynamics)
     largest_control = max(item["control"] for item in dynamics if item["size"] == largest_size)
     chosen = sorted(
-        [item for item in dynamics if item["size"] == largest_size and item["control"] == largest_control],
+        [
+            item
+            for item in dynamics
+            if item["size"] == largest_size and item["control"] == largest_control
+        ],
         key=lambda item: (_style_index(item["variant"]), item["variant"]),
     )[:4]
     figure, axes = _subplots(1, 2, sharex=True)
@@ -574,7 +661,14 @@ def _dynamics_figure(aggregate: dict[str, Any], destination: Path) -> Path | Non
             mean = np.asarray(value["mean"], dtype=float)
             error = np.asarray(value["ci95"], dtype=float)
             color = COLORS[index % len(COLORS)]
-            ax.plot(x, mean, color=color, marker=MARKERS[index % len(MARKERS)], markersize=3.8, label=_label(item["variant"]))
+            ax.plot(
+                x,
+                mean,
+                color=color,
+                marker=MARKERS[index % len(MARKERS)],
+                markersize=3.8,
+                label=_label(item["variant"]),
+            )
             ax.fill_between(x, mean - error, mean + error, color=color, alpha=0.16, linewidth=0.0)
             ax.set_xlabel(r"optimizer step $t$")
             ax.set_ylabel(ylabel)
@@ -587,8 +681,10 @@ def _dynamics_figure(aggregate: dict[str, Any], destination: Path) -> Path | Non
 
 def _mechanism_figure(conditions: list[dict[str, Any]], destination: Path) -> Path | None:
     selected = [
-        item for item in conditions
-        if item["family"] == "tensor_mlp" and item["parameters"].get("data_kind") == "synthetic_retrieval"
+        item
+        for item in conditions
+        if item["family"] == "tensor_mlp"
+        and item["parameters"].get("data_kind") == "synthetic_retrieval"
     ]
     if not any("mlp_jacobian_effective_rank" in item["metrics"] for item in selected):
         return None
@@ -632,20 +728,41 @@ def _coverage_figure(taxonomy_path: str | Path, destination: Path) -> Path:
     panels = (("Field frontier", field, "#167A8B"), ("This paper", paper, "#C56A17"))
     figure, axes = _subplots(1, 2, sharey=True)
     for ax, (title, entries, color) in zip(axes, panels, strict=True):
-        matrix = np.asarray([[int(column in entries.get(axis, [])) for column in columns] for axis in axis_names])
+        matrix = np.asarray(
+            [[int(column in entries.get(axis, [])) for column in columns] for axis in axis_names]
+        )
         ax.imshow(matrix, cmap=ListedColormap(["#ECECEC", color]), vmin=0, vmax=1, aspect="auto")
         for row, axis in enumerate(axis_names):
             for column, status in enumerate(columns):
-                ax.text(column, row, status if matrix[row, column] else "N0", ha="center", va="center", fontsize=8.5)
-        ax.set_xticks(np.arange(len(columns)), [_math_label(payload["column_labels"][column]) for column in columns], rotation=32, ha="right")
-        ax.set_yticks(np.arange(len(axis_names)), [_math_label(axis_labels.get(axis, axis)) for axis in axis_names])
+                ax.text(
+                    column,
+                    row,
+                    status if matrix[row, column] else "N0",
+                    ha="center",
+                    va="center",
+                    fontsize=8.5,
+                )
+        ax.set_xticks(
+            np.arange(len(columns)),
+            [_math_label(payload["column_labels"][column]) for column in columns],
+            rotation=32,
+            ha="right",
+        )
+        ax.set_yticks(
+            np.arange(len(axis_names)),
+            [_math_label(axis_labels.get(axis, axis)) for axis in axis_names],
+        )
         ax.set_xlabel("evidence tier")
         ax.set_title(title)
         ax.grid(ls="--", color="white", linewidth=0.9)
         ax.tick_params(which="both", labelsize=10.5)
     axes[0].set_ylabel("phase-continuation coordinate")
     figure.legend(
-        handles=[Patch(facecolor="#167A8B", label="field coverage"), Patch(facecolor="#C56A17", label="this-paper evidence"), Patch(facecolor="#ECECEC", label="N0: untested")],
+        handles=[
+            Patch(facecolor="#167A8B", label="field coverage"),
+            Patch(facecolor="#C56A17", label="this-paper evidence"),
+            Patch(facecolor="#ECECEC", label="N0: untested"),
+        ],
         frameon=False,
         loc="lower center",
         ncol=3,
@@ -671,26 +788,50 @@ def plot_phase_tensor(
     alpha = r"$\alpha=N_{\rm train}/d^\gamma$"
 
     primary_mlp = [
-        item for item in conditions
-        if item["family"] == "tensor_mlp" and item["parameters"].get("data_kind") == "synthetic_retrieval"
+        item
+        for item in conditions
+        if item["family"] == "tensor_mlp"
+        and item["parameters"].get("data_kind") == "synthetic_retrieval"
     ]
-    outputs.append(_phase_splitting_figure(aggregate, primary_mlp, destination / "figure09_mlp_phase_splitting.pdf"))
-    causal = _causal_effect_figure(primary_mlp, destination / "figure10_mlp_causal_contribution.pdf")
+    outputs.append(
+        _phase_splitting_figure(
+            aggregate, primary_mlp, destination / "figure09_mlp_phase_splitting.pdf"
+        )
+    )
+    causal = _causal_effect_figure(
+        primary_mlp, destination / "figure10_mlp_causal_contribution.pdf"
+    )
     if causal is not None:
         outputs.append(causal)
 
-    optimizer = _optimizer_response_figure(conditions, destination / "figure11_optimizer_geometry.pdf")
+    optimizer = _optimizer_response_figure(
+        conditions, destination / "figure11_optimizer_geometry.pdf"
+    )
     if optimizer is not None:
         outputs.append(optimizer)
-    gradients = _gradient_correlation_figure(conditions, destination / "figure12_optimizer_gradient_heterogeneity.pdf")
+    gradients = _gradient_correlation_figure(
+        conditions, destination / "figure12_optimizer_gradient_heterogeneity.pdf"
+    )
     if gradients is not None:
         outputs.append(gradients)
 
-    objective_size = max((item["size"] for item in conditions if item["family"] == "tensor_objective"), default=None)
-    outputs.append(_line_figure(
-        _series(conditions, "tensor_objective", "normalized_ce", lambda item: f"{item['variant']} ({item['parameters'].get('activation', 'default')})", size=objective_size),
-        destination / "figure13_objective_homotopy.pdf", alpha, r"$\tilde\ell_{\rm CE}=\ell_{\rm CE}/\log V$",
-    ))
+    objective_size = max(
+        (item["size"] for item in conditions if item["family"] == "tensor_objective"), default=None
+    )
+    outputs.append(
+        _line_figure(
+            _series(
+                conditions,
+                "tensor_objective",
+                "normalized_ce",
+                lambda item: f"{item['variant']} ({item['parameters'].get('activation', 'default')})",
+                size=objective_size,
+            ),
+            destination / "figure13_objective_homotopy.pdf",
+            alpha,
+            r"$\tilde\ell_{\rm CE}=\ell_{\rm CE}/\log V$",
+        )
+    )
 
     scaling = _scaling_figure(conditions, destination / "figure14_scaling_paths.pdf")
     if scaling is not None:
@@ -699,27 +840,53 @@ def plot_phase_tensor(
     if natural is not None:
         outputs.append(natural)
 
-    real_size = max((item["size"] for item in conditions if item["family"] == "tensor_realdata"), default=None)
-    has_gap = any("normalized_generalization_gap" in item["metrics"] for item in conditions if item["family"] == "tensor_realdata")
+    real_size = max(
+        (item["size"] for item in conditions if item["family"] == "tensor_realdata"), default=None
+    )
+    has_gap = any(
+        "normalized_generalization_gap" in item["metrics"]
+        for item in conditions
+        if item["family"] == "tensor_realdata"
+    )
     gap_metric = "normalized_generalization_gap" if has_gap else "normalized_generalization_error"
-    gap_label = r"$e_{\rm gen}=R_{\rm test}-R_{\rm train}$" if has_gap else r"$R_{\rm test}$ (legacy aggregate)"
-    outputs.append(_line_figure(
-        _series(conditions, "tensor_realdata", gap_metric, lambda item: f"{item['variant']} ({item['parameters'].get('activation', 'default')})", size=real_size),
-        destination / "figure16_natural_data_generalization.pdf", alpha, gap_label,
-        reference=0.0 if has_gap else None,
-    ))
+    gap_label = (
+        r"$e_{\rm gen}=R_{\rm test}-R_{\rm train}$"
+        if has_gap
+        else r"$R_{\rm test}$ (legacy aggregate)"
+    )
+    outputs.append(
+        _line_figure(
+            _series(
+                conditions,
+                "tensor_realdata",
+                gap_metric,
+                lambda item: f"{item['variant']} ({item['parameters'].get('activation', 'default')})",
+                size=real_size,
+            ),
+            destination / "figure16_natural_data_generalization.pdf",
+            alpha,
+            gap_label,
+            reference=0.0 if has_gap else None,
+        )
+    )
 
-    outputs.append(_line_figure(
-        _compute_regret_series(conditions),
-        destination / "figure17_compute_error_landscape.pdf",
-        r"$C_{\rm train}\simeq6PN_{\rm tok}$",
-        r"within-family regret $r_f=(R-R_f^{\min})/(R_f^{\max}-R_f^{\min})$",
-        xscale="log",
-    ))
+    outputs.append(
+        _line_figure(
+            _compute_regret_series(conditions),
+            destination / "figure17_compute_error_landscape.pdf",
+            r"$C_{\rm train}\simeq6PN_{\rm tok}$",
+            r"within-family regret $r_f=(R-R_f^{\min})/(R_f^{\max}-R_f^{\min})$",
+            xscale="log",
+        )
+    )
 
     if taxonomy_path is not None:
-        outputs.append(_coverage_figure(taxonomy_path, destination / "figure18_theory_experiment_coverage.pdf"))
-    dynamics = _dynamics_figure(aggregate, destination / "figure19_training_generalization_dynamics.pdf")
+        outputs.append(
+            _coverage_figure(taxonomy_path, destination / "figure18_theory_experiment_coverage.pdf")
+        )
+    dynamics = _dynamics_figure(
+        aggregate, destination / "figure19_training_generalization_dynamics.pdf"
+    )
     if dynamics is not None:
         outputs.append(dynamics)
     mechanism = _mechanism_figure(conditions, destination / "figure20_mlp_mechanism_atlas.pdf")

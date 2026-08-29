@@ -13,7 +13,7 @@ class TwoLayerNetwork(BaseModel):
     """
     Two-layer neural network.
 
-    Architecture: y = (1/sqrt(K)) * a^T @ g(W @ x / sqrt(d))
+    Architecture: y = (1/sqrt(K)) * a^T @ g(W @ x)
 
     where:
         - W: (K, d) first layer weights
@@ -129,8 +129,10 @@ class TwoLayerNetwork(BaseModel):
         if single_sample:
             x = x.unsqueeze(0)
 
-        # First layer: (batch, K) = (batch, d) @ (d, K)
-        hidden = x @ self.W.T / np.sqrt(self.d)
+        # ``W`` is initialized with variance ``1 / d``.  Scaling again here
+        # suppresses the signal as d grows, so normalization lives in the
+        # initialization only.
+        hidden = x @ self.W.T
 
         # Activation
         activated = self.activation(hidden)

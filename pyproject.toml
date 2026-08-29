@@ -122,6 +122,13 @@ exclude = '''
   | dist
 )/
 '''
+force-exclude = '''
+.*(
+    statphys/continuation/paper\.py
+  | statphys/continuation/orchestration/paper\.py
+  | statphys/phase_tensor/paper\.py
+)$
+'''
 
 # Ruff configuration
 [tool.ruff]
@@ -131,8 +138,8 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["E", "F", "W", "N", "D", "UP", "B", "C4", "SIM"]
 ignore = [
-    "D100", "D102", "D104", "D105", "D107",  # Missing docstrings
-    "D200", "D205",  # One-line docstring formatting
+    "D100", "D101", "D102", "D103", "D104", "D105", "D107",  # Missing docstrings
+    "D200", "D202", "D205",  # One-line docstring formatting
     "D203", "D212", "D213",  # Docstring formatting
     "D400", "D401", "D415", "D417",  # Docstring content
     "N802", "N803", "N806", "N812",  # Naming conventions (allow math notation like W0, X, H)
@@ -142,11 +149,20 @@ ignore = [
     "B007",  # Loop control variable not used
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"src/statphys/continuation/*.py" = ["F403"]  # Intentional compatibility re-exports.
+"src/statphys/continuation/core/__init__.py" = ["F403"]
+
 # isort configuration
 [tool.isort]
 profile = "black"
 line_length = 100
 known_first_party = ["statphys"]
+skip_glob = [
+    "src/statphys/continuation/paper.py",
+    "src/statphys/continuation/orchestration/paper.py",
+    "src/statphys/phase_tensor/paper.py",
+]
 
 # mypy configuration
 [tool.mypy]

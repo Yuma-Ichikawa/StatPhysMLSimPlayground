@@ -39,7 +39,7 @@ def binder_crossing(
 
     sorted_sizes = np.argsort(system_sizes)
     if adjacent_sizes:
-        pairs = list(zip(sorted_sizes[:-1], sorted_sizes[1:]))
+        pairs = list(zip(sorted_sizes[:-1], sorted_sizes[1:], strict=False))
     else:
         pairs = list(combinations(sorted_sizes.tolist(), 2))
     crossings: list[dict[str, float | int]] = []
@@ -267,4 +267,3 @@ def classify_transition_evidence(
             "maximum_collapse_score": float(maximum_collapse_score),
         },
     }
-

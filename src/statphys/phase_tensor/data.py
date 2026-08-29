@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from hashlib import sha256
 import json
 import math
 import os
+from dataclasses import dataclass
+from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
@@ -36,15 +36,27 @@ CORPUS_SPECS = {
         "roneneldan/TinyStories", None, "train", "text", "f54c09fd23315a6f9c86f9dc80f725de7d8f9c64"
     ),
     "simplestories": CorpusSpec(
-        "SimpleStories/SimpleStories", None, "train", "story", "e63b8adc3b1a1bdc7cac5b500d150b71346b0628"
+        "SimpleStories/SimpleStories",
+        None,
+        "train",
+        "story",
+        "e63b8adc3b1a1bdc7cac5b500d150b71346b0628",
     ),
     "fineweb_edu": CorpusSpec(
-        "HuggingFaceFW/fineweb-edu", "sample-10BT", "train", "text", "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9"
+        "HuggingFaceFW/fineweb-edu",
+        "sample-10BT",
+        "train",
+        "text",
+        "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9",
     ),
     # Parquet conversion of the official v1_6 sample; the upstream repository
     # still depends on dataset scripts removed in datasets 5.
     "dolma": CorpusSpec(
-        "devingulliver/dolma-v1_6-sample", None, "train", "text", "6b03e4bbe0d9633c408555a7a8667b944033b46c"
+        "devingulliver/dolma-v1_6-sample",
+        None,
+        "train",
+        "text",
+        "6b03e4bbe0d9633c408555a7a8667b944033b46c",
     ),
 }
 
@@ -71,18 +83,28 @@ def token_data_summary(dataset: TokenDataset) -> dict[str, float]:
     effective_vocabulary = math.exp(entropy) / VOCABULARY
     ranks = np.arange(1, nonzero.size + 1, dtype=np.float64)
     ordered = np.sort(nonzero)[::-1]
-    zipf_exponent = float(-np.polyfit(np.log(ranks), np.log(ordered), deg=1)[0]) if ordered.size >= 3 else 0.0
+    zipf_exponent = (
+        float(-np.polyfit(np.log(ranks), np.log(ordered), deg=1)[0]) if ordered.size >= 3 else 0.0
+    )
     pairs = tokens[:, :-1].reshape(-1) * VOCABULARY + tokens[:, 1:].reshape(-1)
-    pair_mass = np.bincount(pairs, minlength=VOCABULARY * VOCABULARY).reshape(VOCABULARY, VOCABULARY)
+    pair_mass = np.bincount(pairs, minlength=VOCABULARY * VOCABULARY).reshape(
+        VOCABULARY, VOCABULARY
+    )
     pair_mass = pair_mass / max(pair_mass.sum(), 1.0)
     marginal_left = pair_mass.sum(axis=1, keepdims=True)
     marginal_right = pair_mass.sum(axis=0, keepdims=True)
     valid = pair_mass > 0.0
-    mutual_information = float(np.sum(pair_mass[valid] * np.log(pair_mass[valid] / (marginal_left * marginal_right)[valid])))
+    mutual_information = float(
+        np.sum(
+            pair_mass[valid] * np.log(pair_mass[valid] / (marginal_left * marginal_right)[valid])
+        )
+    )
     sample = tokens[: min(tokens.shape[0], 1024)]
     duplicate_fraction = 1.0 - np.unique(sample, axis=0).shape[0] / max(sample.shape[0], 1)
     positive_counts = counts[counts > 0.0]
-    tail_ratio = float(counts.max() / max(float(positive_counts.mean()) if positive_counts.size else 1.0, 1.0))
+    tail_ratio = float(
+        counts.max() / max(float(positive_counts.mean()) if positive_counts.size else 1.0, 1.0)
+    )
     return {
         "data_effective_vocabulary_fraction": float(effective_vocabulary),
         "data_zipf_exponent": zipf_exponent,
@@ -100,12 +122,10 @@ def _corpus_path(root: str | Path, name: str) -> Path:
 def _dolma_records() -> Any:
     """Stream official Dolma JSONL shards without the retired HF dataset script."""
     import gzip
+
     import requests
 
-    index_url = (
-        "https://huggingface.co/datasets/allenai/dolma/resolve/main/"
-        "urls/v1_6-sample.txt"
-    )
+    index_url = "https://huggingface.co/datasets/allenai/dolma/resolve/main/" "urls/v1_6-sample.txt"
     index_response = requests.get(index_url, timeout=120)
     index_response.raise_for_status()
     shard_urls = [line.strip() for line in index_response.text.splitlines() if line.strip()]
@@ -187,7 +207,9 @@ def _encode_bytes(values: np.ndarray) -> np.ndarray:
     return values.astype(np.int64) + 2
 
 
-def _partition_corpus(corpus: bytes, split: str, minimum_bytes: int) -> tuple[bytes, dict[str, Any]]:
+def _partition_corpus(
+    corpus: bytes, split: str, minimum_bytes: int
+) -> tuple[bytes, dict[str, Any]]:
     """Return a deterministic, byte-disjoint corpus partition."""
     if split not in CORPUS_SPLITS:
         raise ValueError(f"unknown corpus split: {split}")
@@ -236,7 +258,7 @@ def _retrieval_sequences(
     for row in range(count):
         keys = rng.choice(np.arange(2 + ord("a"), 2 + ord("h") + 1), size=pairs, replace=False)
         values = rng.choice(np.arange(2 + ord("A"), 2 + ord("Z") + 1), size=pairs, replace=False)
-        for index, (key, value) in enumerate(zip(keys, values)):
+        for index, (key, value) in enumerate(zip(keys, values, strict=False)):
             offset = 3 * index
             sequences[row, offset : offset + 3] = (key, 2 + ord("="), value)
         selected = int(rng.integers(0, pairs))
@@ -299,7 +321,9 @@ def _injected_sequences(
         prefix = _encode_bytes(np.frombuffer(corpus[start : start + prefix_length], dtype=np.uint8))
         key = int(rng.integers(2 + ord("a"), 2 + ord("h") + 1))
         value = int(rng.integers(2 + ord("A"), 2 + ord("Z") + 1))
-        answer = value if rng.random() >= noise else int(rng.integers(2 + ord("A"), 2 + ord("Z") + 1))
+        answer = (
+            value if rng.random() >= noise else int(rng.integers(2 + ord("A"), 2 + ord("Z") + 1))
+        )
         trailer = np.asarray(
             [2 + ord("|"), key, 2 + ord("="), value, 2 + ord("?"), key, 2 + ord("="), answer],
             dtype=np.int64,

@@ -189,4 +189,3 @@ def subspace_principal_angles(
         "teacher_rank": teacher_rank,
         "unmatched_dimensions": abs(student_rank - teacher_rank),
     }
-

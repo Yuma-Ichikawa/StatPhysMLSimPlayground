@@ -3,26 +3,75 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import tomllib
-from typing import Any, Sequence
+from collections.abc import Sequence
+from pathlib import Path
+from typing import Any
 
 from ..core.registry import is_supported
 from ..core.schema import validate_seed_set
 
 REQUIRED_EXPERIMENT_IDS = frozenset(
-    """
-T-M0-M8 T-D0-D5 T-SCALING T-POSSEM T-HEADS T-ATTN-MLP T-ICL T-LONG-CONTEXT
-T-LORA T-GLASS T-OPTIMIZER T-DATA-BRIDGE T-COT T-MOE T-RETRIEVAL T-MULTIMODAL
-T-COMPRESSION T-LIFECYCLE T-GENERATION T-DISCOVERY P-FSS P-HYSTERESIS P-RATE-FUNCTION
-P-FDT P-NESTED-SEEDS D-ANCHOR D-GUIDANCE D-TRAJECTORY D-LOCALITY D-MEMORIZATION
-R-ANCHOR R-ENTROPY-FLOW R-GOODHART R-ROLLOUT R-OPTIMIZER R-PREFERENCE
-M-ANCHOR M-DEBATE M-MINORITY M-INFLUENCE M-ROLES M-SCALING
-X-DIFFUSION-LANGUAGE-RL X-DIFFUSION-POLICY-RL X-MULTIAGENT-RL X-MOE-MULTIAGENT
-C-COMMON-COORDINATES C-MATCHED-LATENT C-ASSUMPTION-GRAPH C-EVIDENCE-GRADES
-T-LEARNED-DECODER D-LEARNED-SCORE R-LEARNED-POLICY M-LEARNED-AGENTS
-C-ASSUMPTION-PAIRS C-RENORMALIZED-SURROGATE C-CRITICAL-WINDOW C-OUTCOME-ATLAS
-""".split()
+    [
+        "T-M0-M8",
+        "T-D0-D5",
+        "T-SCALING",
+        "T-POSSEM",
+        "T-HEADS",
+        "T-ATTN-MLP",
+        "T-ICL",
+        "T-LONG-CONTEXT",
+        "T-LORA",
+        "T-GLASS",
+        "T-OPTIMIZER",
+        "T-DATA-BRIDGE",
+        "T-COT",
+        "T-MOE",
+        "T-RETRIEVAL",
+        "T-MULTIMODAL",
+        "T-COMPRESSION",
+        "T-LIFECYCLE",
+        "T-GENERATION",
+        "T-DISCOVERY",
+        "P-FSS",
+        "P-HYSTERESIS",
+        "P-RATE-FUNCTION",
+        "P-FDT",
+        "P-NESTED-SEEDS",
+        "D-ANCHOR",
+        "D-GUIDANCE",
+        "D-TRAJECTORY",
+        "D-LOCALITY",
+        "D-MEMORIZATION",
+        "R-ANCHOR",
+        "R-ENTROPY-FLOW",
+        "R-GOODHART",
+        "R-ROLLOUT",
+        "R-OPTIMIZER",
+        "R-PREFERENCE",
+        "M-ANCHOR",
+        "M-DEBATE",
+        "M-MINORITY",
+        "M-INFLUENCE",
+        "M-ROLES",
+        "M-SCALING",
+        "X-DIFFUSION-LANGUAGE-RL",
+        "X-DIFFUSION-POLICY-RL",
+        "X-MULTIAGENT-RL",
+        "X-MOE-MULTIAGENT",
+        "C-COMMON-COORDINATES",
+        "C-MATCHED-LATENT",
+        "C-ASSUMPTION-GRAPH",
+        "C-EVIDENCE-GRADES",
+        "T-LEARNED-DECODER",
+        "D-LEARNED-SCORE",
+        "R-LEARNED-POLICY",
+        "M-LEARNED-AGENTS",
+        "C-ASSUMPTION-PAIRS",
+        "C-RENORMALIZED-SURROGATE",
+        "C-CRITICAL-WINDOW",
+        "C-OUTCOME-ATLAS",
+    ]
 )
 
 
@@ -50,7 +99,9 @@ def validate_coverage(
         configured.update(pairs)
         for experiment in raw.get("experiments", []):
             key = (str(experiment["domain"]), str(experiment.get("family", "anchor")))
-            configured_sizes[key] = max(configured_sizes.get(key, 0), len(set(experiment.get("sizes", []))))
+            configured_sizes[key] = max(
+                configured_sizes.get(key, 0), len(set(experiment.get("sizes", [])))
+            )
         config_reports.append({"path": str(path), "pairs": len(pairs), "seeds": len(seeds)})
     invalid = []
     unconfigured = []

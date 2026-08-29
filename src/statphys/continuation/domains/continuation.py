@@ -41,7 +41,10 @@ def _assumption_pairs(task: TaskSpec) -> tuple[dict[str, float], dict[str, Any]]
     second_effect = domain_weights[second] * latent[:, second]
     interaction_coefficient = 0.18 * math.sin((first + 1) * (second + 2) * (domain + 1))
     additive_field = baseline_field + strength * (first_effect + second_effect)
-    full_field = additive_field + interaction_coefficient * strength**2 * latent[:, first] * latent[:, second]
+    full_field = (
+        additive_field
+        + interaction_coefficient * strength**2 * latent[:, first] * latent[:, second]
+    )
     finite_noise = rng.normal(size=probes) / math.sqrt(max(task.size, 1))
     additive_order = np.tanh(additive_field + finite_noise)
     full_order = np.tanh(full_field + finite_noise)
@@ -93,7 +96,9 @@ def _renormalized_bridge(task: TaskSpec) -> tuple[dict[str, float], dict[str, An
     x = controls[calibration_mask]
     y = observed[calibration_mask]
     bare_features = np.stack((np.ones_like(x), x), axis=1)
-    renormalized_features = np.stack((np.ones_like(x), x, x**2, 1.0 / np.sqrt(task.size) * np.ones_like(x)), axis=1)
+    renormalized_features = np.stack(
+        (np.ones_like(x), x, x**2, 1.0 / np.sqrt(task.size) * np.ones_like(x)), axis=1
+    )
     bare = ridge(bare_features, y, float(task.parameters.get("ridge", 1e-4)))
     renormalized = ridge(renormalized_features, y, float(task.parameters.get("ridge", 1e-4)))
     heldout_bare = float(np.asarray([1.0, task.control]) @ bare)
@@ -113,8 +118,7 @@ def _renormalized_bridge(task: TaskSpec) -> tuple[dict[str, float], dict[str, An
     signed = np.tanh(heldout + rng.normal(size=probes) / math.sqrt(max(task.size, 1)))
     ood_control = min(1.0, task.control + 0.1)
     ood_prediction = float(
-        np.asarray([1.0, ood_control, ood_control**2, 1.0 / math.sqrt(task.size)])
-        @ renormalized
+        np.asarray([1.0, ood_control, ood_control**2, 1.0 / math.sqrt(task.size)]) @ renormalized
     )
     ood_truth = float(_true_response(domain, np.asarray([ood_control]))[0])
     metrics, arrays = common_coordinates(
@@ -157,13 +161,13 @@ def _critical_window(task: TaskSpec) -> tuple[dict[str, float], dict[str, Any]]:
     if kind == "continuous":
         signed = np.tanh(scale * reduced + noise)
         hysteresis = 0.0
-        relaxation = task.size ** 0.35 / (1.0 + abs(scale * reduced))
+        relaxation = task.size**0.35 / (1.0 + abs(scale * reduced))
     elif kind == "first_order":
         weight = 1.0 / (1.0 + math.exp(-np.clip(9.0 * scale * reduced, -60.0, 60.0)))
         branch = np.where(rng.random(probes) < weight, 1.0, -1.0)
         signed = np.clip(0.82 * branch + 0.12 * noise, -1.0, 1.0)
         hysteresis = float(0.18 * math.exp(-abs(reduced) * scale))
-        relaxation = task.size ** 0.6 / (1.0 + abs(scale * reduced))
+        relaxation = task.size**0.6 / (1.0 + abs(scale * reduced))
     elif kind == "crossover":
         signed = np.tanh(4.0 * reduced + noise)
         hysteresis = 0.0
@@ -175,7 +179,10 @@ def _critical_window(task: TaskSpec) -> tuple[dict[str, float], dict[str, Any]]:
     histogram /= max(histogram.sum(), 1.0)
     centered = signed - signed.mean()
     variance = np.mean(centered**2)
-    bimodality = float(np.mean(centered**3) ** 2 / max(variance**3, 1e-12) + 1.0 / max(np.mean(centered**4) / max(variance**2, 1e-12), 1e-12))
+    bimodality = float(
+        np.mean(centered**3) ** 2 / max(variance**3, 1e-12)
+        + 1.0 / max(np.mean(centered**4) / max(variance**2, 1e-12), 1e-12)
+    )
     metrics, arrays = common_coordinates(
         signed,
         size=task.size,
@@ -194,7 +201,10 @@ def _critical_window(task: TaskSpec) -> tuple[dict[str, float], dict[str, Any]]:
             "response_slope": float(np.mean(intervention - signed) / 0.05),
         },
     )
-    arrays.update(order_histogram=histogram.astype(np.float32), intervened_order=intervention.astype(np.float32))
+    arrays.update(
+        order_histogram=histogram.astype(np.float32),
+        intervened_order=intervention.astype(np.float32),
+    )
     return metrics, arrays
 
 
@@ -216,7 +226,9 @@ def _outcome_atlas(task: TaskSpec) -> tuple[dict[str, float], dict[str, Any]]:
         computational_threshold = 0.62
     elif outcome == "splitting":
         amplitude = max(0.0, control - 0.35)
-        signed = np.tanh(scale * (control - 0.5) + noise) + rng.choice((-1.0, 1.0), probes) * amplitude
+        signed = (
+            np.tanh(scale * (control - 0.5) + noise) + rng.choice((-1.0, 1.0), probes) * amplitude
+        )
         signed = np.clip(signed, -1.0, 1.0)
         mode_count = 2.0
     elif outcome == "merging":
@@ -257,7 +269,9 @@ def _outcome_atlas(task: TaskSpec) -> tuple[dict[str, float], dict[str, Any]]:
             "threshold_separation": computational_threshold - statistical_threshold,
         },
     )
-    arrays.update(order_histogram=histogram.astype(np.float32), oracle_order=oracle.astype(np.float32))
+    arrays.update(
+        order_histogram=histogram.astype(np.float32), oracle_order=oracle.astype(np.float32)
+    )
     return metrics, arrays
 
 

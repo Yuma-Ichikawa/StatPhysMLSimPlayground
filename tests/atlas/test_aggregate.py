@@ -130,9 +130,7 @@ def test_trajectory_table_preserves_axes_steps_and_hierarchy(tmp_path: Path) -> 
     loss_rows = [row for row in aggregate.trajectories if row["array_name"] == "data_loss"]
     assert [row["step"] for row in loss_rows] == [0, 10]
     assert all(row["step_axis"] == "step" for row in loss_rows)
-    probe_rows = [
-        row for row in aggregate.trajectories if row["array_name"] == "functional_m_pos"
-    ]
+    probe_rows = [row for row in aggregate.trajectories if row["array_name"] == "functional_m_pos"]
     assert probe_rows[0]["step_axis"] == "probe_step"
     spectral_rows = [
         row for row in aggregate.trajectories if row["array_name"] == "qk_singular_values"
@@ -301,4 +299,3 @@ def test_transition_claim_requires_complete_five_size_ensemble_evidence() -> Non
     assert claim["data_collapse_score"] < 1e-20
     run_rows[-1]["eligible_for_claims"] = False
     assert evaluate_claims(run_rows, ensembles)[0]["label"] == "insufficient_evidence"
-

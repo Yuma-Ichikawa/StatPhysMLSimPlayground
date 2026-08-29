@@ -9,7 +9,6 @@ from statphys.continuation.core.metrics import COMMON_METRICS
 from statphys.continuation.core.registry import resolve_runner
 from statphys.continuation.schema import Domain, TaskSpec
 
-
 CASES = [
     (Domain.TRANSFORMER, "architecture", "m0", 1.0),
     (Domain.TRANSFORMER, "heads", "tied", 1.0),

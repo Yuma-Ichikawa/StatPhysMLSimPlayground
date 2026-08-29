@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import math
-from pathlib import Path
 import shlex
 import tomllib
+from dataclasses import dataclass
+from pathlib import Path
 
 from ..core.schema import Manifest, read_manifest
 
@@ -69,9 +69,7 @@ def render_array_script(manifest: Manifest, profile: SlurmProfile) -> str:
     if profile.gpus_per_task:
         directives.append(f"#SBATCH --gres=gpu:{profile.gpus_per_task}")
     directives.extend(f"#SBATCH {line}" for line in profile.extra_sbatch)
-    body = [
-        line for line in directives if line
-    ] + [
+    body = [line for line in directives if line] + [
         "",
         "set -euo pipefail",
         ': "${STATPHYS_MANIFEST:?export STATPHYS_MANIFEST to the generated manifest}"',

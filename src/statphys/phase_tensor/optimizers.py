@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import inspect
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 import torch
 
@@ -11,7 +12,9 @@ import torch
 class CompositeOptimizer:
     def __init__(self, optimizers: Iterable[torch.optim.Optimizer]) -> None:
         self.optimizers = list(optimizers)
-        self.param_groups = [group for optimizer in self.optimizers for group in optimizer.param_groups]
+        self.param_groups = [
+            group for optimizer in self.optimizers for group in optimizer.param_groups
+        ]
 
     def zero_grad(self, set_to_none: bool = True) -> None:
         for optimizer in self.optimizers:
@@ -22,7 +25,9 @@ class CompositeOptimizer:
             optimizer.step()
 
     def state_dict(self) -> dict[str, Any]:
-        return {str(index): optimizer.state_dict() for index, optimizer in enumerate(self.optimizers)}
+        return {
+            str(index): optimizer.state_dict() for index, optimizer in enumerate(self.optimizers)
+        }
 
 
 def _accepted_kwargs(cls: type[Any], kwargs: dict[str, Any]) -> dict[str, Any]:

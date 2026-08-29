@@ -38,4 +38,3 @@ def scalar_or_array(value: np.ndarray | float) -> Any:
 
     array = np.asarray(value)
     return float(array) if array.ndim == 0 else array
-

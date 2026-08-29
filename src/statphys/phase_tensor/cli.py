@@ -5,13 +5,13 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from pathlib import Path
 import sys
-from typing import Sequence
+from collections.abc import Sequence
+from pathlib import Path
 
 from .data import prepare_corpus
-from .plotting import plot_phase_tensor
 from .paper import write_phase_tensor_results
+from .plotting import plot_phase_tensor
 from .report import aggregate_phase_tensor
 
 
@@ -39,7 +39,9 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> None:
     args = build_parser().parse_args(argv)
     if args.command == "prepare-data":
-        paths = [prepare_corpus(name, Path(args.root), max_bytes=args.max_bytes) for name in args.names]
+        paths = [
+            prepare_corpus(name, Path(args.root), max_bytes=args.max_bytes) for name in args.names
+        ]
         print(json.dumps({"corpora": [str(path) for path in paths]}, indent=2), flush=True)
         if os.environ.get("STATPHYS_DATA_FAST_EXIT") == "1":
             sys.stdout.flush()
