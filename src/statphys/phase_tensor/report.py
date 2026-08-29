@@ -14,6 +14,7 @@ import numpy as np
 from scipy.stats import t as student_t
 
 from statphys.continuation.core.schema import read_manifest
+from statphys.core import Estimate
 
 LEGACY_CAUSAL_METRICS = {
     "attention_contribution": "attention",
@@ -41,14 +42,102 @@ def _summary(values: Iterable[float], seed_ids: Iterable[int]) -> dict[str, Any]
     mean = float(data.mean())
     standard_deviation = float(data.std(ddof=1))
     critical = float(student_t.ppf(0.975, df=data.size - 1))
+    standard_error = standard_deviation / math.sqrt(data.size)
+    half_width = critical * standard_error
+    estimate = Estimate(
+        mean=mean,
+        interval_low=mean - half_width,
+        interval_high=mean + half_width,
+        interval_level=0.95,
+        uncertainty_method="Student-t interval over independent outer seeds",
+        n_outer=int(data.size),
+        n_inner=None,
+        outer_seed_ids=seeds,
+        raw_outer_values=tuple(float(value) for value in data),
+        units="dimensionless",
+        standard_deviation=standard_deviation,
+        standard_error=standard_error,
+    ).to_dict()
+    # Compatibility aliases for report readers predating the canonical Estimate.
+    estimate.update(
+        {
+            "ci95": half_width,
+            "n": int(data.size),
+            "seed_ids": list(seeds),
+            "raw_values": [float(value) for value in data],
+        }
+    )
+    return estimate
+
+
+def _outer_phase_summaries(
+    members: list[dict[str, Any]], seed_ids: tuple[int, ...]
+) -> dict[str, dict[str, Any]]:
+    """Estimate phase observables over independent training/disorder seeds."""
+    if not all("signed_order_parameter" in member["metrics"] for member in members):
+        return {}
+    by_seed = {int(member["seed"]): member for member in members}
+    samples = np.asarray(
+        [by_seed[seed]["metrics"]["signed_order_parameter"] for seed in seed_ids],
+        dtype=np.float64,
+    )
+    finite_size = float(members[0]["size"])
+
+    def susceptibility(values: np.ndarray) -> float:
+        return finite_size * float(np.mean(values**2) - np.mean(values) ** 2)
+
+    def binder(values: np.ndarray) -> float:
+        second = float(np.mean(values**2))
+        fourth = float(np.mean(values**4))
+        return 0.0 if second <= np.finfo(float).eps else 1.0 - fourth / (3.0 * second**2)
+
+    def sign_entropy(values: np.ndarray) -> float:
+        positive = float(np.mean(values > 0.0))
+        if positive <= 0.0 or positive >= 1.0:
+            return 0.0
+        return float(
+            -(positive * math.log(positive) + (1.0 - positive) * math.log(1.0 - positive))
+            / math.log(2.0)
+        )
+
+    def jackknife(statistic: Any) -> dict[str, Any]:
+        point = float(statistic(samples))
+        count = len(samples)
+        leave_one_out = np.asarray(
+            [statistic(np.delete(samples, index)) for index in range(count)], dtype=np.float64
+        )
+        pseudo = count * point - (count - 1) * leave_one_out
+        standard_deviation = float(pseudo.std(ddof=1))
+        standard_error = standard_deviation / math.sqrt(count)
+        half_width = float(student_t.ppf(0.975, df=count - 1)) * standard_error
+        estimate = Estimate(
+            mean=point,
+            interval_low=point - half_width,
+            interval_high=point + half_width,
+            interval_level=0.95,
+            uncertainty_method="delete-one outer-seed jackknife",
+            n_outer=count,
+            n_inner=None,
+            outer_seed_ids=seed_ids,
+            raw_outer_values=tuple(float(value) for value in pseudo),
+            units="dimensionless",
+            standard_deviation=standard_deviation,
+            standard_error=standard_error,
+        ).to_dict()
+        estimate.update(
+            {
+                "ci95": half_width,
+                "n": count,
+                "seed_ids": list(seed_ids),
+                "raw_values": [float(value) for value in pseudo],
+            }
+        )
+        return estimate
+
     return {
-        "mean": mean,
-        "standard_deviation": standard_deviation,
-        "standard_error": standard_deviation / math.sqrt(data.size),
-        "ci95": critical * standard_deviation / math.sqrt(data.size),
-        "n": int(data.size),
-        "seed_ids": list(seeds),
-        "raw_values": [float(value) for value in data],
+        "susceptibility": jackknife(susceptibility),
+        "binder_cumulant": jackknife(binder),
+        "disorder_sign_entropy": jackknife(sign_entropy),
     }
 
 
@@ -122,7 +211,16 @@ def _canonical_causal_metrics(metrics: dict[str, Any]) -> dict[str, Any]:
 def _condition_metric_summaries(
     members: list[dict[str, Any]], seed_ids: tuple[int, ...]
 ) -> dict[str, Any]:
-    metric_names = sorted(set().union(*(set(member["metrics"]) for member in members)))
+    schemas = [set(member["metrics"]) for member in members]
+    if any(schema != schemas[0] for schema in schemas[1:]):
+        details = "; ".join(
+            f"seed {member['seed']}: {','.join(sorted(schema))}"
+            for member, schema in zip(members, schemas, strict=True)
+        )
+        raise RuntimeError(
+            f"metric schema differs across outer seeds; missing or extra fields: ({details})"
+        )
+    metric_names = sorted(schemas[0])
     summaries: dict[str, Any] = {}
     members_by_seed = {int(member["seed"]): member for member in members}
     for metric_name in metric_names:
@@ -136,6 +234,11 @@ def _condition_metric_summaries(
                 raise RuntimeError(f"required metric {metric_name!r} is non-finite for seed {seed}")
             values.append(value)
         summaries[metric_name] = _summary(values, seed_ids)
+    phase = _outer_phase_summaries(members, seed_ids)
+    for metric_name, estimate in phase.items():
+        if metric_name in summaries:
+            summaries[f"inner_{metric_name}"] = summaries.pop(metric_name)
+        summaries[metric_name] = estimate
     return summaries
 
 
@@ -422,11 +525,14 @@ def aggregate_phase_tensor(
         )
 
     payload = {
-        "schema_version": "1.1",
+        "schema_version": "2.0",
         "study": manifest.study,
         "seeds": list(manifest_seeds),
         "seed_count": len(manifest_seeds),
         "uncertainty": f"two-sided 95% Student-t interval across {len(manifest_seeds)} full-pipeline seeds",
+        "phase_ensemble": "outer_seed",
+        "fidelity": "trainable_synthetic",
+        "theory_status": "empirical_only",
         "causal_metric_contract": {
             "effect": "delta_R / (abs(delta_R) + R_full + 1e-12)",
             "range": [-1.0, 1.0],

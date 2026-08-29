@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "source_revision": "1b483ee5add61663c9bc6f240658eabf59d961d5",
+  "validity": "partially_invalidated",
+  "invalid_metrics": [
+    "phase_tensor.susceptibility_from_checkpoints",
+    "phase_tensor.binder_cumulant_from_checkpoints",
+    "phase_tensor.macrostate_entropy_from_checkpoint_signs",
+    "atlas.best_loss_before_checkpoint_fix",
+    "atlas.converged_before_status_fix"
+  ],
+  "retained_metric_families": [
+    "normalized_train_risk",
+    "normalized_test_risk",
+    "normalized_ood_risk",
+    "bits_per_byte",
+    "token_accuracy",
+    "causal_ablation_effects"
+  ],
+  "reason": "phase_statistics_v2_and_training_status_v2",
+  "replacement_policy": "Recompute outer-seed phase statistics from terminal independent runs; keep temporal summaries under temporal names."
+}

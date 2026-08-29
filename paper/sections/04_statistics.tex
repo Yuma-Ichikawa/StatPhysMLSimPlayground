@@ -1,7 +1,7 @@
 \section{Experimental and statistical protocol}
 \label{sec:protocol}
 
-Evidence strength follows Table~\ref{tab:evidence}. The controlled predictive
+Evidence strength follows the vector summarized in Table~\ref{tab:evidence}. The controlled predictive
 benchmark uses 16 independent outer-disorder seeds, four inner stochastic
 replicates, and 16 additional outer seeds near the frozen boundary window.
 Inner replicates are never counted as independent disorder. The broad
@@ -15,7 +15,7 @@ outer seeds. These designs answer different questions and are never pooled.
 \toprule
 Tier & Purpose & Sizes & Outer seeds & Allowed language \\
 \midrule
-A & finite-size phase or boundary transport & $\geq6$ & $12$--$32$ &
+A & finite-size phase or boundary transport & registered path & $12$--$32$ &
 phase structure, crossing/crossover, predictive boundary \\
 B & frozen mechanism or endpoint comparison & $\geq3$ & $\geq5$ &
 shift, mechanism candidate, resolved/unresolved contrast \\
@@ -23,8 +23,9 @@ C & natural or open endpoint & $\geq2$ & $\geq5$ &
 measurement transport and bounded external validity \\
 \bottomrule
 \end{tabularx}
-\caption{Evidence tiers. More seeds do not upgrade an invalid order parameter
-or a non-independent holdout.}
+\caption{Convenient language classes derived from, but never replacing, the
+evidence vector. No fixed size count by itself upgrades an invalid order
+parameter or a non-independent holdout.}
 \label{tab:evidence}
 \end{table}
 
@@ -33,7 +34,8 @@ Finite-size scaling is domain specific \cite{fisher1972scaling,binder1981cumulan
 fisher1982firstorder}. We therefore do not impose $N^{-1/2}$ or $N^{-1}$ on
 width, trajectory resolution, horizon, and population as universal exponents.
 Candidate forms are empirical models whose parameters are fit below the
-largest size and scored prospectively on it. A phase label additionally
+largest size and selected without it; the untouched largest size is used only
+for prospective scoring. A phase label additionally
 requires order semantics, sharpening or crossing diagnostics, sensitivity to
 the minimum size and fitting window, and a registered alternative.
 
@@ -49,7 +51,10 @@ normalization, never division by a vanishing remaining-accuracy scale.
 \paragraph{Accounting and preregistration.}
 A condition is a unique PhaseCard; a trained model is one outer seed; an inner
 replicate is conditional stochasticity; an evaluation is not a new model.
-Configuration hashes, corpus revisions and hashes, seed values, raw seed
+Metric schemas must match exactly across registered seeds: aggregation never
+takes the intersection of available keys. A boundary-profile bootstrap draws
+one outer-seed index vector and reuses it across all controls, preserving the
+paired disorder profile. Configuration hashes, corpus revisions and hashes, seed values, raw seed
 metrics, censor flags, cap-hit flags, tokens, estimated FLOPs, and elapsed time
 are stored before aggregation. Confirmation configurations were frozen after
 the exploratory audit in the machine-readable claim ledger

@@ -1,0 +1,43 @@
+schema_version = "1.0"
+
+[[questions]]
+id = "RQ1_semantic_survival"
+hypothesis = "Registered macroscopic observables retain information about their latent reference under deformation."
+falsifier = "Permutation, label-shuffle, or counterfactual nulls remove no less information than the registered observable."
+required_evidence = ["semantic_null", "independent_functional_probe"]
+
+[[questions]]
+id = "RQ2_boundary_transport"
+hypothesis = "A source-calibrated reduced description predicts an untouched target deformation better than simple transport baselines."
+falsifier = "Constant, source-boundary, nearest-calibration, or size-only baselines match the registered surrogate."
+required_evidence = ["calibration_split", "untouched_holdout", "paired_outer_seed_bootstrap"]
+
+[[questions]]
+id = "RQ3_assumption_nonadditivity"
+hypothesis = "At least one registered pair of deformation axes has a non-zero interaction contrast."
+falsifier = "All pair contrasts include zero under paired outer-seed uncertainty."
+required_evidence = ["all_15_pairs", "trainable_system_subset"]
+
+[[questions]]
+id = "RQ4_path_dependence"
+hypothesis = "At least one ordered deformation path differs from its reversed path."
+falsifier = "Forward and reverse paths agree under matched compute and disorder."
+required_evidence = ["ordered_paths", "matched_compute"]
+
+[[questions]]
+id = "RQ5_statistical_computational_gap"
+hypothesis = "A registered optimizer fails where the oracle or information-theoretic reference remains feasible."
+falsifier = "Optimizer and oracle thresholds agree within uncertainty."
+required_evidence = ["oracle_reference", "optimizer_sensitivity", "time_scaling"]
+
+[[questions]]
+id = "RQ6_intervention_value"
+hypothesis = "A matched-resource intervention has higher marginal value near a registered transition neighborhood."
+falsifier = "Critical-window allocation does not beat matched random-window allocation on trained endpoints."
+required_evidence = ["trained_endpoint", "matched_random_window", "fresh_seeds"]
+
+[[questions]]
+id = "RQ7_outcome_reuse"
+hypothesis = "Continuation outcomes are reusable structural descriptors across domains without common critical exponents."
+falsifier = "Outcome labels do not improve prediction or diagnosis over domain-specific unstructured reports."
+required_evidence = ["domain_specific_semantics", "structural_feature_comparison"]

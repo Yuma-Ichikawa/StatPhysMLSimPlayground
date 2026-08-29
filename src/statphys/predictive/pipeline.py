@@ -185,13 +185,23 @@ def aggregate(manifest_path: str | Path, runs: str | Path, output: str | Path) -
     rng = np.random.default_rng(20260719)
     conditions: list[dict[str, Any]] = []
     for key, rows in sorted(grouped.items()):
-        metric_names = sorted(set.intersection(*(set(row["metrics"]) for row in rows)))
+        schemas = {tuple(sorted(row["metrics"])) for row in rows}
+        if len(schemas) != 1:
+            by_seed = {
+                (int(row["seed"]), int(row["inner"])): sorted(row["metrics"]) for row in rows
+            }
+            raise RuntimeError(f"inconsistent metric schema for condition {key}: {by_seed}")
+        metric_names = list(next(iter(schemas)))
         metrics: dict[str, Any] = {}
         for metric in metric_names:
             outer: dict[int, list[float]] = defaultdict(list)
             for row in rows:
-                outer[int(row["seed"])].append(float(row["metrics"][metric]))
-            outer_values = np.asarray([np.mean(values) for values in outer.values()], dtype=float)
+                value = float(row["metrics"][metric])
+                if not math.isfinite(value):
+                    raise RuntimeError(f"non-finite {metric} for condition {key}")
+                outer[int(row["seed"])].append(value)
+            seed_ids = sorted(outer)
+            outer_values = np.asarray([np.mean(outer[seed]) for seed in seed_ids], dtype=float)
             mean, low, high = _bootstrap_ci(outer_values, rng)
             within = float(
                 np.mean(
@@ -209,6 +219,7 @@ def aggregate(manifest_path: str | Path, runs: str | Path, output: str | Path) -
                 "within_disorder_variance": within,
                 "outer_seeds": len(outer),
                 "inner_replicates": len(rows) // len(outer),
+                "outer_seed_ids": seed_ids,
                 "raw_outer_means": outer_values.tolist(),
             }
         conditions.append(
@@ -228,8 +239,19 @@ def aggregate(manifest_path: str | Path, runs: str | Path, output: str | Path) -
     interactions = _assumption_interactions(boundaries)
     interventions = _intervention_summary(conditions)
     result = {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "study": manifest.study,
+        "benchmark_role": "known_ground_truth_method_validation",
+        "fidelity": "phenomenological_generator",
+        "allowed_claims": [
+            "method recovery error",
+            "false-positive rate",
+            "registered simulator response",
+        ],
+        "disallowed_claims": [
+            "phase discovered in a trained real system",
+            "observed wall-clock training benefit",
+        ],
         "registered_tasks": len(manifest.tasks),
         "devices": dict(sorted(devices.items())),
         "artifact_storage": {"individual_results": True, "compact_shards": bool(shard_paths)},
@@ -249,16 +271,26 @@ def aggregate(manifest_path: str | Path, runs: str | Path, output: str | Path) -
 
 
 def _quadratic_peak(x: np.ndarray, y: np.ndarray) -> float:
+    return float(_quadratic_peak_result(x, y)["value"])
+
+
+def _quadratic_peak_result(x: np.ndarray, y: np.ndarray) -> dict[str, Any]:
     index = int(np.argmax(y))
-    if index == 0 or index == len(x) - 1:
-        return float(x[index])
+    if index == 0:
+        return {"value": float(x[index]), "status": "left_censored", "index": index}
+    if index == len(x) - 1:
+        return {"value": float(x[index]), "status": "right_censored", "index": index}
     local_x = x[index - 1 : index + 2]
     local_y = y[index - 1 : index + 2]
     quadratic, linear, _ = np.polyfit(local_x, local_y, 2)
     if quadratic >= -1e-12:
-        return float(x[index])
+        return {"value": float(x[index]), "status": "unresolved", "index": index}
     vertex = -linear / (2.0 * quadratic)
-    return float(np.clip(vertex, local_x[0], local_x[-1]))
+    return {
+        "value": float(np.clip(vertex, local_x[0], local_x[-1])),
+        "status": "crossed",
+        "index": index,
+    }
 
 
 def _estimate_boundaries(conditions: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -270,7 +302,8 @@ def _estimate_boundaries(conditions: list[dict[str, Any]]) -> list[dict[str, Any
         rows.sort(key=lambda row: row["control"])
         controls = np.asarray([row["control"] for row in rows], dtype=float)
         susceptibility = np.asarray([row["metrics"]["susceptibility"]["mean"] for row in rows])
-        observed = _quadratic_peak(controls, susceptibility)
+        peak = _quadratic_peak_result(controls, susceptibility)
+        observed = float(peak["value"])
         truth = float(np.mean([row["metrics"]["critical_control_truth"]["mean"] for row in rows]))
         truth_low = float(
             np.mean([row["metrics"]["critical_control_truth"]["ci95_low"] for row in rows])
@@ -280,11 +313,19 @@ def _estimate_boundaries(conditions: list[dict[str, Any]]) -> list[dict[str, Any
         )
         seed_material = "|".join(map(str, key)).encode()
         rng = np.random.default_rng(int(sha256(seed_material).hexdigest()[:16], 16))
-        bootstrap_profiles = np.empty((1000, len(rows)), dtype=float)
-        for column, row in enumerate(rows):
-            raw = np.asarray(row["metrics"]["susceptibility"]["raw_outer_means"], dtype=float)
-            indices = rng.integers(0, len(raw), size=(1000, len(raw)))
-            bootstrap_profiles[:, column] = raw[indices].mean(axis=1)
+        seed_ids = list(rows[0]["metrics"]["susceptibility"]["outer_seed_ids"])
+        if any(
+            list(row["metrics"]["susceptibility"]["outer_seed_ids"]) != seed_ids for row in rows[1:]
+        ):
+            raise RuntimeError(f"outer-seed profile is not paired across controls for {key}")
+        raw_profiles = np.column_stack(
+            [
+                np.asarray(row["metrics"]["susceptibility"]["raw_outer_means"], dtype=float)
+                for row in rows
+            ]
+        )
+        indices = rng.integers(0, len(seed_ids), size=(1000, len(seed_ids)))
+        bootstrap_profiles = raw_profiles[indices].mean(axis=1)
         boundary_samples = np.asarray(
             [_quadratic_peak(controls, profile) for profile in bootstrap_profiles]
         )
@@ -296,6 +337,8 @@ def _estimate_boundaries(conditions: list[dict[str, Any]]) -> list[dict[str, Any
                 "size": key[2],
                 "secondary": key[3],
                 "observed": observed,
+                "boundary_status": peak["status"],
+                "censoring": None if peak["status"] == "crossed" else peak["status"],
                 "observed_ci95_low": float(observed_low),
                 "observed_ci95_high": float(observed_high),
                 "latent_truth": truth,
@@ -304,6 +347,7 @@ def _estimate_boundaries(conditions: list[dict[str, Any]]) -> list[dict[str, Any
                 "ci95_width": float(observed_high - observed_low),
                 "peak_susceptibility": float(susceptibility.max()),
                 "holdout": key[1] == "holdout",
+                "bootstrap_unit": "paired outer-seed control profile",
             }
         )
     return output
@@ -380,8 +424,10 @@ def _predict_boundaries(
     boundaries: list[dict[str, Any]], *, _propagate_uncertainty: bool = True
 ) -> dict[str, Any]:
     predictions: list[dict[str, Any]] = []
-    for domain in sorted({row["domain"] for row in boundaries}):
-        domain_rows = [row for row in boundaries if row["domain"] == domain]
+    censored = [row for row in boundaries if row.get("boundary_status", "crossed") != "crossed"]
+    eligible = [row for row in boundaries if row.get("boundary_status", "crossed") == "crossed"]
+    for domain in sorted({row["domain"] for row in eligible}):
+        domain_rows = [row for row in eligible if row["domain"] == domain]
         train = [row for row in domain_rows if not row["holdout"]]
         test = [row for row in domain_rows if row["holdout"]]
         if not train or not test:
@@ -461,9 +507,9 @@ def _predict_boundaries(
                 else None
             ),
         }
-    has_intervals = bool(boundaries) and all(
+    has_intervals = bool(eligible) and all(
         "ci95_width" in row or ("observed_ci95_low" in row and "observed_ci95_high" in row)
-        for row in boundaries
+        for row in eligible
     )
     if _propagate_uncertainty and has_intervals:
         rng = np.random.default_rng(20260723)
@@ -482,7 +528,7 @@ def _predict_boundaries(
 
         for _ in range(256):
             sampled = []
-            for row in boundaries:
+            for row in eligible:
                 if "ci95_width" in row:
                     width = float(row["ci95_width"])
                 else:
@@ -534,6 +580,7 @@ def _predict_boundaries(
             "augmented_selection_status": "preregistered",
         },
         "uncertainty": uncertainty,
+        "censored_boundaries": censored,
     }
 
 
@@ -579,19 +626,35 @@ def _compare_transition_models(conditions: list[dict[str, Any]]) -> list[dict[st
             beta = np.linalg.lstsq(design(train_sizes), train_y, rcond=None)[0]
             fitted = design(train_sizes) @ beta
             predicted = float((design(test_size) @ beta)[0])
+            validation_errors: list[float] = []
+            for validation_index in range(len(train_sizes)):
+                keep = np.arange(len(train_sizes)) != validation_index
+                if np.count_nonzero(keep) < design(train_sizes[keep]).shape[1]:
+                    continue
+                fold_beta = np.linalg.lstsq(design(train_sizes[keep]), train_y[keep], rcond=None)[0]
+                fold_prediction = float(
+                    (design(train_sizes[validation_index : validation_index + 1]) @ fold_beta)[0]
+                )
+                validation_errors.append(abs(fold_prediction - float(train_y[validation_index])))
+            validation_score = (
+                float(np.mean(validation_errors)) if validation_errors else float("inf")
+            )
             fits[name] = {
                 "training_rmse": float(np.sqrt(np.mean((fitted - train_y) ** 2))),
+                "leave_one_size_out_mae": validation_score,
                 "largest_size_prediction": predicted,
                 "largest_size_observed": float(test_y),
                 "largest_size_absolute_error": abs(predicted - float(test_y)),
             }
-        selected = min(fits, key=lambda name: fits[name]["largest_size_absolute_error"])
+        selected = min(fits, key=lambda name: fits[name]["leave_one_size_out_mae"])
         comparisons.append(
             {
                 "domain": key[0],
                 "variant": key[1],
                 "secondary": key[2],
                 "selected": selected,
+                "selection_rule": "leave-one-size-out validation below the held-out largest size",
+                "largest_size_role": "untouched evaluation",
                 "n_sizes": len(sizes),
                 "widths": [{"size": int(n), "width": width} for n, width in widths],
                 "models": fits,
@@ -1431,18 +1494,14 @@ def render_slurm(manifest_path: str | Path, profile_path: str | Path, output: st
     array_size = min(count, int(profile.get("max_array_size", count)))
     if block < 1 or array_size < 1:
         raise ValueError("tasks_per_array, max_array_size, and manifest size must be positive")
-    partition = str(profile["partition"])
-    if not partition.startswith("spark_"):
-        raise ValueError("predictive production jobs require a DGX Spark partition")
+    partition = str(profile.get("partition", ""))
     gpus = int(profile.get("gpus", 1))
     device = str(profile.get("device", "cuda" if gpus else "cpu"))
     lines = [
         "#!/usr/bin/env bash",
         "#SBATCH --job-name=predictive-phase",
-        f"#SBATCH --partition={partition}",
         f"#SBATCH --array=0-{array_size - 1}%{int(profile['max_parallel'])}",
         f"#SBATCH --time={profile['time']}",
-        f"#SBATCH --gres=gpu:{gpus}",
         f"#SBATCH --cpus-per-task={int(profile.get('cpus', 4))}",
         f"#SBATCH --mem={profile.get('memory', '16G')}",
         "set -euo pipefail",
@@ -1463,6 +1522,10 @@ def render_slurm(manifest_path: str | Path, profile_path: str | Path, output: st
         "  BLOCK_INDEX=$((BLOCK_INDEX + BLOCKS_PER_ARRAY))",
         "done",
     ]
+    if partition:
+        lines.insert(2, f"#SBATCH --partition={partition}")
+    if gpus:
+        lines.insert(5 if partition else 4, f"#SBATCH --gres=gpu:{gpus}")
     target = Path(output)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text("\n".join(lines) + "\n")

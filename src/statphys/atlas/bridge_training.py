@@ -18,6 +18,7 @@ from .schema import OptimizerName, Precision, TrainingSpec
 from .training import (
     Probe,
     TrainingResult,
+    TrainingStatus,
     _gradient_norm,
     _model_state_copy,
     _parameter_norm,
@@ -109,6 +110,9 @@ def train_bridge(
     history: dict[str, list[float]] = {
         "step": [],
         "data_loss": [],
+        "explicit_penalty": [],
+        "optimizer_decay": [],
+        "reported_energy": [],
         "objective": [],
         "gradient_norm": [],
         "weight_norm": [],
@@ -119,6 +123,7 @@ def train_bridge(
     best_state: dict[str, Any] | None = None
     stale = 0
     converged = False
+    status = TrainingStatus.MAX_STEPS
     stop_reason = "budget_exhausted"
     started = time.perf_counter()
 
@@ -157,6 +162,7 @@ def train_bridge(
         final_loss = float(loss)
         if not math.isfinite(final_loss):
             stop_reason = "numerical_failure"
+            status = TrainingStatus.NUMERICAL_FAILURE
             break
         l2 = (
             0.5
@@ -166,7 +172,10 @@ def train_bridge(
         if record:
             history["step"].append(float(step))
             history["data_loss"].append(final_loss)
-            history["objective"].append(final_loss + l2)
+            history["explicit_penalty"].append(0.0)
+            history["optimizer_decay"].append(l2)
+            history["reported_energy"].append(final_loss + l2)
+            history["objective"].append(final_loss)
             history["gradient_norm"].append(gradient_norm)
             history["weight_norm"].append(_parameter_norm(model))
             history["relative_update_norm"].append(_update_norm(model, initial) / initial_norm)
@@ -214,10 +223,12 @@ def train_bridge(
         ):
             converged = True
             stop_reason = "converged"
+            status = TrainingStatus.CONVERGED
             break
         if spec.patience is not None and step >= spec.min_steps and stale >= spec.patience:
-            converged = True
+            converged = False
             stop_reason = "patience"
+            status = TrainingStatus.EARLY_STOPPED
             break
 
     terminal_loss = final_loss
@@ -233,6 +244,7 @@ def train_bridge(
         converged=converged,
         elapsed_seconds=time.perf_counter() - started,
         history=history,
+        status=status,
         stop_reason=stop_reason,
         terminal_loss=terminal_loss,
         restored_best_checkpoint=restored_best_checkpoint,

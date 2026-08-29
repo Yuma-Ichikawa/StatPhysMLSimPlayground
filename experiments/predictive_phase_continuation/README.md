@@ -28,7 +28,7 @@ python -m statphys.predictive.cli manifest \
   --output manifest.json
 python -m statphys.predictive.cli slurm \
   --manifest manifest.json \
-  --profile experiments/predictive_phase_continuation/cluster/dgx_spark.toml \
+  --profile experiments/predictive_phase_continuation/cluster/gpu.toml \
   --output job.sbatch
 ```
 
@@ -39,7 +39,7 @@ Cluster paths are supplied only through `STATPHYS_REPO`, `STATPHYS_MANIFEST`,
 
 - Raw outer-seed values and inner replicates remain in every artifact.
 - Intervals use outer-disorder resampling, never pooled pseudo-replicates.
-- Continuous, first-order-like, and smooth-crossover width models compete on
-  largest-size prediction.
+- Continuous, first-order-like, and smooth-crossover width models are selected
+  below the largest size; that untouched size is used only for evaluation.
 - Plots show raw seed dots and 95% hierarchical bootstrap intervals.
 - Every plot is 6.4 by 4.8 inches and follows the registered journal style.

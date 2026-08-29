@@ -44,7 +44,7 @@
 - **Theory solvers**: replica saddle-point equations (6 scenarios) and online-learning ODEs (6 scenarios), with automatic theory-vs-experiment comparison
 - **22 datasets / 19 models / 16 losses**: from Gaussian linear teachers to ICL tasks, sequence models, and attention-indexed models
 - **General teacher-student experiments**: theory-free numerical experiments for *any* PyTorch model, with structured teacher weights (sparse, low-rank, spiked, power-law, ...) and configurable input distributions — including **hidden-manifold** inputs for realistic data structure
-- **Physics order parameters for any architecture**: function-space magnetization, replica overlap, susceptibility, Binder cumulant, specialization index, subspace overlap, weight movement — locate phase transitions numerically even where no theory exists, with generalization error checked against exact formulas where available
+- **Registered macroscopic observables for any architecture**: function-space recovery, replica overlap, disorder susceptibility, Binder diagnostics, specialization, subspace overlap, and weight movement — screen finite-size responses with explicit ensembles, nulls, and censoring even where no analytic theory exists
 - **Realistic modern settings**: multi-index models (feature learning, subspace recovery), Gaussian-mixture classification (exactly verifiable Bayes error), lazy-vs-rich training regimes (Chizat & Bach), and LoRA-style low-rank fine-tuning — see [order_parameters.md](docs/order_parameters.md) for full derivations
 - **Frontier paradigms as physics experiments** (`statphys.frontier`): SFT forgetting/transfer phase diagrams, RLHF reward-model **overoptimization (Goodhart) transitions**, **weak-to-strong generalization** surfaces, **model collapse** under synthetic-data loops, and the **emergence of in-context learning** — the same order parameters, applied where no theory exists yet ([docs/frontier.md](docs/frontier.md))
 - **Numerical phase diagrams**: 2D (parameter × α) sweeps with contour-based boundary estimation, plus finite-size-scaling protocols
@@ -53,13 +53,13 @@
 - **Modern phenomenology, ready-made**: grokking (delayed generalization), Gaussian universality, model-wise double descent, data-scaling exponents, multi-index recovery, mixture classification, lazy/rich regimes, and LoRA fine-tuning — all as one-command studies
 - **Slurm integration**: programmatic sbatch generation and job arrays, no hardcoded cluster paths
 - **One-liner API**: `quick_online()`, `quick_replica()`, `quick_experiment()`, `quick_order_parameters()`, `quick_phase_diagram()`
-- **CLI**: `statphys list / order-params / phase-diagram / study` — no Python required
+- **Unified CLI**: guided study creation, validation, preview, execution, retry/status, strict aggregation, inspection, comparison, evidence-aware reports, paper macros, and environment diagnosis — no Python required
 
 ## Installation
 
 ```bash
-git clone https://github.com/yuma-ichikawa/statphys-ml.git
-cd statphys-ml
+git clone https://github.com/Yuma-Ichikawa/StatPhysMLSimPlayground.git
+cd StatPhysMLSimPlayground
 pip install -e ".[dev]"        # or: uv pip install -e ".[dev]"
 ```
 
@@ -88,19 +88,27 @@ result = statphys.quick_phase_diagram("sparse_teacher", "sparsity",
                                       [0.5, 0.8, 0.9, 0.95])
 ```
 
-### Phase transitions for any architecture
+### Finite-size diagnostics for any architecture
 
-Every observable is defined in *function space* on a shared probe set, so the
-same order parameters apply to linear models, MLPs, CNNs, LSTMs, attention,
-and tiny GPTs — no analytic theory required:
+The package can evaluate a common set of *function-space report roles* on a
+shared probe set for linear models, MLPs, CNNs, LSTMs, attention, and tiny
+GPTs. Their numerical values are not assumed to be the same physical quantity
+across domains. Every registered observable records its units, normalization,
+ensemble, null model, and validity range; transition language additionally
+requires replicated finite-size evidence.
 
 | Observable | Meaning |
 |---|---|
 | $\hat m$ | teacher-student overlap (magnetization); noise-independent recovery measure |
 | $q_{ab}$ | overlap between independently trained students (replica order parameter) |
 | $\epsilon_g$ | generalization error on fresh samples |
-| $\chi_m = d\,\mathrm{Var}[\hat m]$ | susceptibility; peaks at the transition |
-| Binder $U_4$ | finite-size-scaling estimate of the critical point |
+| $\chi_N = N_{\mathrm{eff}}\,\mathrm{Var}_\omega[\hat m_\omega]$ | susceptibility across independent outer disorder seeds; an interior peak is evidence, not a guarantee, of a transition |
+| Binder $U_4$ | outer-ensemble moment diagnostic; crossings are interpolated only when supported and are otherwise reported as censored |
+
+Checkpoint variation along one non-stationary training trajectory is reported
+separately as a temporal statistic; it is never substituted for disorder or
+replica susceptibility. Operational level crossings are labelled as such and
+are not promoted to thermodynamic critical points.
 
 ```python
 from statphys.experiment import architecture_experiment
@@ -146,6 +154,22 @@ wording. `statphys resume results` reuses the immutable `study.toml`; `compare`
 compares condition-level results; and `doctor` checks optional dependencies.
 All paths stored in an artifact are relative names, and reports require no
 local server. See [the guided workflow](docs/guided_workflow.md) for details.
+
+### Reproducible reference evidence
+
+The portable [GPU reference report](evidence/tensor_reference_validation/report.html)
+is generated from a 45-task Slurm validation (three controls, three widths,
+five independent outer seeds). Its strict
+[aggregate](evidence/tensor_reference_validation/aggregate.json) and compact
+[summary](evidence/tensor_reference_validation/summary.csv) retain raw outer
+values, canonical uncertainty intervals, scale metadata, and the evidence
+vector. The result is deliberately graded **C**: replication and semantic
+registration pass, but the finite-size grid shows no supported interior
+susceptibility peak and therefore establishes no thermodynamic transition.
+
+<p align="center">
+  <img src="screenshots/gpu_analysis_report.png" alt="Portable finite-width GPU evidence report" width="78%">
+</p>
 
 Ready-made studies cover the classic and the modern phenomenology:
 committee specialization, sparse-recovery finite-size scaling, 2D phase
@@ -314,7 +338,7 @@ Detailed documentation lives in [`docs/`](docs/README.md):
 | [Order Parameters (full reference)](docs/order_parameters.md) | Every order parameter/generalization-error formula, with derivations: multi-index subspace overlap, Gaussian-mixture Bayes error, lazy/rich weight movement, LoRA adapter recovery |
 | [Frontier Experiments](docs/frontier.md) | SFT, RLHF overoptimization, weak-to-strong, model collapse, ICL emergence — modern paradigms measured with physics order parameters |
 | [Glossary](docs/glossary.md) | Statistical-physics ↔ ML dictionary, for readers with no stat-mech background |
-| [Paper draft](paper/README.md) | *Phase Diagrams Without Solvable Models* — a paper built entirely from the frontier studies of this repository (LaTeX + figures) |
+| [Paper draft](paper/README.md) | *Beyond Solvable Models: A Numerical Statistical-Mechanics Atlas of Modern Machine Learning* (LaTeX, generated tables, and a reproducible PDF) |
 | [Theory & Literature](docs/THEORY.md) | Feature ↔ paper map; exact vs heuristic status |
 | [Package Structure](docs/package_structure.md) | Source-tree layout and design conventions |
 
@@ -353,7 +377,7 @@ If you use this package in your research, please cite:
   month        = feb,
   version      = {0.1.0},
   publisher    = {GitHub},
-  url          = {https://github.com/yuma-ichikawa/statphys-ml},
+  url          = {https://github.com/Yuma-Ichikawa/StatPhysMLSimPlayground},
   note         = {Python package for Teacher-Student model analysis using replica method and online learning theory}
 }
 ```

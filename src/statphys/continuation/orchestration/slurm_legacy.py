@@ -1,4 +1,4 @@
-"""Portable one-GPU-per-task Slurm arrays for an eight-GPU DGX."""
+"""Compatibility renderer for portable one-accelerator-per-task Slurm arrays."""
 
 from __future__ import annotations
 

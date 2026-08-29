@@ -16,7 +16,7 @@ def test_nested_interval_is_exactly_five_outer_seeds():
 
 def test_generated_slurm_script_is_portable_and_uses_full_gpu_array():
     manifest = expand_config(EXPERIMENT / "configs" / "cross_domain.toml")
-    profile = load_profile(EXPERIMENT / "cluster" / "dgx_gpu.toml")
+    profile = load_profile(EXPERIMENT / "cluster" / "gpu.toml")
     script = render_array_script(manifest, profile)
     assert "%8" in script
     assert "#SBATCH --gres=gpu:1" in script

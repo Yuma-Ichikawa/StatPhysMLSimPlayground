@@ -1,23 +1,39 @@
-\section{A hierarchical taxonomy of theory-to-reality deformations}
+\section{An orthogonal atlas of numerical statistical mechanics}
 \label{sec:taxonomy}
 
 The design space is a graph rather than a fully observed Cartesian tensor. A
-node is a learning system; an edge removes one registered assumption. Three
-levels prevent axes of different abstraction from being conflated.
+node is a scientific specification; an edge applies one registered deformation.
+Seven layers prevent axes of different abstraction from being conflated.
 
-\paragraph{Level 0: domain.}
+\paragraph{Domain.}
 The domains are Transformer representations, diffusion trajectories, RL
 feedback dynamics, and multi-agent populations.
 
-\paragraph{Level 1: thermodynamic level.}
-The object of interest is respectively learning, representation, trajectory, or
-population order. A system may occupy more than one level, but every PhaseCard
-selects one primary level.
+\paragraph{State object.}
+The primary object is a parameter ensemble, representation, optimizer
+trajectory, generated sample, policy occupancy, or interacting population.
 
-\paragraph{Level 2: six realism axes.}
-Table~\ref{tab:taxonomy} is the central design taxonomy. Architecture
-subcomponents such as attention and MLPs live under model/interaction rather
-than appearing beside data or population as peer axes.
+\paragraph{Deformation.}
+Data/environment, architecture/interaction, objective/feedback,
+dynamics/optimizer, and lifecycle changes are explicit operators. Attention
+and MLP choices are subcoordinates of architecture, not peers of data or scale.
+
+\paragraph{Disorder.}
+Initialization, dataset draw, environment instance, evaluation draw, and inner
+replica each have a registered role and seed stream. The outer disorder unit is
+the independent unit for uncertainty.
+
+\paragraph{Scale.}
+$\mathbf N=(d,L,T,H,n,C,\ldots)$ is a vector. One component is declared the
+finite-size coordinate and the remaining components follow a registered path;
+the scalar word ``size'' alone is insufficient.
+
+\paragraph{Observable and phenomenon.}
+An observable records estimator, units, intensive/extensive character, ensemble,
+null, and validity range. A phenomenon is then a hypothesis about recovery,
+specialization, locality, multiplicity, symmetry breaking, crossover,
+criticality, glassiness, dynamical arrest, or collective alignment---never a
+synonym for a visually steep curve.
 
 \begin{table}[t]
 \centering\small
@@ -35,15 +51,14 @@ $v$, flow, guidance & gold, proxy, process reward & individual, team,
 competitive reward \\
 Dynamics / optimizer & SGD-M, AdamW, Muon, SOAP, schedule & optimizer, noise
 schedule, solver & PPO, off-policy reuse, search & response and memory update \\
-Scale / resources & $d,L,T,H,n,C$ & dimension, resolution, NFE & parameters,
-horizon, rollouts & agents, degree, rounds \\
 Lifecycle / population & pretrain, LoRA, pruning, RAG, rollouts &
 distillation, conditioning & SFT--RL, verifier calls & heterogeneous agents,
 dynamic topology \\
 \bottomrule
 \end{tabularx}
-\caption{Hierarchical realism taxonomy. Entries are domain-specific subaxes,
-not claims that every cell is tested in this paper.}
+\caption{Domain-specific coordinates within the deformation layer. The other
+atlas layers---state, disorder, scale, observable, and phenomenon---are recorded
+separately; no empty cell is implied to have been tested.}
 \label{tab:taxonomy}
 \end{table}
 
@@ -87,19 +102,21 @@ probe distribution, normalization, units, and null.}
 
 \subsection{Outcomes and PhaseCards}
 
-An edge can preserve a phase structure, renormalize its coordinate, split or
-merge regimes, round a sharp response, insert a new regime, separate
-information and computation thresholds, become path dependent, or destroy the
-semantics of the order parameter. These outcomes are hypotheses adjudicated by
-registered diagnostics; they are not labels assigned from visual smoothness.
+An edge has one of 13 registered outcomes: preserved, renormalized, rounded,
+split, merged, new regime, hysteretic, path-dependent,
+statistical--computational separation, semantic failure, censored without a
+crossing, unresolved, or not comparable.
+These outcomes are hypotheses adjudicated by diagnostics, not labels assigned
+from visual smoothness.
 
 The minimal experimental record is
 \begin{equation}
-\mathcal P=(D,L,A,\delta,\omega,\mathbf N,\mathbf g,\mathbf m,
-\mathbf R,H,E),
+\mathcal P=(D,S,\delta,\omega,\mathbf N,\mathbf g,\mathbf m,
+\mathbf R,H,T,F,\mathbf E,O),
 \end{equation}
-where $D$ is domain, $L$ thermodynamic level, $A$ anchor, $\delta$ deformation,
-$\omega$ disorder hierarchy, $\mathbf N$ system-size vector, $\mathbf g$
-controls, $\mathbf m$ primary and secondary orders, $\mathbf R$ resources,
-$H$ holdout rule, and $E$ evidence tier. Full PhaseCards are machine-readable;
-representative cards appear in Section~\ref{sec:protocol}.
+where $D$ is domain, $S$ the state object, $\delta$ deformation, $\omega$
+disorder hierarchy, $\mathbf N$ scale vector and path, $\mathbf g$ controls,
+$\mathbf m$ observables, $\mathbf R$ resources, $H$ holdout rule, $T$ theory
+status, $F$ fidelity, $\mathbf E$ the evidence vector, and $O$ outcome. Full
+PhaseCards are machine-readable; representative cards appear in
+Section~\ref{sec:protocol}.

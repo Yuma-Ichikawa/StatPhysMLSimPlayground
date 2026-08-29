@@ -1,5 +1,26 @@
-\section{Predictive phase continuation}
+\section{Experiment grammar and predictive phase continuation}
 \label{sec:method}
+
+Every run is generated from four typed objects. A \emph{ScientificSpec} names
+the question, state object, deformation, phenomenon, theory status, fidelity,
+and observables. A \emph{ProtocolSpec} fixes controls, outer and inner disorder,
+finite-size path, nulls, interventions, calibration, and holdouts. An
+\emph{ExecutionSpec} fixes implementation, resources, seed streams, and
+software identity without changing scientific identity. An
+\emph{EvidenceVector} records semantic validity, replication, finite-size
+diagnostics, prospective prediction, intervention, and external validity.
+
+The output of an estimator is not a bare float but
+\begin{equation}
+\widehat O=(\bar O,[O_-,O_+],q,U,n_{\rm outer},n_{\rm inner},
+\mathcal S_{\rm outer},\text{units}),
+\end{equation}
+where $q$ is interval level and $U$ names the uncertainty method. The ensemble
+is part of the observable: checkpoint-to-checkpoint variability is a temporal
+statistic, whereas susceptibility and Binder cumulants used here are computed
+over independent terminal outer-seed samples.
+
+\subsection{Predictive phase continuation as one atlas protocol}
 
 Let $\mathcal O_{\rm cal}$ be registered calibration observables and
 $\mathcal O_{\rm solv}(\bm\theta)$ a solvable surrogate. We estimate
@@ -53,3 +74,10 @@ post-hoc repair.
 A threshold estimate is recorded as crossed, left-censored, or right-censored.
 Only crossed estimates enter boundary-error summaries. Censored curves remain
 visible because the absence of a crossing is often the scientific result.
+
+\paragraph{Attempt and invalidation semantics.}
+A failed accelerator attempt and a CPU fallback are separate attempts under one
+scientific condition. Artifact identity records scientific, protocol,
+implementation, and execution hashes separately. If a metric definition,
+ensemble, split, or selection rule changes, the prior artifact is retained but
+marked invalidated for the affected claim; it is never silently reinterpreted.

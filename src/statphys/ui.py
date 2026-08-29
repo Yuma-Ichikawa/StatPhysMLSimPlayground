@@ -6,6 +6,7 @@ import html
 import json
 import math
 from collections.abc import Mapping
+from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
@@ -23,38 +24,102 @@ STUDY_KINDS = {
     "ready_made": "A named exploratory study from the built-in catalogue",
 }
 
+SCIENTIFIC_QUESTIONS = (
+    "recovery",
+    "specialization",
+    "generalization",
+    "phase_or_crossover",
+    "dynamics",
+    "replica_structure",
+    "intervention",
+    "theory_experiment_comparison",
+)
+SYSTEMS = (
+    "linear_teacher_student",
+    "committee_machine",
+    "mlp",
+    "attention",
+    "transformer",
+    "diffusion",
+    "reinforcement",
+    "multiagent",
+    "custom_torch",
+)
+DEFORMATION_AXES = (
+    "data",
+    "architecture",
+    "objective",
+    "dynamics",
+    "scale",
+    "lifecycle",
+)
+BUDGETS = ("cpu_preview", "single_gpu", "multi_gpu", "slurm")
+
 
 def catalog() -> list[dict[str, str]]:
     """Return stable user-facing workflows rather than implementation namespaces."""
     return [{"kind": name, "description": description} for name, description in STUDY_KINDS.items()]
 
 
-def study_template(kind: str = "order_parameters") -> str:
+def study_template(
+    kind: str = "order_parameters",
+    *,
+    scientific_question: str = "recovery",
+    system: str = "mlp",
+    deformation_axis: str = "data",
+    evidence_tier: str = "exploratory",
+    budget: str = "cpu_preview",
+) -> str:
     if kind not in STUDY_KINDS:
         raise ValueError(f"unknown study kind: {kind}")
+    if scientific_question not in SCIENTIFIC_QUESTIONS:
+        raise ValueError("unknown scientific question")
+    if system not in SYSTEMS or deformation_axis not in DEFORMATION_AXES:
+        raise ValueError("unknown system or deformation axis")
+    if evidence_tier not in {"exploratory", "confirmatory", "finite_size"}:
+        raise ValueError("unknown evidence tier")
+    if budget not in BUDGETS:
+        raise ValueError("unknown compute budget")
     return (
         "# A portable StatPhys study. Paths are relative to where you run it.\n"
         "[study]\n"
         'name = "my_statphys_study"\n'
         f'kind = "{kind}"\n'
+        f'scientific_question = "{scientific_question}"\n'
+        f'system = "{system}"\n'
+        f'deformation_axis = "{deformation_axis}"\n'
         'preset = "random_mlp"\n'
         "alphas = [0.5, 1.0, 2.0, 4.0]\n"
         "replicas = 4\n"
         "seed = 0\n\n"
         "[evidence]\n"
-        'tier = "exploratory" # exploratory, confirmatory, or finite_size\n'
+        f'tier = "{evidence_tier}" # exploratory, confirmatory, or finite_size\n'
         'claim = "response shift"\n\n'
+        "[scale]\n"
+        'finite_size_coordinate = "input_dimension"\n'
+        'scaling_path = "data_size = alpha * input_dimension; depth = fixed"\n\n'
+        "[ensemble]\n"
+        'outer = ["teacher_or_environment_disorder", "data_disorder", "initialization"]\n'
+        'inner = ["minibatch_order", "dropout", "evaluation"]\n'
+        "paired_across_controls = true\n\n"
+        "[resources]\n"
+        f'budget = "{budget}"\n'
+        f"gpus = {0 if budget == 'cpu_preview' else 1}\n\n"
         "[output]\n"
         'directory = "statphys_results"\n'
     )
 
 
-def write_study_template(path: str | Path, kind: str = "order_parameters") -> Path:
+def write_study_template(
+    path: str | Path,
+    kind: str = "order_parameters",
+    **selections: str,
+) -> Path:
     destination = Path(path)
     if destination.exists():
         raise FileExistsError(f"refusing to overwrite existing study file: {destination.name}")
     destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(study_template(kind), encoding="utf-8")
+    destination.write_text(study_template(kind, **selections), encoding="utf-8")
     return destination
 
 
@@ -96,12 +161,61 @@ def validate_study(path: str | Path) -> dict[str, Any]:
     tier = evidence.get("tier", "exploratory")
     if tier not in {"exploratory", "confirmatory", "finite_size"}:
         raise ValueError("evidence.tier must be exploratory, confirmatory, or finite_size")
+    question = study.get("scientific_question", "recovery")
+    system = study.get("system", "mlp")
+    deformation = study.get("deformation_axis", "data")
+    if question not in SCIENTIFIC_QUESTIONS:
+        raise ValueError("study.scientific_question is not registered")
+    if system not in SYSTEMS:
+        raise ValueError("study.system is not registered")
+    if deformation not in DEFORMATION_AXES:
+        raise ValueError("study.deformation_axis is not registered")
+    resources = payload.get("resources", {})
+    budget = resources.get("budget", "cpu_preview") if isinstance(resources, dict) else None
+    if budget not in BUDGETS:
+        raise ValueError("resources.budget is not registered")
+    scale = payload.get("scale", {})
+    finite_size_coordinate = (
+        scale.get("finite_size_coordinate") if isinstance(scale, dict) else None
+    )
+    if tier == "finite_size" and not finite_size_coordinate:
+        raise ValueError("finite-size evidence requires scale.finite_size_coordinate")
     return {
         "valid": True,
         "kind": kind,
         "name": name,
         "evidence_tier": tier,
         "allowed_wording": "phase transition" if tier == "finite_size" else "response shift",
+        "scientific_question": question,
+        "system": system,
+        "deformation_axis": deformation,
+        "finite_size_coordinate": finite_size_coordinate,
+        "budget": budget,
+    }
+
+
+def preview_study(path: str | Path) -> dict[str, Any]:
+    """Return a resource/evidence preview without starting an experiment."""
+    validation = validate_study(path)
+    payload = load_study(path)
+    study = payload["study"]
+    points = len(study.get("alphas", [1.0])) * len(study.get("controls", [0.0]))
+    replicas = int(study.get("replicas", 4))
+    return {
+        **validation,
+        "registered_conditions": points,
+        "planned_outer_runs": points * replicas,
+        "expected_figures": ["raw_seed_curve", "finite_size_or_response", "evidence_panel"],
+        "phase_card_sections": [
+            "identity",
+            "system",
+            "deformation",
+            "scale",
+            "disorder",
+            "observables",
+            "theory",
+            "evidence",
+        ],
     }
 
 
@@ -208,7 +322,12 @@ def _portable_result(result: Mapping[str, Any], variant: str) -> dict[str, Any]:
     return portable
 
 
-def run_study(path: str | Path, output_dir: str | Path | None = None) -> Path:
+def run_study(
+    path: str | Path,
+    output_dir: str | Path | None = None,
+    *,
+    new_attempt: bool = False,
+) -> Path:
     """Run a validated study and save a portable JSON result artifact."""
     validation = validate_study(path)
     source = Path(path)
@@ -223,6 +342,31 @@ def run_study(path: str | Path, output_dir: str | Path | None = None) -> Path:
         raise FileExistsError("output directory already belongs to a different study")
     if not snapshot.exists():
         snapshot.write_text(source_text, encoding="utf-8")
+    status_path = destination_root / "status.json"
+    previous_status = (
+        json.loads(status_path.read_text(encoding="utf-8")) if status_path.is_file() else {}
+    )
+    previous_attempt = int(previous_status.get("attempt", 0))
+    attempt = max(previous_attempt + int(new_attempt), 1)
+    scientific_condition_id = "study-" + sha256(source_text.encode("utf-8")).hexdigest()[:20]
+
+    def write_status(state: str, **details: Any) -> None:
+        status_path.write_text(
+            json.dumps(
+                {
+                    "state": state,
+                    "attempt": attempt,
+                    "scientific_condition_id": scientific_condition_id,
+                    **details,
+                },
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+    write_status("running")
     kind = validation["kind"]
     alphas = [float(value) for value in study.get("alphas", [0.5, 1.0, 2.0, 4.0])]
     replicas = int(study.get("replicas", 4))
@@ -230,35 +374,41 @@ def run_study(path: str | Path, output_dir: str | Path | None = None) -> Path:
 
     import statphys
 
-    if kind == "order_parameters":
-        result = statphys.quick_order_parameters(
-            preset, alphas=alphas, n_replicas=replicas, plot=False, verbose=False
-        )
-        scientific_result = _portable_result(result.to_dict(), preset)
-    elif kind == "phase_diagram":
-        parameter = str(study.get("parameter", "sparsity"))
-        controls = [float(value) for value in study.get("controls", [0.25, 0.5, 0.75])]
-        result = statphys.quick_phase_diagram(
-            preset,
-            parameter,
-            controls,
-            alphas=alphas,
-            n_replicas=replicas,
-            plot=False,
-            verbose=False,
-        )
-        scientific_result = _portable_result(result.to_dict(), preset)
-    elif kind == "online":
-        result = statphys.quick_online(n_seeds=replicas, plot=False, verbose=False)
-        scientific_result = _portable_result(result.to_dict(), "online")
-    elif kind == "replica":
-        result = statphys.quick_replica(n_seeds=replicas, alphas=alphas, plot=False, verbose=False)
-        scientific_result = _portable_result(result.to_dict(), "replica")
-    else:
-        from statphys.experiment.studies import run_study as run_ready_made
+    try:
+        if kind == "order_parameters":
+            result = statphys.quick_order_parameters(
+                preset, alphas=alphas, n_replicas=replicas, plot=False, verbose=False
+            )
+            scientific_result = _portable_result(result.to_dict(), preset)
+        elif kind == "phase_diagram":
+            parameter = str(study.get("parameter", "sparsity"))
+            controls = [float(value) for value in study.get("controls", [0.25, 0.5, 0.75])]
+            result = statphys.quick_phase_diagram(
+                preset,
+                parameter,
+                controls,
+                alphas=alphas,
+                n_replicas=replicas,
+                plot=False,
+                verbose=False,
+            )
+            scientific_result = _portable_result(result.to_dict(), preset)
+        elif kind == "online":
+            result = statphys.quick_online(n_seeds=replicas, plot=False, verbose=False)
+            scientific_result = _portable_result(result.to_dict(), "online")
+        elif kind == "replica":
+            result = statphys.quick_replica(
+                n_seeds=replicas, alphas=alphas, plot=False, verbose=False
+            )
+            scientific_result = _portable_result(result.to_dict(), "replica")
+        else:
+            from statphys.experiment.studies import run_study as run_ready_made
 
-        run_ready_made(str(study.get("name", preset)), out_dir=destination_root, quick=True)
-        scientific_result = {"status": "completed", "kind": "ready_made"}
+            run_ready_made(str(study.get("name", preset)), out_dir=destination_root, quick=True)
+            scientific_result = {"status": "completed", "kind": "ready_made"}
+    except Exception as error:
+        write_status("failed", error_type=type(error).__name__)
+        raise
 
     artifact = {
         "schema_version": "2.0",
@@ -275,6 +425,7 @@ def run_study(path: str | Path, output_dir: str | Path | None = None) -> Path:
         json.dumps(artifact, default=_json_default, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+    write_status("completed")
     return destination
 
 
@@ -285,14 +436,44 @@ def inspect_artifact(path: str | Path) -> dict[str, Any]:
         "schema_version": payload.get("schema_version", "unknown"),
         "top_level_keys": sorted(result) if isinstance(result, dict) else [],
         "study": payload.get("study", {}),
-        "has_conditions": isinstance(result, dict) and bool(result.get("conditions")),
+        "has_conditions": bool(_artifact_conditions(result)) if isinstance(result, dict) else False,
         "has_dynamics": isinstance(result, dict) and bool(result.get("dynamics")),
+        "has_censoring": isinstance(result, dict)
+        and any(row.get("censoring") is not None for row in result.get("boundaries", [])),
     }
+
+
+def artifact_status(path: str | Path) -> dict[str, Any]:
+    """Read a run status without returning its host path or server metadata."""
+    source = Path(path)
+    if source.is_dir():
+        source = source / "status.json"
+    payload = json.loads(source.read_text(encoding="utf-8"))
+    public_keys = (
+        "state",
+        "attempt",
+        "scientific_condition_id",
+        "elapsed_seconds",
+        "device",
+        "error_type",
+    )
+    return {key: payload[key] for key in public_keys if key in payload}
+
+
+def _artifact_conditions(result: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Return only condition-table records, not legacy metric-to-replica maps."""
+    conditions = result.get("conditions", [])
+    if isinstance(conditions, list) and conditions:
+        return [row for row in conditions if isinstance(row, dict)]
+    records = result.get("records", [])
+    if isinstance(records, list):
+        return [row for row in records if isinstance(row, dict)]
+    return []
 
 
 def _metric_means(payload: Mapping[str, Any]) -> dict[str, float]:
     result = payload.get("result", payload)
-    conditions = result.get("conditions", []) if isinstance(result, dict) else []
+    conditions = _artifact_conditions(result) if isinstance(result, dict) else []
     if not conditions and isinstance(result, dict):
         conditions = _condition_table(result, str(result.get("variant", "result")))
     values: dict[str, list[float]] = {}
@@ -329,7 +510,7 @@ def _condition_series(
     payload: Mapping[str, Any],
 ) -> tuple[str | None, dict[str, list[tuple[float, float, float]]]]:
     result = payload.get("result", payload)
-    conditions = result.get("conditions", []) if isinstance(result, dict) else []
+    conditions = _artifact_conditions(result) if isinstance(result, dict) else []
     if not conditions and isinstance(result, dict):
         conditions = _condition_table(result, str(result.get("variant", "result")))
     if not conditions:
@@ -353,6 +534,8 @@ def _condition_series(
         error = float(summary.get("ci95", 0.0))
         if "ci95_low" in summary and "ci95_high" in summary:
             error = 0.5 * abs(float(summary["ci95_high"]) - float(summary["ci95_low"]))
+        elif summary.get("interval_low") is not None and summary.get("interval_high") is not None:
+            error = 0.5 * abs(float(summary["interval_high"]) - float(summary["interval_low"]))
         label = str(row.get("series", f"size={row.get('size', 'all')}"))
         series.setdefault(label, []).append(
             (float(row.get("control", 0.0)), float(summary["mean"]), error)
@@ -412,10 +595,14 @@ def render_report(artifact_path: str | Path, output_path: str | Path) -> Path:
     """Render a self-contained HTML evidence dashboard with no local URLs."""
     payload = json.loads(Path(artifact_path).read_text(encoding="utf-8"))
     metric, series = _condition_series(payload)
-    study = payload.get("study", {}) if isinstance(payload, dict) else {}
+    raw_study = payload.get("study", {}) if isinstance(payload, dict) else {}
+    study = raw_study if isinstance(raw_study, dict) else {"name": str(raw_study)}
     result = payload.get("result", payload) if isinstance(payload, dict) else payload
     seed_count = (
-        result.get("outer_seed_count", result.get("seed_count", "not recorded"))
+        result.get(
+            "outer_seed_count",
+            result.get("seed_count", result.get("required_seed_count", "not recorded")),
+        )
         if isinstance(result, dict)
         else "not recorded"
     )
@@ -429,15 +616,53 @@ def render_report(artifact_path: str | Path, output_path: str | Path) -> Path:
         if isinstance(study, dict)
         else "response shift"
     )
+    fidelity = (
+        result.get("fidelity", "unclassified") if isinstance(result, dict) else "unclassified"
+    )
+    scale_coordinate = "not registered"
+    boundary_status = "not evaluated"
+    evidence_vector: Mapping[str, Any] = {}
+    conditions = _artifact_conditions(result) if isinstance(result, dict) else []
+    if conditions:
+        scale_coordinate = str(conditions[0].get("finite_size_coordinate", scale_coordinate))
+        contract = conditions[0].get("runner_contract", {})
+        if isinstance(contract, dict):
+            if fidelity == "unclassified":
+                fidelity = contract.get("fidelity", fidelity)
+            if status == "unclassified":
+                status = contract.get("theory_status", status)
+    boundaries = result.get("boundaries", []) if isinstance(result, dict) else []
+    if boundaries:
+        boundary_status = ", ".join(
+            sorted({str(row.get("boundary_status", "unclassified")) for row in boundaries})
+        )
+    evidence_rows = result.get("evidence", []) if isinstance(result, dict) else []
+    if evidence_rows and isinstance(evidence_rows[0], dict):
+        evidence_vector = evidence_rows[0].get("evidence_vector", {})
+    disallowed = (
+        result.get("disallowed_claims", ["unregistered universality or phase claim"])
+        if isinstance(result, dict)
+        else ["unregistered universality or phase claim"]
+    )
+    evidence_badges = "".join(
+        f'<span class="badge">{html.escape(str(name))}: {html.escape(str(value))}</span>'
+        for name, value in evidence_vector.items()
+        if name != "grade"
+    )
+    evidence_badges_html = (
+        evidence_badges or '<span class="badge">evidence vector unavailable</span>'
+    )
+    disallowed_text = "; ".join(str(item) for item in disallowed)
     chart = _chart_svg(metric, series)
     document = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>StatPhys analysis report</title><style>
-body{{font-family:system-ui,-apple-system,sans-serif;background:#f6f8fb;color:#172033;margin:0}} main{{max-width:900px;margin:auto;padding:28px 18px 44px}} h1{{margin:0}} .sub{{color:#526071}} .grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:20px 0}} .card{{background:white;border:1px solid #dce3ed;border-radius:10px;padding:14px;box-shadow:0 1px 3px #1720330d}} .label{{font-size:12px;fill:#526071}} .legend{{font-size:13px}} .axis{{stroke:#637083;stroke-width:1}} svg{{width:100%;height:auto;background:white;border:1px solid #dce3ed;border-radius:10px}} .empty{{padding:42px;background:white;border:1px dashed #aab5c4;border-radius:10px;color:#526071}} code{{background:#eef2f7;padding:2px 4px;border-radius:4px}}</style></head>
+body{{font-family:system-ui,-apple-system,sans-serif;background:#f6f8fb;color:#172033;margin:0}} main{{max-width:960px;margin:auto;padding:28px 18px 44px}} h1{{margin:0}} .sub{{color:#526071}} .grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:20px 0}} .card{{background:white;border:1px solid #dce3ed;border-radius:10px;padding:14px;box-shadow:0 1px 3px #1720330d}} .label{{font-size:12px;fill:#526071}} .legend{{font-size:13px}} .axis{{stroke:#637083;stroke-width:1}} svg{{width:100%;height:auto;background:white;border:1px solid #dce3ed;border-radius:10px}} .empty{{padding:42px;background:white;border:1px dashed #aab5c4;border-radius:10px;color:#526071}} code{{background:#eef2f7;padding:2px 4px;border-radius:4px}} .badge{{display:inline-block;margin:3px 5px 3px 0;padding:4px 8px;border-radius:999px;background:#e8eef8;color:#23416b;font-size:12px}} .warning{{border-left:4px solid #d97706}} .views{{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}} .view h3{{margin-top:0}}</style></head>
 <body><main><h1>StatPhys Analysis Report</h1><p class="sub">Interactive-ready, self-contained evidence view. It contains no local-server address or source path.</p>
-<section class="grid"><div class="card"><strong>Study</strong><br>{html.escape(str(study.get("name", "unnamed")))}</div><div class="card"><strong>Outer seeds</strong><br>{html.escape(str(seed_count))}</div><div class="card"><strong>Theory status</strong><br>{html.escape(str(status))}</div><div class="card"><strong>Allowed wording</strong><br>{html.escape(str(wording))}</div></section>
+<section class="grid"><div class="card"><strong>Study</strong><br>{html.escape(str(study.get("name", "unnamed")))}</div><div class="card"><strong>Fidelity</strong><br>{html.escape(str(fidelity))}</div><div class="card"><strong>Outer seeds</strong><br>{html.escape(str(seed_count))}</div><div class="card"><strong>Theory status</strong><br>{html.escape(str(status))}</div><div class="card"><strong>Finite-size coordinate</strong><br>{html.escape(scale_coordinate)}</div><div class="card"><strong>Boundary status</strong><br>{html.escape(boundary_status)}</div></section>
 <section><h2>Phase explorer</h2><p class="sub">Curve points show reported means; vertical bars show recorded or seed-derived 95% uncertainty where available.</p>{chart}</section>
-<section class="card"><h2>Evidence panel</h2><p>Observable: <code>{html.escape(metric or "not available")}</code>. Statistical quantities from independent seed ensembles must be labelled separately from checkpoint-time variation. Unclassified theory is rendered as provisional evidence and should not be described as an exact result.</p></section>
+<section class="card"><h2>Evidence panel</h2><p>{evidence_badges_html}</p><p>Observable: <code>{html.escape(metric or "not available")}</code>. Allowed wording: <strong>{html.escape(str(wording))}</strong>.</p><p class="warning">Disallowed wording: {html.escape(disallowed_text)}.</p><p>Independent disorder statistics are separated from checkpoint-time variation. Censored boundaries remain visible and are excluded from prediction-error summaries.</p></section>
+<section><h2>Analysis views</h2><div class="views"><div class="card view"><h3>Replica gallery</h3><p>Weight, functional, representation, and symmetry-reduced overlap are shown when registered raw replica arrays are present.</p></div><div class="card view"><h3>Dynamics theater</h3><p>Loss, order, gradient geometry, rank, and attention trajectories retain their temporal labels.</p></div><div class="card view"><h3>Intervention sandbox</h3><p>Matched ablations, replacement controls, and equal-resource interventions are reported separately from synthetic benefit functions.</p></div></div></section>
 </main></body></html>"""
     destination = Path(output_path)
     destination.parent.mkdir(parents=True, exist_ok=True)

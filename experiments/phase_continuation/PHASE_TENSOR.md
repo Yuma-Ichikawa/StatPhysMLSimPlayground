@@ -72,7 +72,7 @@ manifest, and artifact roots supplied by the environment:
 
 ```bash
 phase-continuation slurm-script "$STATPHYS_MANIFEST" \
-  experiments/phase_continuation/cluster/dgx_spark.toml \
+  experiments/phase_continuation/cluster/gpu.toml \
   --output phase-tensor-array.sh
 sbatch phase-tensor-array.sh
 ```

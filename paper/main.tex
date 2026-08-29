@@ -19,33 +19,36 @@
 \newcommand{\Ebridge}{\mathcal E_{\mathrm{bridge}}}
 \newcommand{\Risk}{\mathcal R}
 \newcommand{\Tier}[1]{\textsf{Tier~#1}}
+\newcommand{\Badge}[2]{\begingroup\setlength{\fboxsep}{2pt}\colorbox{#1!13}{\textsf{\scriptsize #2}}\endgroup}
 \newcommand{\resultfigure}[2]{\begin{figure}[t]\centering\includegraphics[width=0.96\linewidth]{#1}\caption{#2}\end{figure}}
 \input{generated/results.tex}
 \input{generated/phase_tensor_results.tex}
 \input{generated/phase_tensor_confirmation_results.tex}
 
-\title{Predictive Phase Continuation:\\
-\large A Hierarchical Benchmark from Solvable Models to Realistic Learning Systems}
+\title{Beyond Solvable Models:\\
+\large A Numerical Statistical-Mechanics Atlas of Modern Machine Learning}
 \author{Yuma Ichikawa}
 \date{}
 
 \begin{document}
 \maketitle
 \input{sections/00_abstract}
+\input{sections/00_readers_guide}
 \input{sections/01_introduction}
 \input{sections/02_taxonomy}
 \input{sections/02_prior_work}
+\input{sections/02b_research_questions}
 \input{sections/03_framework}
 \input{sections/04_statistics}
 \input{sections/06_transformer_diffusion}
 \input{sections/07_rl_agents}
 \input{sections/08_prediction}
+\input{sections/08b_empirical_tensor}
 \input{sections/09_limitations}
 \input{sections/10_conclusion}
 \appendix
 \input{sections/appendix}
 \input{sections/05_audit}
-\input{sections/08b_empirical_tensor}
 \bibliographystyle{plainnat}
 \bibliography{references}
 \end{document}

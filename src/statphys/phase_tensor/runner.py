@@ -152,7 +152,7 @@ def run_phase_tensor(
         data_kind,
         count=train_examples,
         length=sequence_length,
-        seed=nested["data"],
+        seed=nested["data_disorder"],
         noise=noise,
         data_root=data_root,
         corpus_split="train" if disjoint_corpus_splits else None,
@@ -210,7 +210,7 @@ def run_phase_tensor(
     steps = int(parameters.get("steps", 300))
     batch_size = min(int(parameters.get("batch_size", 64)), train_data.size)
     warmup = max(1, int(float(parameters.get("warmup_fraction", 0.05)) * steps))
-    generator = torch.Generator(device="cpu").manual_seed(nested["minibatch"])
+    generator = torch.Generator(device="cpu").manual_seed(nested["minibatch_order"])
     use_amp = bool(parameters.get("bfloat16", True)) and device.type == "cuda"
     autocast = (
         (lambda: torch.autocast(device_type="cuda", dtype=torch.bfloat16))
@@ -343,13 +343,22 @@ def run_phase_tensor(
             / math.log(2.0)
         )
     effective_ff_width = max(1.0, ff_ratio * width)
+    trajectory_mean_task_order = float(abs(np.mean(signed_phase_samples)))
+    temporal_order_variance = float(np.var(signed_phase_samples))
+    temporal_kurtosis_proxy = float(
+        0.0 if phase_second <= 1e-12 else 1.0 - phase_fourth / (3.0 * phase_second**2)
+    )
     metrics = {
-        "order_parameter": float(abs(np.mean(signed_phase_samples))),
-        "susceptibility": float(np.var(signed_phase_samples)),
-        "binder_cumulant": float(
-            0.0 if phase_second <= 1e-12 else 1.0 - phase_fourth / (3.0 * phase_second**2)
-        ),
-        "macrostate_entropy": macrostate_entropy,
+        # ``signed_order_parameter`` is one terminal outer-disorder sample.  It
+        # is the only phase sample consumed by the canonical aggregator.
+        "order_parameter": float(abs(2.0 * semantic_order - 1.0)),
+        "signed_order_parameter": float(np.clip(2.0 * semantic_order - 1.0, -1.0, 1.0)),
+        # Checkpoint-series summaries are explicitly temporal and must never be
+        # presented as disorder susceptibility or a Binder cumulant.
+        "trajectory_mean_task_order": trajectory_mean_task_order,
+        "temporal_order_variance": temporal_order_variance,
+        "temporal_kurtosis_proxy": temporal_kurtosis_proxy,
+        "trajectory_sign_entropy": macrostate_entropy,
         "generalization_error": full["objective"],
         "normalized_generalization_error": full["objective"],
         "normalized_train_risk": train_full["objective"],

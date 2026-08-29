@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +8,8 @@ version = "0.1.0"
 description = "Statistical mechanics simulation package for machine learning theory (Replica, Online Learning, DMFT)"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {file = "LICENSE.txt"}
+license = "BSD-3-Clause"
+license-files = ["LICENSE.txt"]
 authors = [{name = "Yuma Ichikawa", email = "yuma.ichikawa@a.riken.jp"}]
 keywords = [
     "statistical mechanics",
@@ -21,7 +22,6 @@ keywords = [
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -48,6 +48,23 @@ phase-continuation = "statphys.continuation.cli:main"
 phase-tensor = "statphys.phase_tensor.cli:main"
 
 [project.optional-dependencies]
+core = []
+vis = []
+natural-data = [
+    "scikit-learn>=1.3",
+    "datasets==5.0.0",
+]
+optimizers = [
+    "pytorch-optimizer==3.10.1",
+]
+cluster = [
+    "pyspark>=3.5,<4",
+]
+lab = [
+    "jupyter>=1.0",
+    "ipykernel>=6.0",
+    "ipywidgets>=8.0",
+]
 # Real-data teachers (frontier taxonomy: sklearn digits)
 realdata = [
     "scikit-learn>=1.3",
@@ -86,7 +103,7 @@ docs = [
 ]
 # All optional dependencies
 all = [
-    "statphys-ml[dev,docs,notebook]",
+    "statphys-ml[dev,docs,notebook,natural-data,optimizers,cluster,lab,phase-tensor]",
 ]
 
 [tool.setuptools]
@@ -96,10 +113,10 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [project.urls]
-Homepage = "https://github.com/yuma-ichikawa/statphys-ml"
-Documentation = "https://statphys-ml.readthedocs.io"
-Repository = "https://github.com/yuma-ichikawa/statphys-ml"
-Issues = "https://github.com/yuma-ichikawa/statphys-ml/issues"
+Homepage = "https://github.com/Yuma-Ichikawa/StatPhysMLSimPlayground"
+Documentation = "https://github.com/Yuma-Ichikawa/StatPhysMLSimPlayground/tree/main/docs"
+Repository = "https://github.com/Yuma-Ichikawa/StatPhysMLSimPlayground"
+Issues = "https://github.com/Yuma-Ichikawa/StatPhysMLSimPlayground/issues"
 Author-Website = "https://ichikawa-laboratory.com/"
 Twitter = "https://x.com/yuma_1_or"
 

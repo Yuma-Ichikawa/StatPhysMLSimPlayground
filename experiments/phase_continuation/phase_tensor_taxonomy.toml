@@ -1,45 +1,59 @@
-schema_version = "1.1"
-title = "Field-frontier and this-paper coverage of the phase-continuation tensor"
-columns = ["T0", "T1", "N1", "N2", "R1", "R2", "O1"]
+schema_version = "3.0"
+title = "Orthogonal taxonomy for the numerical statistical-mechanics atlas"
+columns = ["E0", "E1", "E2", "E3", "E4", "E5", "E6"]
 
 [column_labels]
-T0 = "exact theory"
-T1 = "asymptotic theory"
-N1 = "reduced numerics"
-N2 = "trainable synthetic"
-R1 = "semi-natural bridge"
-R2 = "natural data"
-O1 = "open-weight lifecycle"
-
-[coverage.field_frontier]
-data = ["T0", "N1", "N2", "R1", "R2"]
-attention = ["T0", "T1", "N1", "N2"]
-mlp = ["N2"]
-residual = ["N2"]
-objective = ["N2"]
-optimizer = ["N2"]
-scaling = ["T1", "N2"]
-lifecycle = ["O1"]
-population = ["N1", "R2"]
-
-[coverage.this_paper]
-data = ["N2", "R1", "R2"]
-attention = ["N2"]
-mlp = ["N2"]
-residual = ["N2"]
-objective = ["N2"]
-optimizer = ["N2"]
-scaling = ["N2"]
-lifecycle = []
-population = []
+E0 = "E_0"
+E1 = "E_1"
+E2 = "E_2"
+E3 = "E_3"
+E4 = "E_4"
+E5 = "E_5"
+E6 = "E_6"
 
 [axis_labels]
-data = "data $\\mathcal D$"
-attention = "attention $\\mathcal A$"
-mlp = "MLP $\\mathcal F$"
-residual = "residual/norm $\\mathcal R$"
-objective = "objective $\\mathcal O$"
-optimizer = "optimizer $\\mathcal U$"
-scaling = "scaling $\\mathcal S$"
-lifecycle = "lifecycle $\\mathcal C$"
-population = "population $\\mathcal P$"
+transformer_representation = "Transformer representation"
+transformer_optimization = "Transformer optimization"
+diffusion_trajectory = "Diffusion trajectory"
+reinforcement_feedback = "RL feedback"
+multiagent_population = "Multi-agent population"
+lifecycle_endpoint = "Lifecycle endpoint"
+
+[coverage.field_frontier]
+transformer_representation = ["E0", "E1", "E2", "E3", "E4", "E5"]
+transformer_optimization = ["E0", "E1", "E2", "E3", "E4"]
+diffusion_trajectory = ["E0", "E1", "E2", "E3", "E4", "E5"]
+reinforcement_feedback = ["E0", "E1", "E2", "E3", "E4", "E5"]
+multiagent_population = ["E0", "E1", "E2", "E3", "E4"]
+lifecycle_endpoint = ["E0", "E1", "E2", "E3"]
+
+[coverage.this_paper]
+transformer_representation = ["E0", "E1", "E2", "E3", "E4"]
+transformer_optimization = ["E0", "E1", "E2", "E3"]
+diffusion_trajectory = ["E0", "E1", "E2", "E3"]
+reinforcement_feedback = ["E0", "E1", "E2", "E3"]
+multiagent_population = ["E0", "E1", "E2", "E3"]
+lifecycle_endpoint = ["E0", "E1"]
+
+[layers]
+domain_task = ["supervised_inference", "sequence_prediction", "generative_modeling", "decision_control", "collective_inference", "lifecycle_self_training"]
+state_object = ["parameter_state", "function_state", "representation_state", "optimization_trajectory", "generative_trajectory", "policy_occupancy", "population_communication_state", "dataset_lifecycle_state"]
+deformation = ["data", "architecture", "objective", "dynamics", "scale", "lifecycle"]
+disorder = ["teacher_environment", "data_corpus", "initialization", "minibatch", "rollout", "sampling_noise", "population_topology", "evaluation_intervention"]
+scale = ["data_size", "input_dimension", "width", "depth", "context", "parameters", "training_time", "horizon", "population", "resolution", "compute"]
+observable = ["recovery", "generalization", "symmetry_breaking", "geometry", "replica_structure", "multiplicity", "locality", "dynamics", "robustness", "resource_response", "memorization_novelty", "information"]
+phenomenon = ["thermodynamic_transition", "non_equilibrium_transition", "algorithmic_threshold", "statistical_threshold", "bifurcation", "crossover", "operational_threshold", "semantic_transition"]
+
+[epistemic_axes]
+theory_status = ["T0", "T1", "T2", "T3", "T4", "T5", "T6"]
+realism_level = ["R0", "R1", "R2", "R3", "R4", "R5"]
+evidence_status = ["E0", "E1", "E2", "E3", "E4", "E5", "E6"]
+
+[architecture_hierarchy]
+interaction = ["linearity_depth", "attention", "feed_forward", "residual_normalization", "sparsity_routing_moe", "retrieval_external_memory"]
+attention = ["tied_or_untied", "low_or_full_rank", "single_or_multi_head", "causal_or_bidirectional"]
+feed_forward = ["activation", "gating", "width_or_rank"]
+
+[comparison_rule]
+raw_cross_domain_values = false
+features = ["direction_of_change", "transition_neighborhood_peak", "finite_size_sharpening", "matched_intervention_alignment", "semantic_validity"]

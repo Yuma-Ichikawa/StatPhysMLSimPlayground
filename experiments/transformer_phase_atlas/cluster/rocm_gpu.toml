@@ -1,15 +1,14 @@
 [cluster]
-partition = "batch-1gpu-short"
+partition = ""
 gpus = 1
 cpus = 4
 memory = "32G"
 time_limit = "06:00:00"
 max_parallel = 8
-module_init = "/etc/profile.d/modules.sh"
-modules = ["singularity"]
+module_init = ""
+modules = []
 container_environment = "STATPHYS_ATLAS_CONTAINER"
 container_runtime = "singularity"
 container_accelerator_flag = "--rocm"
 container_workdir = "/workspace"
 python = "python3"
-

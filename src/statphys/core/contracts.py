@@ -65,6 +65,13 @@ class ObservableSpec:
     normalization: str = "none"
     null_model: str | None = None
     valid_for: tuple[str, ...] = ()
+    semantic_role: str = "diagnostic"
+    quantity_kind: str = "scalar"
+    intensive: bool = True
+    independent_of_optimized_objective: bool = True
+    requires_teacher_or_oracle: bool = False
+    permutation_invariant: bool = True
+    valid_range: tuple[float, float] | None = None
 
     def __post_init__(self) -> None:
         required = {
@@ -72,6 +79,8 @@ class ObservableSpec:
             "units": self.units,
             "ensemble": self.ensemble,
             "interpretation": self.interpretation,
+            "semantic_role": self.semantic_role,
+            "quantity_kind": self.quantity_kind,
         }
         missing = [name for name, value in required.items() if not value.strip()]
         if missing:
@@ -86,6 +95,8 @@ class ObservableSpec:
                 "phase-ensemble observables require independent replicas; use "
                 "trajectory_variance or temporal_kurtosis for checkpoint series"
             )
+        if self.valid_range is not None and self.valid_range[0] > self.valid_range[1]:
+            raise ValueError("valid_range must be ordered")
 
 
 class LearningSystem(Protocol):

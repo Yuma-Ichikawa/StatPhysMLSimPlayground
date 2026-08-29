@@ -9,13 +9,20 @@ import numpy as np
 import torch
 
 RNG_STREAMS = (
-    "teacher",
-    "data",
+    "teacher_or_environment_disorder",
+    "data_disorder",
     "initialization",
-    "training",
+    "minibatch_order",
+    "dropout",
+    "diffusion_noise",
+    "rollout",
     "evaluation",
     "intervention",
     "bootstrap",
+    # Compatibility names used by the original public API.
+    "teacher",
+    "data",
+    "training",
 )
 
 

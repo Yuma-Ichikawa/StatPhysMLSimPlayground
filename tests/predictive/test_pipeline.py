@@ -6,6 +6,7 @@ import pytest
 
 from statphys.predictive.pipeline import (
     _compare_transition_models,
+    _estimate_boundaries,
     _predict_boundaries,
     _split_holdout_rows,
     build_adaptive_manifest,
@@ -30,7 +31,7 @@ def test_manifest_has_nested_design_and_holdout(tmp_path):
     assert len({row["inner_seed"] for row in result["replicates"]}) == 3
 
 
-def test_slurm_rejects_non_spark_and_renders_portably(tmp_path):
+def test_slurm_accepts_deployment_partition_and_renders_portably(tmp_path):
     config = tmp_path / "config.toml"
     config.write_text(
         """[study]\nname="test"\nseeds=[11]\ninner_replicates=2\n[domains.transformer]\nvariants=["anchor"]\nholdout_variants=[]\nsizes=[8]\ncontrols=[1.0]\nsecondary_controls=[0.0]\n"""
@@ -38,19 +39,20 @@ def test_slurm_rejects_non_spark_and_renders_portably(tmp_path):
     manifest_path = build_manifest(config).write(tmp_path / "manifest.json")
     profile = tmp_path / "profile.toml"
     profile.write_text(
-        """[slurm]\npartition="spark_3H"\ntime="03:00:00"\ngpus=1\ncpus=2\nmemory="8G"\ntasks_per_array=4\nmax_parallel=2\n"""
+        """[slurm]\npartition="accelerator"\ntime="03:00:00"\ngpus=1\ncpus=2\nmemory="8G"\ntasks_per_array=4\nmax_parallel=2\n"""
     )
     script = render_slurm(manifest_path, profile, tmp_path / "job.sbatch").read_text()
-    assert "#SBATCH --partition=spark_3H" in script
+    assert "#SBATCH --partition=accelerator" in script
     assert "/mnt/" not in script
     assert 'cd "$STATPHYS_REPO"' in script
     assert '"$STATPHYS_PYTHON" -m statphys.predictive.cli' in script
 
     profile.write_text(
-        """[slurm]\npartition="gpu_shared"\ntime="03:00:00"\ngpus=1\ntasks_per_array=4\nmax_parallel=2\n"""
+        """[slurm]\npartition=""\ntime="03:00:00"\ngpus=0\ntasks_per_array=4\nmax_parallel=2\n"""
     )
-    with pytest.raises(ValueError, match="DGX Spark partition"):
-        render_slurm(manifest_path, profile, tmp_path / "non_spark.sbatch")
+    cpu_script = render_slurm(manifest_path, profile, tmp_path / "cpu.sbatch").read_text()
+    assert "--partition=" not in cpu_script
+    assert "--gres=" not in cpu_script
 
 
 def test_journal_style_contract():
@@ -187,3 +189,39 @@ def test_transition_model_comparison_ignores_intervention_only_rows():
         }
     ]
     assert _compare_transition_models(conditions) == []
+
+
+def test_boundary_bootstrap_resamples_paired_outer_seed_profiles():
+    controls = (0.0, 1.0, 2.0)
+    offsets = (-0.2, -0.1, 0.0, 0.1, 0.2)
+    shape = (0.0, 1.0, 0.0)
+    conditions = []
+    for control_index, control in enumerate(controls):
+        raw = [shape[control_index] + offset for offset in offsets]
+        conditions.append(
+            {
+                "domain": "transformer",
+                "variant": "anchor",
+                "size": 16,
+                "secondary": 0.0,
+                "control": control,
+                "metrics": {
+                    "susceptibility": {
+                        "mean": sum(raw) / len(raw),
+                        "outer_seed_ids": [11, 13, 17, 19, 23],
+                        "raw_outer_means": raw,
+                    },
+                    "critical_control_truth": {
+                        "mean": 1.0,
+                        "ci95_low": 0.9,
+                        "ci95_high": 1.1,
+                    },
+                },
+            }
+        )
+    boundary = _estimate_boundaries(conditions)[0]
+    assert boundary["bootstrap_unit"] == "paired outer-seed control profile"
+    assert boundary["observed"] == pytest.approx(1.0)
+    # A paired resample changes only the common vertical offset, not the peak.
+    assert boundary["observed_ci95_low"] == pytest.approx(1.0)
+    assert boundary["observed_ci95_high"] == pytest.approx(1.0)

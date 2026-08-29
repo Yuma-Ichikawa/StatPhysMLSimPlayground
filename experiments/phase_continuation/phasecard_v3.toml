@@ -1,0 +1,61 @@
+schema_version = "3.0"
+
+[identity]
+domain = "transformer"
+task = "latent_retrieval"
+state_object = "representation_state"
+fidelity = "trainable_synthetic"
+
+[system]
+teacher = "semantic_positional_mixture"
+student = "decoder_transformer"
+data = "synthetic_retrieval"
+objective = "normalized_cross_entropy"
+dynamics = "adamw"
+
+[deformation]
+source_card = "tied_low_rank_attention"
+axis = "architecture"
+changed_assumptions = ["add_parameter_matched_mlp"]
+held_fixed = ["data_distribution", "parameter_budget", "initialization_family"]
+
+[scale]
+finite_size_coordinate = "width"
+width = 64
+context_length = 64
+depth = 2
+scaling_path = { context_length = "fixed", data_size = "alpha * width", depth = "fixed" }
+
+[disorder]
+outer = ["teacher_or_environment_disorder", "initialization", "data_disorder"]
+inner = ["minibatch_order", "dropout"]
+paired_across_controls = true
+outer_seeds = 12
+
+[observables]
+primary = ["semantic_recovery"]
+secondary = ["functional_overlap", "head_specialization", "representation_rank"]
+nulls = ["permuted_latent_labels", "matched_random_ablation"]
+
+[theory]
+status = "calibrated_surrogate"
+limit = "finite width target calibrated from a solvable low-rank anchor"
+assumptions = ["matched teacher-student anchor", "frozen calibration split"]
+stability_checked = true
+references = ["cui_attention_2024"]
+
+[evidence]
+holdout = "largest registered width"
+censoring_rule = "explicit"
+alternative_models = ["constant", "source_transport", "size_only"]
+allowed_language = "finite-size response shift"
+disallowed_language = "universal thermodynamic phase transition"
+
+[result]
+outcome = "unresolved"
+evidence_vector = [1, 2, 1, 1, 1, 0]
+
+[artifacts]
+manifest_hash = "pending"
+aggregate_hash = "pending"
+code_revision = "pending"

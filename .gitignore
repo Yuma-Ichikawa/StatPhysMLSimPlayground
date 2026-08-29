@@ -148,6 +148,8 @@ results/
 !assets/
 !assets/**
 !examples/*.png
+!screenshots/
+!screenshots/*.png
 
 # Temporary files
 *.tmp

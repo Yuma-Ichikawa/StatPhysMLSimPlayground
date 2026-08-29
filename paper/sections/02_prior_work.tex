@@ -1,20 +1,23 @@
 \section{Theory frontier and the unresolved gap}
 \label{sec:frontier}
 
-The taxonomy is our organizational proposal, informed by reproducibility
+The literature registry separates a bibliographic claim from an implementation
+and from evidence generated here. It records publication status, model class,
+state object, assumptions, predicted observables, and the atlas edge for which
+the source is relevant. The taxonomy is our organizational proposal, informed by reproducibility
 frameworks that make model and dataset assumptions explicit
 \cite{mitchell2019modelcards,gebru2021datasheets,pineau2021reproducibility}.
 It is not presented as an established consensus.
 
-For attention, a tied low-rank model exhibits a positional--semantic transition
-\cite{cui2024phase}, and attention-indexed models extend Bayes predictions to
+For attention, Cui et al.'s published tied low-rank model exhibits a
+positional--semantic transition \cite{cui2024phase}, and attention-indexed models extend Bayes predictions to
 full-width matrices \cite{boncoraglio2026aim}. The open question is therefore
 not whether simplified attention can transition, but whether its boundary and
 order semantics survive standard blocks, MLPs, normalization, causal
 objectives, optimization, and natural carriers.
 
 Diffusion theory distinguishes speciation from later memorized-point collapse
-\cite{biroli2024dynamical}; DDPM and DiT provide the relevant learned endpoints
+in the published analysis of Biroli et al. \cite{biroli2024dynamical}; DDPM and DiT provide the relevant learned endpoints
 \cite{ho2020ddpm,peebles2023dit}. A recent unreviewed preprint reports nearby
 symmetry-breaking and nonlocality onsets \cite{zhang2026concurrence}, which we
 treat as a hypothesis rather than settled evidence. In RL, proxy optimization
@@ -23,8 +26,10 @@ entropy must be read jointly with gold reward and strategy support. Consensus
 dynamics have a classical foundation \cite{degroot1974consensus}; modern MARL
 and LLM debate add nonstationarity and heterogeneous language agents
 \cite{lowe2017maddpg,du2024debate}. The 2026 statistical-physics agent papers
-we cite are explicitly recent preprints, useful for hypotheses but not a mature
-theoretical frontier \cite{denobili2026collective,bertalanic2026ringelmann}.
+are explicitly recent preprints. De Nobili reports model-dependent crossovers
+dominated by intrinsic bias rather than evidence for a two-dimensional Ising
+transition; we use this as a cautionary hypothesis, not a settled frontier
+\cite{denobili2026collective,bertalanic2026ringelmann}.
 
 \begin{table}[t]
 \centering\small
@@ -49,4 +54,3 @@ population and field holdouts \\
 last column states a test, not a guarantee of successful continuation.}
 \label{tab:frontier}
 \end{table}
-

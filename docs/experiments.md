@@ -69,12 +69,15 @@ the other way around (e.g. Gaussian-mixture classification, §5 of
 `dataset=...` object to `TeacherStudentExperiment` instead of
 `input_dist` — see "Custom generative datasets" below.
 
-## Physics order parameters
+## Registered macroscopic observables
 
 `statphys.experiment.observables` defines statistical-physics observables in
-*function space* (on a shared probe set), so they apply to any architecture,
-not only to models with a single weight vector. **Full derivations and the
-exact generalization-error identities are in
+*function space* (on a shared probe set), so the same report roles can be
+evaluated for architectures without a single weight vector. This does not
+make their raw values physically interchangeable across architectures.
+Transition claims require a declared outer ensemble, finite-size path,
+semantic null, and censoring rule. **Full derivations and the exact
+generalization-error identities are in
 [order_parameters.md](order_parameters.md)** — this table is a quick
 reference:
 
@@ -82,9 +85,9 @@ reference:
 |---|---|---|
 | `function_order_params` | \(m_f = \mathbb{E}[f_s f_t]\), \(q_f = \mathbb{E}[f_s^2]\), and \(\hat m = m_f/\sqrt{q_f \rho_f}\) | magnetization (teacher recovery); noise-independent |
 | `generalization_error_decomposition` | \(\epsilon_g = \tfrac12(\rho_f+q_f-2m_f)\), checked against the direct MSE | exact identity; validates the eps_g bookkeeping |
-| `replica_overlaps` | \(q_{ab} = \mathbb{E}[f_a f_b]\) between independently trained students | replica-symmetric overlap; \(q_{ab} \to 1\) = condensed phase, small = many distinct minima |
-| `susceptibility` | \(\chi_m = d \, \mathrm{Var}[\hat m]\) over replicas | peaks at the transition, sharpens with \(d\) |
-| `binder_cumulant` | \(U_4 = 1 - \langle m^4\rangle / 3\langle m^2\rangle^2\) | curves for different \(d\) cross at \(\alpha_c\) (finite-size scaling) |
+| `replica_overlaps` | \(q_{ab} = \mathbb{E}[f_a f_b]\) between independently trained students | functional agreement/diversity; condensed or glassy language needs additional symmetry and finite-size evidence |
+| `susceptibility` | \(\chi_N = N_{\mathrm{eff}} \, \mathrm{Var}_\omega[\hat m_\omega]\) over a registered outer ensemble | an interior, size-sharpening peak can support a transition model; endpoint maxima are censored |
+| `binder_cumulant` | \(U_4 = 1 - \langle m^4\rangle / 3\langle m^2\rangle^2\) | an interpolated crossing across compatible sizes is a diagnostic; no supported crossing is censored |
 | `participation_ratio` | \((\sum\lambda_i)^2/\sum\lambda_i^2\) of activation covariance | effective dimension of representations |
 | `specialization_index` | permutation-matched hidden-unit overlap (matched minus unmatched) | committee-machine specialization for any matched pair |
 | `subspace_overlap` | cos(principal angles) between K-dim relevant subspaces (works if \(K_s \ne K_t\)) | multi-index model recovery (Ben Arous/Gerace/Krzakala/Zdeborová-style) |

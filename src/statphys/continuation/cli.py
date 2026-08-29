@@ -108,7 +108,7 @@ def build_parser() -> argparse.ArgumentParser:
     paper.add_argument("aggregate")
     paper.add_argument("--output", required=True)
 
-    slurm = commands.add_parser("slurm-script", help="render a portable DGX array")
+    slurm = commands.add_parser("slurm-script", help="render a portable Slurm array")
     slurm.add_argument("manifest")
     slurm.add_argument("profile")
     slurm.add_argument("--output", required=True)
@@ -131,7 +131,7 @@ def build_parser() -> argparse.ArgumentParser:
     coverage.add_argument("configs", nargs="+")
     coverage.add_argument("--output")
 
-    taxonomy = commands.add_parser("taxonomy", help="audit tiers, outcomes, and six-size bridges")
+    taxonomy = commands.add_parser("taxonomy", help="audit orthogonal axes and epistemic fields")
     taxonomy.add_argument("registry")
     taxonomy.add_argument("configs", nargs="+")
     taxonomy.add_argument("--output")

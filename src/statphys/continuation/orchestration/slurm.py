@@ -1,4 +1,4 @@
-"""Portable Slurm array rendering for DGX GPU and CPU shards."""
+"""Portable Slurm array rendering for accelerator and CPU shards."""
 
 from __future__ import annotations
 

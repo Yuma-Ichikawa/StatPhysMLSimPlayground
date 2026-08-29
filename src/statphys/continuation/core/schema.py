@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import tomllib
 from collections.abc import Mapping, Sequence
@@ -14,8 +15,10 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any
 
+from statphys.core.scientific_spec import ScaleSpec
+
 REQUIRED_SEED_COUNT = 5
-SCHEMA_VERSION = "1.1"
+SCHEMA_VERSION = "2.0"
 
 
 class Domain(str, Enum):
@@ -89,6 +92,7 @@ class TaskSpec:
     size: int
     seed: int
     parameters: Mapping[str, Any] = field(default_factory=dict)
+    scale: ScaleSpec | Mapping[str, Any] | None = None
     schema_version: str = SCHEMA_VERSION
     family: str = "anchor"
 
@@ -103,6 +107,14 @@ class TaskSpec:
         object.__setattr__(self, "size", int(self.size))
         object.__setattr__(self, "seed", int(self.seed))
         object.__setattr__(self, "parameters", MappingProxyType(dict(_plain(self.parameters))))
+        scale = self.scale
+        if scale is None:
+            scale = ScaleSpec.legacy(self.size)
+        elif isinstance(scale, Mapping):
+            scale = ScaleSpec.from_dict(scale)
+        if not math.isclose(float(scale.finite_size_value), float(self.size)):
+            raise ValueError("size must equal scale.finite_size_coordinate for compatibility")
+        object.__setattr__(self, "scale", scale)
         if self.size <= 0:
             raise ValueError("size must be positive")
         if self.seed < 0:
@@ -122,6 +134,7 @@ class TaskSpec:
             "control_name": self.control_name,
             "control": self.control,
             "size": self.size,
+            "scale": self.scale.to_dict(),
             "parameters": _plain(self.parameters),
         }
 
@@ -141,8 +154,29 @@ class TaskSpec:
     def nested_seeds(self) -> dict[str, int]:
         return {
             name: derive_seed(self.seed, name)
-            for name in ("disorder", "data", "initialization", "minibatch", "dropout", "evaluation")
+            for name in (
+                "teacher_or_environment_disorder",
+                "data_disorder",
+                "initialization",
+                "minibatch_order",
+                "dropout",
+                "diffusion_noise",
+                "rollout",
+                "evaluation",
+                "intervention",
+                "bootstrap",
+            )
         }
+
+    @property
+    def finite_size_coordinate(self) -> str:
+        return self.scale.finite_size_coordinate
+
+    @property
+    def finite_size_value(self) -> float:
+        value = self.scale.finite_size_value
+        assert value is not None
+        return value
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -155,6 +189,7 @@ class TaskSpec:
             "control_name": self.control_name,
             "control": self.control,
             "size": self.size,
+            "scale": self.scale.to_dict(),
             "seed": self.seed,
             "nested_seeds": self.nested_seeds,
             "parameters": _plain(self.parameters),
@@ -234,6 +269,39 @@ def _parameter_combinations(experiment: Mapping[str, Any]) -> list[dict[str, Any
     return [{**base, **dict(zip(keys, items, strict=True))} for items in product(*values)]
 
 
+def _scale_for_size(experiment: Mapping[str, Any], size: int) -> ScaleSpec:
+    raw = experiment.get("scale")
+    if raw is None:
+        return ScaleSpec.legacy(size)
+    payload = dict(raw)
+    coordinate = str(payload.get("finite_size_coordinate", "width"))
+    field_names = {
+        "data_size",
+        "input_dimension",
+        "width",
+        "depth",
+        "context_length",
+        "parameter_count",
+        "horizon",
+        "population",
+        "resolution",
+        "compute_flops",
+    }
+    if coordinate in field_names:
+        registered = payload.get(coordinate)
+        if registered is not None and float(registered) != float(size):
+            raise ValueError(f"scale.{coordinate} must match each value in sizes")
+        payload[coordinate] = size
+    else:
+        coordinates = dict(payload.get("coordinates", {}))
+        registered = coordinates.get(coordinate)
+        if registered is not None and float(registered) != float(size):
+            raise ValueError(f"scale coordinate {coordinate} must match each value in sizes")
+        coordinates[coordinate] = size
+        payload["coordinates"] = coordinates
+    return ScaleSpec.from_dict(payload)
+
+
 def expand_config(path: str | Path) -> Manifest:
     source = Path(path)
     raw_bytes = source.read_bytes()
@@ -266,6 +334,7 @@ def expand_config(path: str | Path) -> Manifest:
                     size=int(size),
                     seed=int(seed),
                     parameters=parameters,
+                    scale=_scale_for_size(experiment, int(size)),
                 )
             )
     if not tasks:
@@ -323,6 +392,7 @@ __all__ = [
     "Manifest",
     "REQUIRED_SEED_COUNT",
     "SCHEMA_VERSION",
+    "ScaleSpec",
     "TaskSpec",
     "compose_manifests",
     "derive_seed",

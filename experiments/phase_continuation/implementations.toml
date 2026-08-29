@@ -1,0 +1,25 @@
+schema_version = "1.0"
+
+[[implementations]]
+id = "canonical_ontology"
+status = "unit_validated"
+modules = ["statphys.core.scientific_spec", "statphys.core.protocol_spec", "statphys.core.execution_spec", "statphys.core.estimates", "statphys.core.evidence"]
+tests = ["tests/test_scientific_contracts.py"]
+
+[[implementations]]
+id = "strict_outer_seed_aggregation"
+status = "unit_validated"
+modules = ["statphys.continuation.analysis.aggregate"]
+tests = ["tests/continuation/test_aggregate.py"]
+
+[[implementations]]
+id = "paired_boundary_bootstrap"
+status = "unit_validated"
+modules = ["statphys.predictive.pipeline"]
+tests = ["tests/predictive/test_pipeline.py"]
+
+[[implementations]]
+id = "evidence_aware_interface"
+status = "unit_validated"
+modules = ["statphys.ui", "statphys.cli"]
+tests = ["tests/test_audit_regressions.py"]

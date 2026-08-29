@@ -11,17 +11,26 @@ from typing import Any
 from ..core.registry import is_supported
 from ..core.schema import validate_seed_set
 
-COORDINATES = ("data", "architecture", "objective", "optimizer", "dynamics", "population")
+COORDINATES = ("data", "architecture", "objective", "dynamics", "scale", "lifecycle")
 OUTCOMES = (
-    "stable",
+    "preserved",
     "renormalized",
-    "splitting",
-    "merging",
-    "rounding",
-    "new_phase",
-    "computational_statistical_separation",
+    "rounded",
+    "split",
+    "merged",
+    "new_regime",
+    "hysteretic",
+    "path_dependent",
+    "statistical_computational_separation",
+    "semantic_failure",
+    "censored_no_crossing",
+    "unresolved",
+    "not_comparable",
 )
 TIERS = ("A", "B", "B+", "C")
+THEORY_STATUSES = {f"T{index}" for index in range(7)}
+REALISM_LEVELS = {f"R{index}" for index in range(6)}
+EVIDENCE_STATUSES = {f"E{index}" for index in range(7)}
 
 
 def validate_taxonomy(path: str | Path, config_paths: Sequence[str | Path]) -> dict[str, Any]:
@@ -30,9 +39,15 @@ def validate_taxonomy(path: str | Path, config_paths: Sequence[str | Path]) -> d
     if tuple(registry.get("coordinates", ())) != COORDINATES:
         errors.append("coordinates must contain the canonical six solvability axes in order")
     if tuple(registry.get("outcomes", ())) != OUTCOMES:
-        errors.append("outcomes must contain all seven continuation outcomes in order")
+        errors.append("outcomes must contain all 13 continuation outcomes in order")
     if set(registry.get("tier_definitions", {})) != set(TIERS):
         errors.append("tier_definitions must define A, B, B+, and C")
+    if set(registry.get("theory_status", {})) != THEORY_STATUSES:
+        errors.append("theory_status must define T0 through T6")
+    if set(registry.get("realism_level", {})) != REALISM_LEVELS:
+        errors.append("realism_level must define R0 through R5")
+    if set(registry.get("evidence_status", {})) != EVIDENCE_STATUSES:
+        errors.append("evidence_status must define E0 through E6")
 
     configured: dict[tuple[str, str], list[dict[str, Any]]] = {}
     pair_values: set[str] = set()
@@ -62,6 +77,14 @@ def validate_taxonomy(path: str | Path, config_paths: Sequence[str | Path]) -> d
         status = str(endpoint.get("status", ""))
         if tier not in TIERS:
             errors.append(f"{identifier}: invalid tier {tier!r}")
+        if endpoint.get("theory_status") not in THEORY_STATUSES:
+            errors.append(f"{identifier}: invalid theory status")
+        if endpoint.get("realism_level") not in REALISM_LEVELS:
+            errors.append(f"{identifier}: invalid realism level")
+        if endpoint.get("evidence_status") not in EVIDENCE_STATUSES:
+            errors.append(f"{identifier}: invalid evidence status")
+        if not endpoint.get("state_object") or not endpoint.get("phenomenon_type"):
+            errors.append(f"{identifier}: state_object and phenomenon_type are required")
         if status == "runnable":
             runnable += 1
             domain = str(endpoint.get("domain", ""))
@@ -72,10 +95,10 @@ def validate_taxonomy(path: str | Path, config_paths: Sequence[str | Path]) -> d
                 errors.append(f"{identifier}: unsupported runner {domain}/{family}")
             if not matches:
                 errors.append(f"{identifier}: no matching configuration")
-            if matches and max(len(set(item.get("sizes", ()))) for item in matches) < 6:
-                errors.append(f"{identifier}: fewer than six system sizes")
             if not endpoint.get("observables") or not endpoint.get("falsifier"):
                 errors.append(f"{identifier}: observables and falsifier are required")
+            if not endpoint.get("finite_size_coordinate") or not endpoint.get("scaling_path"):
+                errors.append(f"{identifier}: finite_size_coordinate and scaling_path are required")
         elif status == "protocol":
             protocols += 1
             if tier != "C" or not endpoint.get("limitation"):

@@ -8,7 +8,7 @@ from pathlib import Path
 
 from ..core.artifacts import RunStore
 from ..core.metrics import resolve_device, validate_metrics
-from ..core.registry import resolve_runner
+from ..core.registry import resolve_runner, runner_contract
 from ..core.schema import TaskSpec, read_manifest
 
 
@@ -33,7 +33,14 @@ def run_task(
     started = time.perf_counter()
     try:
         metrics, arrays = resolve_runner(task)(task, resolved)
-        validated = validate_metrics(metrics)
+        contract = runner_contract(task)
+        contract.validate_metric_names(set(metrics), context=task.run_id)
+        missing_arrays = contract.required_arrays - set(arrays)
+        if missing_arrays:
+            raise ValueError(
+                f"{task.run_id} is missing required arrays: {', '.join(sorted(missing_arrays))}"
+            )
+        validated = validate_metrics(metrics, contract.required_metrics)
         store.complete(
             task,
             validated,
@@ -50,11 +57,21 @@ def run_task(
                 torch.cuda.empty_cache()
             except BaseException:
                 pass
+            store.fail(task, error)
             store.begin(task, overwrite=True)
             resolved = resolve_device("cpu")
+            started = time.perf_counter()
             try:
                 metrics, arrays = resolve_runner(task)(task, resolved)
-                validated = validate_metrics(metrics)
+                contract = runner_contract(task)
+                contract.validate_metric_names(set(metrics), context=task.run_id)
+                missing_arrays = contract.required_arrays - set(arrays)
+                if missing_arrays:
+                    raise ValueError(
+                        f"{task.run_id} is missing required arrays: "
+                        f"{', '.join(sorted(missing_arrays))}"
+                    )
+                validated = validate_metrics(metrics, contract.required_metrics)
                 store.complete(
                     task,
                     validated,

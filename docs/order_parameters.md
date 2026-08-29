@@ -139,25 +139,25 @@ q_{ab} = \mathbb E_x[f_a(x) f_b(x)], \qquad a \ne b,
 $$
 
 averaged over all $\binom{R}{2}$ pairs to give `q_ab_mean`/`q_ab_std`
-(`replica_overlaps`). This is the **numerical analogue of the
-replica-symmetric order parameter**: $q_{ab} \to 1$ means all replicas
-converge to (essentially) the same function — a single dominant basin
-("condensed"/RS phase) — while small $q_{ab}$ indicates many distinct
-minima (a "glassy"/RSB-like multiplicity of solutions), exactly the
-numerical diagnostic used by Zdeborová & Krzakala-style analyses to
-locate phase transitions without solving saddle-point equations.
+(`replica_overlaps`). This is a **numerical analogue of a replica
+overlap**: $q_{ab} \to 1$ means the fitted functions agree on the probe
+ensemble, while small $q_{ab}$ indicates functional diversity. Calling
+that diversity a condensed, glassy, RS, or RSB phase additionally
+requires registered symmetries, nulls, independent disorder, and
+finite-size evidence; overlap alone is an exploratory diagnostic.
 
-Over the $R$ per-alpha values of $\hat m$, define the **susceptibility**
+For a registered outer ensemble $\omega$, define the **susceptibility**
 
 $$
-\chi_m = d \cdot \mathrm{Var}_{\rm replicas}[\hat m]
+\chi_N = N_{\rm eff} \cdot \mathrm{Var}_{\omega}[\hat m_\omega]
 \tag{2.2}
 $$
 
-(`susceptibility`, with `scale=d`) — the finite-size numerical proxy
-for the thermodynamic susceptibility, expected to **peak at a
-continuous phase transition** and grow with $d$ there (critical
-slowing-down / diverging fluctuations).
+(`susceptibility`; the legacy experiment path uses $N_{\rm eff}=d$ and
+independent student dynamics). An interior peak that sharpens along a
+declared finite-size path can support a continuous-transition model.
+It does not establish one by itself, and a maximum at the sampled
+control boundary is reported as censored rather than as a peak.
 
 The **Binder cumulant**
 
@@ -166,11 +166,13 @@ U_4 = 1 - \frac{\langle \hat m^4 \rangle}{3 \langle \hat m^2\rangle^2}
 \tag{2.3}
 $$
 
-(`binder_cumulant`) is $0$ for a centered Gaussian order parameter
-(disordered phase) and $2/3$ for a delta-distributed one (fully ordered
-phase); curves $U_4(\alpha)$ computed at different $d$ **cross at the
-critical point** $\alpha_c$ — the standard finite-size-scaling trick
-used in `study_fss`/`study_diagram`.
+(`binder_cumulant`) is $0$ for a centered Gaussian variable and $2/3$
+for a nonzero delta-distributed variable. In a compatible outer
+ensemble, a stable crossing of curves at increasing sizes can support
+a continuous-transition estimate. The analysis requires an actual
+interpolated crossing; absent sign change or boundary-only support is
+recorded as censored. `study_fss`/`study_diagram` therefore provide
+finite-size diagnostics, not an automatic critical-point declaration.
 
 ### 2.4 Participation ratio and specialization index
 

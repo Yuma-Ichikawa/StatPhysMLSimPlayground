@@ -17,6 +17,7 @@ from .schema import (
     SeedPlan,
     TrainingSpec,
 )
+from .training import TrainingResult, TrainingStatus
 
 __all__ = [
     "ArchitectureStage",
@@ -29,4 +30,6 @@ __all__ = [
     "ScalingPath",
     "SeedPlan",
     "TrainingSpec",
+    "TrainingResult",
+    "TrainingStatus",
 ]

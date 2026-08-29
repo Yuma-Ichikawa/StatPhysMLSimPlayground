@@ -1,6 +1,6 @@
 \section{Limitations and scope}
 
-The strongest evidence is a controlled numerical benchmark, not natural
+The strongest evidence in this release is a controlled numerical benchmark, not natural
 language, natural image, open RLVR, or open-weight LLM-agent external validity.
 The Transformer atlas trains small decoder models from scratch. Natural
 corpora test a byte-level measurement protocol on disjoint ranges; they do not
@@ -22,8 +22,14 @@ objectives, open checkpoints, and agent populations remain explicit open cells.
 Recent 2026 multi-agent and diffusion references are unreviewed preprints and
 are not used as sole support for a claim.
 
+Temporal fluctuation proxies in a single training trajectory do not estimate
+disorder susceptibility or a Binder cumulant. The revised schema names these
+quantities separately and requires independent terminal samples for phase
+statistics, but legacy trajectories cannot retroactively supply that ensemble.
+Likewise, phenomenological generators are method-validation benchmarks rather
+than empirical evidence about trainable neural systems.
+
 Finally, the confirmation suite was designed after auditing the broad atlas.
 Its fresh seeds protect the numerical comparison, but the hypotheses are
 second-stage confirmations rather than an independent replication by another
 implementation.
-

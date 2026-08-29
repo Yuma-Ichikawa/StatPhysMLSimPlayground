@@ -1,0 +1,53 @@
+schema_version = "1.0"
+
+[[works]]
+id = "cui_attention_2024"
+title = "A Phase Transition between Positional and Semantic Learning in a Solvable Model of Dot-Product Attention"
+source = "NeurIPS 2024"
+doi = "10.52202/079017-1146"
+domain = "sequence_prediction"
+state_object = "representation_state"
+model = "tied_low_rank_dot_product_attention"
+data = "high_dimensional_teacher_student"
+objective = "empirical_risk"
+dynamics = "global_minimum"
+limit = "dimension and sample count jointly asymptotic"
+theory_status = "T1"
+realism_level = "R0"
+order_parameters = ["positional_overlap", "semantic_overlap"]
+predictions = ["positional_semantic_boundary"]
+missing_axes = ["full_rank", "mlp", "residual", "causal_objective", "finite_time_optimizer", "natural_data"]
+
+[[works]]
+id = "biroli_diffusion_2024"
+title = "Dynamical regimes of diffusion models"
+source = "Nature Communications"
+doi = "10.1038/s41467-024-54281-3"
+domain = "generative_modeling"
+state_object = "generative_trajectory"
+model = "diffusion_model"
+data = "structured_distributions"
+objective = "score_based_generation"
+dynamics = "reverse_diffusion"
+theory_status = "T2"
+realism_level = "R1"
+order_parameters = ["speciation", "memorization"]
+predictions = ["dynamical_regimes"]
+missing_axes = ["finite_capacity_learned_score", "guidance_transport", "natural_endpoint"]
+
+[[works]]
+id = "de_nobili_multiagent_2026"
+title = "Collective Alignment in LLM Multi-Agent Systems: Disentangling Bias from Cooperation via Statistical Physics"
+source = "arXiv:2605.10528"
+domain = "collective_inference"
+state_object = "population_communication_state"
+model = "open_weight_llm_agents_on_square_lattice"
+data = "binary_prompted_state"
+objective = "neighbor_conditioned_update"
+dynamics = "temperature_controlled_sampling"
+theory_status = "T6"
+realism_level = "R5"
+order_parameters = ["magnetization", "susceptibility", "effective_field", "effective_coupling"]
+predictions = ["bias_driven_crossover"]
+missing_axes = ["heterogeneous_agents", "dynamic_topology", "task_truth", "tool_use"]
+review_status = "preprint"

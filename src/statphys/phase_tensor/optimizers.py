@@ -62,6 +62,12 @@ def build_optimizer(
             weight_decay=weight_decay,
         )
     if normalized == "muon":
+        muon_class = getattr(torch.optim, "Muon", None)
+        if muon_class is None:
+            raise RuntimeError(
+                "optimizer muon is unavailable in this PyTorch build; install a build "
+                "that exposes torch.optim.Muon or choose another registered optimizer"
+            )
         named = list(model.named_parameters())
         matrix = [
             parameter
@@ -80,7 +86,7 @@ def build_optimizer(
         optimizers: list[torch.optim.Optimizer] = []
         if matrix:
             optimizers.append(
-                torch.optim.Muon(
+                muon_class(
                     matrix,
                     lr=learning_rate,
                     momentum=momentum,

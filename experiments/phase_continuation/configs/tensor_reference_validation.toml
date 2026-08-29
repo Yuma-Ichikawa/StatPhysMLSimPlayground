@@ -1,0 +1,16 @@
+[study]
+name = "tensor_outer_seed_reference_validation"
+description = "Portable GPU-sized validation of outer-seed phase statistics and finite-width curves"
+seeds = [104729, 130363, 155921, 181081, 206369]
+uncertainty = "two-sided 95% interval over five independent full-pipeline seeds"
+
+[[experiments]]
+domain = "transformer"
+family = "tensor_mlp"
+variants = ["gelu"]
+stage = "validation"
+control_name = "sample_coefficient"
+controls = [0.5, 2.0, 8.0]
+sizes = [16, 32, 64]
+scale = { finite_size_coordinate = "width", depth = 1, context_length = 16, scaling_path = { depth = "fixed", context_length = "fixed", data_size = "sample_coefficient * width" } }
+parameters = { data_kind = "synthetic_retrieval", sequence_length = 16, depth = 1, heads = 4, ff_ratio = 2.0, normalization = "pre_rmsnorm", optimizer = "adamw", steps = 24, record_interval = 4, batch_size = 32, eval_examples = 64, learning_rate = 0.001, weight_decay = 0.01, noise = 0.12, ood_shift = 0.18, sample_exponent = 1.0, train_cap = 512, bfloat16 = true }

@@ -8,7 +8,7 @@ account, and module settings belong in the works directory or environment variab
       configs/domain_programs.toml configs/cross_domain.toml
 
     phase-continuation expand configs/transformer_atlas.toml --manifest atlas.json
-    phase-continuation slurm-script atlas.json cluster/dgx_cpu.toml --output atlas.sbatch
+    phase-continuation slurm-script atlas.json cluster/cpu.toml --output atlas.sbatch
 
 The GPU profile runs one task per GPU with eight-way concurrency. The CPU profile bundles
 four compact numerical anchors per array element. Both profiles are generic templates;
@@ -16,17 +16,17 @@ fill site-specific Slurm fields outside the reusable repository.
 
 ## Taxonomic completion contract
 
-'taxonomy.toml' separates four realism tiers, the six solvability coordinates, all 15
-coordinate-pair interactions, and seven possible continuation outcomes. The runnable
+'taxonomy.toml' separates seven scientific layers, independent theory/realism/evidence
+axes, all 15 deformation-pair interactions, and 13 continuation outcomes. The runnable
 program consists of ten independent configurations so each domain can be retried without
-changing the estimand. Screening grids use the canonical five seeds; frozen confirmation
-grids use twelve untouched seeds. Every condition has at least five seeds, and registered
-phase-classification grids use at least six sizes.
+changing the estimand. Screening grids use five registered seeds; frozen confirmation
+grids use twelve untouched seeds. Every condition has at least five seeds; finite-size
+evidence additionally requires a declared coordinate, path, diagnostic, and alternative.
 
 Tier C entries are protocols, not simulated claims. Site-specific environment archives,
 paths, job IDs, raw runs, and logs belong outside this repository. The immutable portable
-manifest snapshot is versioned with the configs. A portable Spark profile is provided at
-'cluster/dgx_spark.toml'; deployments supply Python and setup through their own profile.
+manifest snapshot is versioned with the configs. Portable CPU and accelerator profiles
+leave partition, account, Python, and setup choices to each deployment.
 
 ## Frozen confirmation suite
 

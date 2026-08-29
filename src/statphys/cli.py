@@ -129,6 +129,13 @@ def _cmd_validate(args) -> int:
     return 0
 
 
+def _cmd_preview(args) -> int:
+    from statphys.ui import preview_study
+
+    print(json.dumps(preview_study(args.study), indent=2, sort_keys=True))
+    return 0
+
+
 def _cmd_run(args) -> int:
     from statphys.ui import run_study
 
@@ -146,6 +153,18 @@ def _cmd_resume(args) -> int:
         raise ValueError("resume expects a run directory containing its immutable study.toml")
     artifact = run_study(study, run_directory)
     print(json.dumps({"result": artifact.name, "mode": "deterministic_rerun"}, indent=2))
+    return 0
+
+
+def _cmd_retry(args) -> int:
+    from statphys.ui import run_study
+
+    run_directory = Path(args.run_id)
+    study = run_directory / "study.toml"
+    if not study.is_file():
+        raise ValueError("retry expects a run directory containing its immutable study.toml")
+    artifact = run_study(study, run_directory, new_attempt=True)
+    print(json.dumps({"result": artifact.name, "mode": "new_execution_attempt"}, indent=2))
     return 0
 
 
@@ -179,8 +198,65 @@ def _cmd_doctor(_args) -> int:
     return 0 if result["ok"] else 1
 
 
+def _cmd_status(args) -> int:
+    from statphys.ui import artifact_status
+
+    print(json.dumps(artifact_status(args.run), indent=2, sort_keys=True))
+    return 0
+
+
+def _cmd_aggregate(args) -> int:
+    from statphys.continuation.aggregate import aggregate_manifest
+
+    result = aggregate_manifest(
+        args.manifest, args.runs, args.output, allow_incomplete=args.allow_incomplete
+    )
+    print(
+        json.dumps(
+            {
+                "schema_version": result["schema_version"],
+                "completed_runs": result["completed_runs"],
+                "conditions": len(result["records"]),
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
+def _cmd_paper(args) -> int:
+    from statphys.continuation.paper import write_paper_results
+
+    destination = write_paper_results(args.aggregate, args.output)
+    print(json.dumps({"paper_macros": destination.name}, indent=2))
+    return 0
+
+
 def _cmd_lab(args) -> int:
-    from statphys.ui import STUDY_KINDS, write_study_template
+    from statphys.ui import (
+        BUDGETS,
+        DEFORMATION_AXES,
+        SCIENTIFIC_QUESTIONS,
+        STUDY_KINDS,
+        SYSTEMS,
+        write_study_template,
+    )
+
+    interactive = args.kind is None
+
+    def choose(label, values, supplied):
+        if supplied is not None:
+            return supplied
+        if not interactive:
+            return values[0]
+        print(label + ":")
+        for index, value in enumerate(values, start=1):
+            print(f"  {index}. {value}")
+        selected = input("Choice [1]: ").strip() or "1"
+        try:
+            return values[int(selected) - 1]
+        except (ValueError, IndexError) as error:
+            raise ValueError("choose one of the displayed numbers") from error
 
     if args.kind is None:
         print("Choose a workflow:")
@@ -194,7 +270,20 @@ def _cmd_lab(args) -> int:
             raise ValueError("choose one of the displayed workflow numbers") from error
     else:
         kind = args.kind
-    write_study_template(args.output, kind)
+    question = choose("Scientific question", SCIENTIFIC_QUESTIONS, args.question)
+    system = choose("Learning system", SYSTEMS, args.system)
+    deformation = choose("Deformation axis", DEFORMATION_AXES, args.deformation)
+    evidence = args.evidence or "exploratory"
+    budget = choose("Compute budget", BUDGETS, args.budget)
+    write_study_template(
+        args.output,
+        kind,
+        scientific_question=question,
+        system=system,
+        deformation_axis=deformation,
+        evidence_tier=evidence,
+        budget=budget,
+    )
     print(
         json.dumps({"created": Path(args.output).name, "next": "statphys validate STUDY"}, indent=2)
     )
@@ -260,6 +349,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("study")
     p.set_defaults(func=_cmd_validate)
 
+    p = sub.add_parser("preview", help="estimate runs, evidence, and figures without computing")
+    p.add_argument("study")
+    p.set_defaults(func=_cmd_preview)
+
     p = sub.add_parser("run", help="run a validated study and write a portable result artifact")
     p.add_argument("study")
     p.add_argument("--output")
@@ -268,6 +361,14 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("resume", help="deterministically rerun a study from its run directory")
     p.add_argument("run_id")
     p.set_defaults(func=_cmd_resume)
+
+    p = sub.add_parser("retry", help="start a new execution attempt for a portable study")
+    p.add_argument("run_id")
+    p.set_defaults(func=_cmd_retry)
+
+    p = sub.add_parser("status", help="show portable state and attempt metadata for one run")
+    p.add_argument("run")
+    p.set_defaults(func=_cmd_status)
 
     p = sub.add_parser(
         "inspect", help="summarize an artifact without opening implementation internals"
@@ -285,6 +386,18 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--output", default="statphys_report.html")
     p.set_defaults(func=_cmd_report)
 
+    p = sub.add_parser("aggregate", help="strictly aggregate a registered continuation manifest")
+    p.add_argument("manifest")
+    p.add_argument("--runs", required=True)
+    p.add_argument("--output", required=True)
+    p.add_argument("--allow-incomplete", action="store_true")
+    p.set_defaults(func=_cmd_aggregate)
+
+    p = sub.add_parser("paper", help="generate auditable TeX macros from an aggregate")
+    p.add_argument("aggregate")
+    p.add_argument("--output", required=True)
+    p.set_defaults(func=_cmd_paper)
+
     p = sub.add_parser("doctor", help="check optional capabilities without exposing host details")
     p.set_defaults(func=_cmd_doctor)
 
@@ -293,6 +406,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--kind", choices=("order_parameters", "phase_diagram", "online", "replica", "ready_made")
     )
+    p.add_argument("--question")
+    p.add_argument("--system")
+    p.add_argument("--deformation")
+    p.add_argument("--evidence", choices=("exploratory", "confirmatory", "finite_size"))
+    p.add_argument("--budget")
     p.set_defaults(func=_cmd_lab)
 
     return parser

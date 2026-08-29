@@ -1,6 +1,6 @@
 [study]
 name = "continuation_taxonomy_diagnostics"
-description = "Complete pairwise assumption graph, renormalized bridges, critical windows, and seven continuation outcomes"
+description = "Complete pairwise assumption graph, renormalized bridges, critical windows, and registered continuation outcomes"
 seeds = [104729, 130363, 155921, 181081, 206369]
 uncertainty = "two-sided 95% Student-t interval across five full-pipeline seeds"
 
@@ -13,7 +13,7 @@ control_name = "deformation_strength"
 controls = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
 sizes = [32, 64, 128, 256, 512, 1024]
 parameters = { fidelity_tier = "B", n_probe = 512 }
-parameter_grid = { pair = ["data__architecture", "data__objective", "data__optimizer", "data__dynamics", "data__population", "architecture__objective", "architecture__optimizer", "architecture__dynamics", "architecture__population", "objective__optimizer", "objective__dynamics", "objective__population", "optimizer__dynamics", "optimizer__population", "dynamics__population"] }
+parameter_grid = { pair = ["data__architecture", "data__objective", "data__dynamics", "data__scale", "data__lifecycle", "architecture__objective", "architecture__dynamics", "architecture__scale", "architecture__lifecycle", "objective__dynamics", "objective__scale", "objective__lifecycle", "dynamics__scale", "dynamics__lifecycle", "scale__lifecycle"] }
 
 [[experiments]]
 domain = "cross_domain"

@@ -23,13 +23,12 @@ Typical commands (from the repository root):
 PYTHONPATH=src python -m statphys.atlas.cli manifest \
   --config experiments/transformer_phase_atlas/configs/00_smoke.toml
 
-export STATPHYS_ATLAS_CONTAINER=/path/to/site-rocm-pytorch.sif
+export STATPHYS_ATLAS_CONTAINER=runtime-container.sif
 PYTHONPATH=src python -m statphys.atlas.cli submit \
   --manifest atlas_manifests/atlas_smoke.jsonl \
   --output-root results/transformer_phase_atlas/smoke \
-  --cluster-config experiments/transformer_phase_atlas/cluster/mi300x.toml
+  --cluster-config experiments/transformer_phase_atlas/cluster/rocm_gpu.toml
 ```
 
 The SIF path is infrastructure, not scientific configuration.  Container
 identity and accelerator details are captured in each run's provenance.
-

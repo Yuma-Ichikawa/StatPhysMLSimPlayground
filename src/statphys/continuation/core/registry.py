@@ -6,6 +6,9 @@ from collections.abc import Callable
 from importlib import import_module
 from typing import Any
 
+from statphys.core import Fidelity, RunnerContract, TheoryStatus
+
+from .metrics import COMMON_METRICS
 from .schema import Domain, TaskSpec
 
 Runner = Callable[[TaskSpec, Any], tuple[dict[str, float], dict[str, Any]]]
@@ -82,6 +85,38 @@ _RUNNER_PATHS: dict[Domain, dict[str, str]] = {
     },
 }
 
+_TEMPORAL_PHASE_METRICS = frozenset(
+    {
+        "order_parameter",
+        "signed_order_parameter",
+        "trajectory_mean_task_order",
+        "temporal_order_variance",
+        "temporal_kurtosis_proxy",
+        "trajectory_sign_entropy",
+        "generalization_error",
+        "ood_generalization_error",
+        "effective_multiplicity",
+        "interaction_range",
+        "oracle_gap",
+        "intervention_response",
+    }
+)
+
+_DEFAULT_CONTRACT = RunnerContract(
+    required_metrics=frozenset(COMMON_METRICS),
+    theory_status=TheoryStatus.EMPIRICAL_ONLY,
+    fidelity=Fidelity.TRAINABLE_SYNTHETIC,
+    phase_ensemble="inner_replica",
+)
+
+_PHASE_TENSOR_CONTRACT = RunnerContract(
+    required_metrics=_TEMPORAL_PHASE_METRICS,
+    required_arrays=frozenset({"history_step", "history_semantic_order"}),
+    theory_status=TheoryStatus.EMPIRICAL_ONLY,
+    fidelity=Fidelity.TRAINABLE_SYNTHETIC,
+    phase_ensemble="outer_seed",
+)
+
 
 def supported_families() -> dict[str, tuple[str, ...]]:
     return {domain.value: tuple(families) for domain, families in _RUNNER_PATHS.items()}
@@ -101,3 +136,22 @@ def resolve_runner(task: TaskSpec) -> Runner:
         ) from error
     module_name, attribute = path.split(":", 1)
     return getattr(import_module(module_name, package=__package__), attribute)
+
+
+def runner_contract(task: TaskSpec) -> RunnerContract:
+    """Return the metric, ensemble, theory, and fidelity contract for a task."""
+    if task.domain is Domain.TRANSFORMER and task.family.startswith("tensor_"):
+        return _PHASE_TENSOR_CONTRACT
+    if task.domain is Domain.CROSS and task.family in {
+        "assumption_pairs",
+        "renormalized_bridge",
+        "critical_window",
+        "outcome_atlas",
+    }:
+        return RunnerContract(
+            required_metrics=frozenset(COMMON_METRICS),
+            theory_status=TheoryStatus.SYNTHETIC_GROUND_TRUTH,
+            fidelity=Fidelity.PHENOMENOLOGICAL_GENERATOR,
+            phase_ensemble="inner_replica",
+        )
+    return _DEFAULT_CONTRACT

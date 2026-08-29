@@ -1,50 +1,52 @@
 \section{Introduction}
 
-Statistical mechanics is most useful for machine learning when it predicts what
-happens after a simplifying assumption is removed. A phase diagram drawn after
-the fact can summarize a simulator, but it does not establish that a solvable
-theory retains explanatory power for a trained system. We therefore study one
-question:
+Statistical mechanics offers machine learning more than analogies to phase
+transitions: it offers explicit ensembles, scale coordinates, observables,
+interventions, and falsifiable statements about collective behavior. Yet a
+phase diagram drawn after the fact can merely summarize a simulator, and the
+same word ``entropy'' can denote token uncertainty, macrostate multiplicity, or
+trajectory diversity. We therefore study one umbrella question:
 \begin{quote}
-Which phase structures and order parameters survive along controlled paths from
-solvable models to realistic learning systems?
+How can numerical statistical mechanics describe, compare, and falsify
+collective phenomena across modern learning systems without confusing theory,
+realism, and evidence?
 \end{quote}
 
-Our answer has three layers. First, a \emph{hierarchical realism taxonomy}
-states what is changed: data or environment, model or interaction, objective or
-feedback, optimization dynamics, scale or resources, and lifecycle or
-population. Second, \emph{predictive phase continuation} states how a change
-is judged: calibrate at an anchor, predict an untouched deformation, diagnose
-breakdown, and test a preregistered repair on independent evidence. Third,
-domain experiments state what was learned. Transformers receive the deepest
-mechanistic treatment; diffusion, reinforcement learning (RL), and multi-agent
-systems test external validity of the experimental grammar.
+Our answer has three components. First, a seven-layer atlas states which state
+object, deformation, disorder ensemble, scale path, observable, and phenomenon
+are under study in each domain. Second, an experiment grammar maps these nouns
+to executable specifications and typed estimates. Third, domain dossiers state
+what was observed, what it may mean, and what remains unestablished.
+\emph{Predictive phase continuation} is a particularly demanding protocol
+inside this grammar: calibrate at an anchor, predict an untouched deformation,
+diagnose breakdown, and test a frozen repair on independent evidence.
 
-This asymmetry is deliberate. The paper does not propose one universality class
-for four unrelated dynamical systems. It proposes one evidence protocol for
-asking whether an order parameter, boundary, or intervention remains
-predictive. The protocol separates a genuine crossing from a censored
-threshold, an $O(1)$ risk from an extensive resource, and a five-seed taxonomy
-screen from a finite-size phase claim.
+The domain coverage is deliberately asymmetric. Transformers receive the
+deepest mechanism study; diffusion, reinforcement learning (RL), and
+multi-agent systems test portability of the grammar. We do not propose one
+universality class for these systems. The atlas instead separates a genuine
+crossing from a censored threshold, an $O(1)$ risk from an extensive resource,
+temporal fluctuations from disorder fluctuations, and a five-seed screen from
+a finite-size phase claim.
 
 The contributions are:
 \begin{enumerate}
-  \item a factorized design space, an order-parameter dictionary, an outcome
-  vocabulary, and a PhaseCard that make theory-to-reality deformations
-  comparable without erasing domain-specific physics;
-  \item a held-out prediction test with nontrivial baselines, nested disorder,
-  explicit censoring, and evidence tiers that bound the language allowed for
-  each result;
+  \item an orthogonal seven-layer taxonomy, observable dictionary, 13-outcome
+  vocabulary, and PhaseCard v3 that preserve domain-specific physics;
+  \item a common execution and evidence grammar with typed estimates, nested
+  disorder, explicit censoring, interventions, provenance, and invalidation;
+  \item a held-out predictive-continuation protocol with nontrivial baselines
+  and prospective largest-size evaluation;
   \item a Transformer flagship study that distinguishes broad exploratory
   coverage from frozen confirmation of module, optimizer, scaling, and data
   hypotheses; and
-  \item canonical diffusion, RL, and multi-agent validations, plus a complete
-  claim-to-artifact ledger and portable Spark-only reproduction workflow.
+  \item diffusion, RL, and multi-agent dossiers, plus literature, question,
+  implementation, claim, and artifact ledgers that distinguish unknown,
+  unimplemented, run, invalidated, and supported cells.
 \end{enumerate}
 
 \resultfigure{figures/figure1_protocol.pdf}{The paper in one figure. A
-hierarchical realism axis selects a deformation; effective variables are
+atlas coordinate selects a deformation; effective variables can then be
 calibrated at an anchor, scored on an untouched holdout, and assigned an outcome
-class. The diagram separates taxonomy (what changes), prediction (what must be
-forecast), and evidence (what can be claimed).}
-
+class. Taxonomy (what exists), protocol (what is tested), and evidence (what may
+be claimed) remain separate.}

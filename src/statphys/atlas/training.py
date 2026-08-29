@@ -9,12 +9,22 @@ import tempfile
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
 from .schema import OptimizerName, Precision, TrainingSpec
 
 Probe = Callable[[Any, int], Mapping[str, float]]
+
+
+class TrainingStatus(str, Enum):
+    CONVERGED = "converged"
+    EARLY_STOPPED = "early_stopped"
+    MAX_STEPS = "max_steps"
+    NUMERICAL_FAILURE = "numerical_failure"
+    PREEMPTED = "preempted"
+    CANCELLED = "cancelled"
 
 
 @dataclass
@@ -28,6 +38,7 @@ class TrainingResult:
     converged: bool
     elapsed_seconds: float
     history: dict[str, list[float]] = field(default_factory=dict)
+    status: TrainingStatus = TrainingStatus.MAX_STEPS
     stop_reason: str = "budget_exhausted"
     terminal_loss: float = float("nan")
     restored_best_checkpoint: bool = False
@@ -40,6 +51,7 @@ class TrainingResult:
             "steps": self.steps,
             "converged": self.converged,
             "elapsed_seconds": self.elapsed_seconds,
+            "status": self.status.value,
             "stop_reason": self.stop_reason,
             "terminal_loss": self.terminal_loss,
             "restored_best_checkpoint": self.restored_best_checkpoint,
@@ -194,6 +206,9 @@ def train_supervised(
     history: dict[str, list[float]] = {
         "step": [],
         "data_loss": [],
+        "explicit_penalty": [],
+        "optimizer_decay": [],
+        "reported_energy": [],
         "objective": [],
         "gradient_norm": [],
         "weight_norm": [],
@@ -204,6 +219,7 @@ def train_supervised(
     best_state: dict[str, Any] | None = None
     stale = 0
     converged = False
+    status = TrainingStatus.MAX_STEPS
     stop_reason = "budget_exhausted"
     start = time.perf_counter()
     final_loss = float("nan")
@@ -259,11 +275,16 @@ def train_supervised(
 
             if not math.isfinite(final_loss) or not math.isfinite(objective_value):
                 stop_reason = "numerical_failure"
+                status = TrainingStatus.NUMERICAL_FAILURE
                 break
 
             if should_record:
                 history["step"].append(float(step))
                 history["data_loss"].append(final_loss)
+                explicit_penalty = objective_value - final_loss
+                history["explicit_penalty"].append(explicit_penalty)
+                history["optimizer_decay"].append(float(spec.weight_decay))
+                history["reported_energy"].append(objective_value)
                 history["objective"].append(objective_value)
                 history["gradient_norm"].append(gradient_norm)
                 history["weight_norm"].append(_parameter_norm(model))
@@ -319,10 +340,12 @@ def train_supervised(
             ):
                 converged = True
                 stop_reason = "converged"
+                status = TrainingStatus.CONVERGED
                 break
             if spec.patience is not None and step >= spec.min_steps and stale >= spec.patience:
-                converged = True
+                converged = False
                 stop_reason = "patience"
+                status = TrainingStatus.EARLY_STOPPED
                 break
 
     elapsed = time.perf_counter() - start
@@ -340,6 +363,7 @@ def train_supervised(
         converged=converged,
         elapsed_seconds=elapsed,
         history=history,
+        status=status,
         stop_reason=stop_reason,
         terminal_loss=terminal_loss,
         restored_best_checkpoint=restored_best_checkpoint,

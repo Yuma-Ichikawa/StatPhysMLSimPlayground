@@ -5,8 +5,8 @@
 ### From source (recommended for development)
 
 ```bash
-git clone https://github.com/yuma-ichikawa/statphys-ml.git
-cd statphys-ml
+git clone https://github.com/Yuma-Ichikawa/StatPhysMLSimPlayground.git
+cd StatPhysMLSimPlayground
 pip install -e ".[dev]"
 ```
 

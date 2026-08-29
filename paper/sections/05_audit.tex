@@ -7,14 +7,16 @@ upgrade a performance-derived order, a censored threshold, a tuned endpoint, or
 an overlapping corpus split.
 
 Legacy artifacts are retained but not relabeled with statistics they did not
-record. The audit found and corrected four material issues: an MLP causal
+record. The current invalidation ledger additionally prevents superseded metric
+or split definitions from supporting current claims. The audit found and corrected four material issues: an MLP causal
 ratio divided by a vanishing scale; threshold endpoints counted as crossings;
 optimizer learning rates selected on the endpoint being reported; and a
 quadratic sample path limited by \texttt{train\_cap}. The confirmation suite
 was frozen specifically around these failures.
 
-The full JSON stores raw seed values, between-seed uncertainty, train/IID/OOD
+The revised artifact contract also distinguishes temporal trajectory variance
+from outer-disorder susceptibility and records failed accelerator and fallback
+runs as separate attempts. The full JSON stores raw seed values, between-seed uncertainty, train/IID/OOD
 risks, trajectory checkpoints, resource accounting, dataset revision and hash,
 split ranges, crossing status, and cap-hit status. Aggregation fails on missing
 or non-finite required quantities.
-

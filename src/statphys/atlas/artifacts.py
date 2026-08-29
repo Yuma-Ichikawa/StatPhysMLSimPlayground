@@ -7,7 +7,6 @@ import hashlib
 import json
 import os
 import platform
-import socket
 import subprocess
 import tempfile
 from collections.abc import Iterator, Mapping
@@ -28,7 +27,7 @@ def _json_default(value: Any) -> Any:
     if hasattr(value, "item"):
         return value.item()
     if isinstance(value, Path):
-        return str(value)
+        return value.as_posix() if not value.is_absolute() else value.name
     raise TypeError(f"not JSON serialisable: {type(value).__name__}")
 
 
@@ -96,17 +95,7 @@ def collect_provenance(repo: str | Path | None = None) -> dict[str, Any]:
     root = Path(repo).resolve() if repo is not None else None
     git_commit = _command_output(["git", "rev-parse", "HEAD"], root)
     git_status = _command_output(["git", "status", "--short"], root)
-    slurm = {
-        name.lower(): os.environ.get(name)
-        for name in (
-            "SLURM_JOB_ID",
-            "SLURM_ARRAY_JOB_ID",
-            "SLURM_ARRAY_TASK_ID",
-            "SLURM_JOB_PARTITION",
-            "SLURMD_NODENAME",
-        )
-        if os.environ.get(name) is not None
-    }
+    scheduler = "slurm" if os.environ.get("SLURM_JOB_ID") else None
     accelerator: dict[str, Any] = {}
     try:
         import torch
@@ -125,13 +114,13 @@ def collect_provenance(repo: str | Path | None = None) -> dict[str, Any]:
         accelerator = {"torch": None, "cuda_available": False}
     return {
         "captured_at": utc_now(),
-        "hostname": socket.gethostname(),
-        "platform": platform.platform(),
+        "platform_system": platform.system(),
+        "machine": platform.machine(),
         "python": platform.python_version(),
         "git_commit": git_commit,
         "git_dirty": bool(git_status),
         "git_status": git_status,
-        "slurm": slurm,
+        "scheduler": scheduler,
         "accelerator": accelerator,
     }
 
@@ -216,7 +205,13 @@ class RunArtifactStore:
     def save_summary(self, run_id: str, summary: Mapping[str, Any]) -> Path:
         path = self.run_dir(run_id) / "summary.json"
         atomic_json(path, dict(summary))
-        self.append_event({"event": "summary", "run_id": run_id, "path": str(path)})
+        self.append_event(
+            {
+                "event": "summary",
+                "run_id": run_id,
+                "path": path.relative_to(self.root).as_posix(),
+            }
+        )
         return path
 
     def save_arrays(self, run_id: str, name: str = "trajectories", **arrays: Any) -> Path:
@@ -226,7 +221,12 @@ class RunArtifactStore:
         atomic_npz(path, **arrays)
         checksum = sha256_file(path)
         self.append_event(
-            {"event": "artifact", "run_id": run_id, "path": str(path), "sha256": checksum}
+            {
+                "event": "artifact",
+                "run_id": run_id,
+                "path": path.relative_to(self.root).as_posix(),
+                "sha256": checksum,
+            }
         )
         return path
 

@@ -106,10 +106,12 @@ def finite_scalar(value: Any, name: str) -> float:
     return scalar
 
 
-def validate_metrics(metrics: dict[str, Any]) -> dict[str, float]:
-    missing = [name for name in COMMON_METRICS if name not in metrics]
+def validate_metrics(
+    metrics: dict[str, Any], required_metrics: frozenset[str] | tuple[str, ...] = COMMON_METRICS
+) -> dict[str, float]:
+    missing = [name for name in required_metrics if name not in metrics]
     if missing:
-        raise ValueError(f"missing common metrics: {', '.join(missing)}")
+        raise ValueError(f"missing required metrics: {', '.join(sorted(missing))}")
     return {str(name): finite_scalar(value, str(name)) for name, value in metrics.items()}
 
 

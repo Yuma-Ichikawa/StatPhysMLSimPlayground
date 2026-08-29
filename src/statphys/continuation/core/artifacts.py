@@ -6,7 +6,6 @@ import contextlib
 import json
 import os
 import platform
-import socket
 import tempfile
 import time
 import traceback
@@ -65,27 +64,52 @@ class RunStore:
             return False
         return json.loads(path.read_text()).get("state") == "completed"
 
+    def _attempt(self, task: TaskSpec) -> int:
+        path = self.directory(task) / "status.json"
+        if not path.exists():
+            return 0
+        return int(json.loads(path.read_text()).get("attempt", 0))
+
+    def attempt_directory(self, task: TaskSpec, attempt: int | None = None) -> Path:
+        number = self._attempt(task) if attempt is None else int(attempt)
+        if number < 1:
+            raise ValueError("an execution attempt has not been started")
+        return self.directory(task) / "attempts" / f"{number:04d}"
+
     def begin(self, task: TaskSpec, overwrite: bool = False) -> Path:
         directory = self.directory(task)
         if self.completed(task) and not overwrite:
             raise FileExistsError(f"completed immutable run already exists: {task.run_id}")
         directory.mkdir(parents=True, exist_ok=True)
+        attempt = self._attempt(task) + 1
+        attempt_directory = self.attempt_directory(task, attempt)
+        attempt_directory.mkdir(parents=True, exist_ok=False)
         _atomic_json(directory / "spec.json", task.to_dict())
-        _atomic_json(directory / "status.json", {"state": "running", "started_unix": time.time()})
+        _atomic_json(attempt_directory / "spec.json", task.to_dict())
+        status = {
+            "state": "running",
+            "attempt": attempt,
+            "scientific_condition_id": task.condition_id,
+            "started_unix": time.time(),
+        }
+        _atomic_json(directory / "status.json", status)
+        _atomic_json(attempt_directory / "status.json", status)
+        provenance = {
+            "platform_system": platform.system(),
+            "python": platform.python_version(),
+            "torch": torch.__version__,
+            "numpy": np.__version__,
+            "cuda_available": torch.cuda.is_available(),
+            "cuda_runtime": torch.version.cuda,
+            "device_count": torch.cuda.device_count(),
+            "attempt": attempt,
+        }
         _atomic_json(
-            directory / "provenance.json",
-            {
-                "hostname": socket.gethostname(),
-                "platform": platform.platform(),
-                "python": platform.python_version(),
-                "torch": torch.__version__,
-                "numpy": np.__version__,
-                "cuda_available": torch.cuda.is_available(),
-                "cuda_version": torch.version.cuda,
-                "device_count": torch.cuda.device_count(),
-            },
+            attempt_directory / "provenance.json",
+            provenance,
         )
-        return directory
+        _atomic_json(directory / "provenance.json", provenance)
+        return attempt_directory
 
     def complete(
         self,
@@ -97,31 +121,38 @@ class RunStore:
         device: str,
     ) -> Path:
         directory = self.directory(task)
+        attempt = self._attempt(task)
+        attempt_directory = self.attempt_directory(task, attempt)
+        _atomic_json(attempt_directory / "metrics.json", metrics)
+        _atomic_npz(attempt_directory / "arrays.npz", arrays)
         _atomic_json(directory / "metrics.json", metrics)
         _atomic_npz(directory / "arrays.npz", arrays)
-        _atomic_json(
-            directory / "status.json",
-            {
-                "state": "completed",
-                "elapsed_seconds": float(elapsed_seconds),
-                "device": device,
-                "finished_unix": time.time(),
-            },
-        )
+        status = {
+            "state": "completed",
+            "attempt": attempt,
+            "scientific_condition_id": task.condition_id,
+            "elapsed_seconds": float(elapsed_seconds),
+            "device": device,
+            "finished_unix": time.time(),
+        }
+        _atomic_json(directory / "status.json", status)
+        _atomic_json(attempt_directory / "status.json", status)
         return directory
 
     def fail(self, task: TaskSpec, error: BaseException) -> None:
         directory = self.directory(task)
-        _atomic_json(
-            directory / "status.json",
-            {
-                "state": "failed",
-                "error_type": type(error).__name__,
-                "error": str(error),
-                "traceback": "".join(traceback.format_exception(error))[-12000:],
-                "finished_unix": time.time(),
-            },
-        )
+        attempt = self._attempt(task)
+        status = {
+            "state": "failed",
+            "attempt": attempt,
+            "scientific_condition_id": task.condition_id,
+            "error_type": type(error).__name__,
+            "error": str(error),
+            "traceback": "".join(traceback.format_exception(error))[-12000:],
+            "finished_unix": time.time(),
+        }
+        _atomic_json(directory / "status.json", status)
+        _atomic_json(self.attempt_directory(task, attempt) / "status.json", status)
 
 
 __all__ = ["RunStore"]

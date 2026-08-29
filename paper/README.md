@@ -1,4 +1,4 @@
-# Predictive phase-continuation paper
+# Numerical statistical-mechanics atlas paper
 
 `main.tex` is the only manuscript entry point. Its `sections/`, `figures/`,
 `generated/`, `references.bib`, and `main.pdf` are all colocated in this directory.
@@ -24,6 +24,7 @@ pdflatex -interaction=nonstopmode -halt-on-error main.tex
 pdflatex -interaction=nonstopmode -halt-on-error main.tex
 ```
 
-The Spark-only monitor in `works/phase_tensor/monitor-o1-v2.sh` runs this sequence
-only after all submitted arrays have left the queue and verifies that `main.pdf` is
-newer than every required figure and the generated result macros.
+For scheduled execution, render a portable job script and provide the repository,
+Python executable, manifest, and output directory through environment variables.
+Before release, verify that `main.pdf` is newer than every required figure and
+generated result macro.

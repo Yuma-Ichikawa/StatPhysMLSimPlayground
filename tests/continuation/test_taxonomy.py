@@ -26,6 +26,6 @@ def test_taxonomy_is_complete_without_overclaiming_tier_c() -> None:
     assert report["runnable_complete"]
     assert not report["full_realism_complete"]
     assert report["coordinates"] == 6
-    assert report["outcomes"] == 7
+    assert report["outcomes"] == 13
     assert report["assumption_pairs"] == 15
     assert report["tier_c_protocols"] == 4

@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
-import subprocess
 from pathlib import Path
 
 import matplotlib
@@ -59,25 +57,11 @@ def _condition(
     }
 
 
-def test_phase_tensor_array_rejects_non_spark_partition(tmp_path: Path) -> None:
+def test_phase_tensor_array_contains_no_site_partition_policy(tmp_path: Path) -> None:
     repository = Path(__file__).parents[1]
-    result = subprocess.run(
-        ["bash", str(repository / "scripts" / "phase_tensor" / "run-array.sh")],
-        env={
-            **os.environ,
-            "STATPHYS_MANIFEST": str(tmp_path / "manifest.json"),
-            "STATPHYS_OUTPUT": str(tmp_path / "output"),
-            "STATPHYS_DATA_ROOT": str(tmp_path / "data"),
-            "REPO_ROOT": str(repository),
-            "SLURM_ARRAY_TASK_ID": "0",
-            "SLURM_JOB_PARTITION": "gpu_shared",
-        },
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert result.returncode == 2
-    assert "refusing non-Spark execution" in result.stderr
+    script = (repository / "scripts" / "phase_tensor" / "run-array.sh").read_text()
+    assert "SLURM_JOB_PARTITION" not in script
+    assert "spark_" not in script
 
 
 def test_confirmation_paper_macros_cover_every_registered_family(tmp_path: Path) -> None:
