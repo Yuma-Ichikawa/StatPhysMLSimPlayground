@@ -1,0 +1,118 @@
+\section{Symmetry breaking and specialisation}
+\label{sec:symmetry}
+
+The permutation symmetry of a hidden layer is the cleanest collective degree of
+freedom available in a neural network. In the symmetric phase every hidden unit
+carries a similar overlap with every teacher unit; in the specialised phase each
+unit commits to one, and the gap \eqref{eq:specgap} becomes non-zero. Exact
+results exist for the two-layer committee machine in the proportional limit.
+This block asks what survives when depth is added and when the student width no
+longer matches the teacher's.
+
+\subsection{The committee machine: a diverging response on a shifted path}
+
+\manuscriptfigure{figures/family_specialization.pdf}{%
+  \textbf{Specialisation of a soft committee machine.}
+  (A) the specialisation gap against the sample ratio, with $95\%$ outer-seed
+  intervals; (B) the disorder susceptibility \eqref{eq:chi-binder}, whose
+  interior maximum is marked per size; (C) the Binder cumulant; (D) the
+  attempted finite-size collapse. Colour encodes system size on a single-hue
+  ramp, light to dark.%
+}{fig:specialization}
+
+\paragraph{Observation.}
+Across \AtlasSpecializationConditions{} conditions spanning
+$\alpha\in\AtlasSpecializationControlRange{}$ and
+\AtlasSpecializationSizes{} sizes, the disorder susceptibility has an interior
+maximum at \emph{every} size --- no size is censored --- and the peak height
+grows as $N^{\AtlasSpecializationSharpening{}}$. The peak \emph{location}
+moves systematically with size, and fitting
+$\alpha_{\rm peak}\propto d^{\,\gamma-1}$ gives
+\begin{equation}
+  \gamma=\AtlasSpecializationGamma{},\qquad
+  95\%\ \text{CI}\;\AtlasSpecializationGammaCI{}.
+  \label{eq:gamma-spec}
+\end{equation}
+The verdict is \emph{\AtlasSpecializationVerdict{}} at grade
+\AtlasSpecializationGrade{}.
+
+\paragraph{Interpretation.}
+Two statements are supported. First, the response is genuinely critical: the
+susceptibility diverges with size rather than saturating, which is the
+finite-size signature the design was built to detect. Second, and more
+consequential, \emph{the transition does not sit at a fixed sample ratio}. The
+interval in \eqref{eq:gamma-spec} excludes $\gamma=1$, so the boundary lies on
+the path $n\propto d^{\gamma}$ with $\gamma$ appreciably above unity, not on
+the proportional path $n\propto d$ that the analytic literature conventionally
+adopts. Since $\alpha=n/d$ is the wrong abscissa, a study that sweeps $\alpha$
+at fixed size --- as most do --- will see a boundary that appears to move for
+no reason.
+
+\paragraph{Not established.}
+The location is not pinned down. The drift extrapolation \eqref{eq:drift} and
+the collapse disagree by more than the consistency tolerance of
+\S\ref{sec:gates}, so the signature count is capped at one and the outcome is a
+candidate boundary rather than a supported transition. We also tried the
+obvious follow-up --- redoing the collapse in the rescaled variable
+$n/d^{\gamma}$, with $\gamma$ fixed in advance by the peak locations --- and it
+did \emph{not} improve on the collapse in $\alpha$. So while the drift exponent
+is measured with an interval that excludes the proportional regime, we do not
+have a scaling function to go with it.
+
+\paragraph{Next falsifier.}
+Extend the size path upward by a further factor of four and re-fit
+\eqref{eq:gamma-spec}. If $\gamma$ drifts back towards $1$ as the sizes grow,
+the exponent measured here is a pre-asymptotic effect and the claim should be
+withdrawn; if it stabilises, the collapse should be re-attempted on
+$n/d^{\gamma}$ with the enlarged range, where the present disagreement between
+drift and collapse would have to resolve one way or the other.
+
+\subsection{Depth: the boundary leaves the window}
+
+\paragraph{Observation.}
+Replacing the two-layer student with deeper networks at matched width and
+sweeping the same $\alpha$ grid gives verdict
+\emph{\AtlasDepthLadderVerdict{}} over \AtlasDepthLadderConditions{}
+conditions.
+
+\paragraph{Interpretation.}
+The order parameter still responds --- the deep students recover the teacher ---
+but the susceptibility maxima fall at the edge of the sampled control range for
+most depths, so the analysis censors them rather than naming an endpoint as a
+critical point. Depth appears to push the boundary outward in $\alpha$, which is
+consistent with the shifted scaling path found above, but the present grid
+cannot separate that from a simple loss of resolution.
+
+\paragraph{Not established.}
+Nothing about how the transition depends on depth. This cell is honestly empty.
+
+\paragraph{Next falsifier.}
+Re-run the depth ladder on the rescaled control $n/d^{\gamma}$ using the
+exponent from \eqref{eq:gamma-spec}. If the peaks return to the interior of the
+window, the depth dependence becomes measurable in one sweep.
+
+\subsection{Multi-index targets and width mismatch}
+
+\paragraph{Observation.}
+For a $K$-index teacher with a quadratic link, subspace recovery
+\eqref{eq:subspace} is measured against $\alpha$ for a matched student and for
+one of twice the width, over \AtlasMultiIndexConditions{} conditions. The
+verdict is \emph{\AtlasMultiIndexVerdict{}}.
+
+\paragraph{Interpretation.}
+Recovery of the planted subspace improves with sample ratio and the response is
+well outside seed noise, but no finite-size signature is admissible: there is no
+interior susceptibility peak that sharpens, no consistent Binder crossing, and
+no collapse that beats the size-shuffled null. Within this window, subspace
+recovery behaves like a crossover rather than a transition.
+
+\paragraph{Not established.}
+The sequential ``staircase'' by which multi-index directions are acquired one
+after another is not resolved here; our observable is the aggregate subspace
+overlap, which is insensitive to the order in which directions are learned.
+
+\paragraph{Next falsifier.}
+Measure per-direction overlaps rather than the aggregate, and look for
+separate thresholds. If individual directions show interior peaks that the
+aggregate washes out, the crossover verdict is an artefact of the observable
+rather than a property of the system.

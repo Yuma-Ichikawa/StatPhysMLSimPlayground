@@ -1,72 +1,85 @@
 \section{Introduction}
-\label{sec:introduction}
+\label{sec:intro}
 
-Statistical mechanics supplies machine learning with a precise language for
-ensembles, collective observables, response, scale, and limiting behavior. It
-has clarified solvable inference thresholds, information--computation gaps,
-signal propagation, jamming, and optimization landscapes
-\cite{zdeborova2016statistical,bahri2020statistical,geiger2019jamming}. Modern
-architectures add a harder numerical question. A Transformer has attention and
-feed-forward modules, several scale coordinates, non-equilibrium training
-dynamics, and data-dependent semantics; diffusion and reinforcement learning
-replace a static parameter ensemble with trajectories and feedback. A curve can
-be steep in all these systems without representing the same physical object or
-the same kind of transition.
+The statistical mechanics of learning has produced a remarkable body of exact
+results: the storage capacity of the perceptron, the replica solution of
+generalised linear estimation, the online dynamics of the soft committee
+machine, the asymptotics of random-feature and kernel regression. What these
+results share is not a technique but a \emph{regime}. They live in the
+proportional high-dimensional limit, with i.i.d.\ Gaussian inputs, shallow
+architectures, and a loss whose minimiser can be characterised. Almost every
+system that motivates the field today lies outside that regime.
 
-Current numerical work is fragmented along three boundaries. First,
-\emph{ontology} is often implicit: ``size'' may mean width, depth, data, context,
-population, or trajectory resolution. Second, \emph{measurement} is often
-underspecified: temporal checkpoint variance can be mislabeled as disorder
-susceptibility, and token entropy can be mistaken for strategy or macrostate
-entropy. Third, \emph{evidence} is often compressed into a single adjective:
-an exact result in a restrictive model, a five-seed synthetic screen, and a
-natural-data measurement may all be called a ``phase transition'' despite
-answering different questions.
+The usual response is to wait for theory to arrive, and meanwhile to describe
+modern phenomena --- grokking, double descent, emergence, collapse --- with
+statistical-mechanics vocabulary borrowed on credit. Words like ``phase,''
+``order parameter,'' and ``critical point'' are applied to curves that have
+never been subjected to the finite-size analysis that gives those words
+content. The result is a literature rich in suggestive plots and poor in
+falsifiable statements.
 
-We ask one central question:
-\begin{quote}
-How can numerical statistical mechanics organize and falsify collective
-phenomena across modern learning systems while keeping the state object,
-ensemble, finite-size path, and evidential scope explicit?
-\end{quote}
-Our answer is an evidence-aware atlas. Its core is a seven-coordinate scientific
-taxonomy. Around that core, a protocol layer records estimators, disorder,
-controls, interventions, and holdouts; an epistemic layer records theory status,
-fidelity, evidence support, and outcome. This separation makes a negative result
-first class: a boundary may be censored, a response may remain finite-width, an
-order parameter may lose semantic validity, or two conditions may be
-incommensurate.
+This paper takes the opposite route. If the analytic calculation is not
+available, the finite-size numerical experiment that a theory would ultimately
+have to reproduce still is, and it can be done to the standards of
+computational statistical mechanics rather than those of a learning-curve
+figure. We build an \emph{atlas}: a broad grid of learning settings, each
+measured with registered order parameters on a control grid fine enough to
+resolve a boundary, across a scale path long enough to extrapolate, over a
+disorder ensemble large enough to give the fluctuations meaning.
 
-The empirical focus is intentionally asymmetric. Transformers receive broad
-module, optimizer, scaling, and data screens followed by frozen confirmations.
-A smaller GPU reference grid exposes raw outer-seed distributions and tests the
-phase-claim decision rule. Diffusion, reinforcement learning, and multi-agent
-systems are cross-domain stress tests for the grammar. They are not asserted to
-share an equilibrium ensemble or critical exponent. A separate controlled
-predictive-continuation simulator checks software and holdout semantics; because
-it generates its own response law, it is method validation rather than evidence
-about trained neural systems.
+\paragraph{What makes this possible now is not compute but design.}
+The measurements here are deliberately small --- widths of tens to hundreds,
+models of thousands of parameters --- because the quantities that decide
+whether a transition exists are not accuracy on a large model but the
+\emph{scaling of fluctuations} across many independent small ones. The binding
+constraint in this kind of study is the number of independent runs, not the
+size of any one of them. That inverts the usual resource allocation: this
+release trains \AtlasTotalRuns{} models across \AtlasTotalConditions{}
+conditions on a laptop, where a single conventional experiment of comparable
+cost would have produced one learning curve.
 
-The paper makes five contributions:
+\paragraph{Anchors first.}
+A measurement pipeline that cannot reproduce a known result should not be
+trusted on an unknown one. The atlas therefore opens with settings whose
+answers are known exactly --- the Gardner storage capacity and the
+Gaussian-mixture error formula --- and reports the measured quantity against
+the closed form, with the residual as a first-class number. Only then does it
+move outward, through settings with partial theory, to settings with none.
+
+\paragraph{Negative and unresolved outcomes are results.}
+The decision procedure in \S\ref{sec:gates} can return ``no resolved
+response'' and ``critical response, boundary unresolved'' as readily as
+``transition supported,'' and this release does return all of them. One case is
+worth stating in the introduction because it shaped the method: our flagship
+family initially produced a confident transition claim that was an artefact of
+two design choices --- a control grid too coarse to place a peak, and a fixed
+epoch budget under which wider models were simply optimised less. Fixing the
+first turned a censored boundary into a resolvable one; fixing the second
+removed a spurious size dependence. The consistency requirement that caught the
+artefact (\S\ref{sec:gates}) is now a gate every family must pass.
+
+\paragraph{Contributions.}
 \begin{enumerate}
-  \item a precise seven-coordinate taxonomy and a thirteen-outcome vocabulary,
-  with protocol and evidence axes kept outside the scientific ontology;
-  \item an observable dictionary that binds every estimator to units, ensemble,
-  null, validity range, and allowed interpretation;
-  \item a finite-size claim rule requiring semantic validity, independent
-  disorder, scale diagnostics, robustness, and a prospective check;
-  \item a unified empirical report covering \PhaseTensorRuns{} exploratory and
-  \PhaseConfirmRuns{} frozen-confirmatory Transformer runs, plus an auditable
-  \ReferenceRuns-run GPU reference grid; and
-  \item an explicit claim ledger that distinguishes observed learning response,
-  bounded mechanism evidence, model validation, negative phase evidence, and
-  open external-validity cells.
+  \item A portable set of function-space order parameters
+    (\S\ref{sec:observables}) that can be evaluated on any differentiable
+    learner, together with the exact identity \eqref{eq:epsg} used as a
+    continuous unit test on the measurement chain.
+  \item A decision procedure (\S\ref{sec:gates}) that separates
+    \emph{sharpening} from \emph{location}, requires independent finite-size
+    signatures to agree before they accumulate, and names the outcome when they
+    do not.
+  \item An empirical atlas of \AtlasTotalFamilies{} experiment families across
+    \AtlasTotalBlocks{} blocks --- \AtlasAnchorFamilies{} anchored by exact
+    theory and \AtlasNoTheoryFamilies{} with no theory at all --- each with a
+    fine control grid, a multi-size scale path, and \AtlasSpecializationSeeds{}
+    outer seeds per condition.
+  \item Quantitative targets for future theory: measured exponents, boundary
+    locations, and scaling paths, each reported with the interval and the
+    experiment that would falsify it.
 \end{enumerate}
 
-The main scientific conclusion is narrower than the atlas coverage. The
-reference Transformer learns more with width and effective data, and MLP
-ablation matters increasingly at larger width. Yet no registered finite-size
-diagnostic supports a phase boundary on that grid. This is the kind of
-distinction a statistical-mechanics study must preserve.
-
-\FloatBarrier
+The claim of this paper is not that these systems have been solved. It is that
+the question ``does this system have a phase boundary, and where?'' can be
+asked well enough to be answered, or well enough to be shown unanswerable with
+present evidence --- and that doing so is worth more than another suggestive
+curve.

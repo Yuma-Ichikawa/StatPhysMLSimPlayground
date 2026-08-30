@@ -1,71 +1,47 @@
-\section{Discussion, limitations, and threats to validity}
+\section{Limitations}
 \label{sec:limitations}
 
-\subsection{Scientific scope}
+\paragraph{Every family is capped at grade~C by construction.}
+The release runs \AtlasSpecializationSeeds{} outer seeds per condition. The
+grading scheme reserves a replication score of $2$ for twelve or more, so no
+family in this paper can reach grade~A or~B however clean its finite-size
+evidence. This is a deliberate allocation --- breadth across settings in
+preference to depth within one --- and it is the first thing a follow-up should
+change.
 
-The strongest trainable evidence concerns small decoder models on controlled
-retrieval and byte-level language modeling. It does not directly cover
-pretrained open-weight language models, natural images, open RLVR, or deployed
-agent populations. The cross-domain dossiers are model-validation cases and are
-not coequal replications. A seven-coordinate taxonomy improves the precision of
-these boundaries but cannot create missing external evidence.
+\paragraph{No prospective confirmation.}
+Nothing here has been re-run frozen at fresh seeds after the analysis was
+fixed. Every number is therefore a retrospective estimate on the data that
+also informed the design choices, and the sharpening exponents in particular
+should be read as effective values over the sampled window rather than as
+critical exponents.
 
-The framework also does not assume that every system has an equilibrium Gibbs
-measure or a scalar thermodynamic limit. Optimizer trajectories, diffusion
-paths, feedback loops, and changing populations are non-equilibrium objects.
-The appropriate result may be a crossover, dynamical regime, path dependence,
-or censoring rather than a phase transition.
+\paragraph{No natural data and no pretrained models.}
+Every input distribution is synthetic and every teacher is planted. This is
+what makes the order parameters exactly interpretable, and it is also the
+strongest limit on external validity: the external-validity component of the
+evidence vector is zero for every family in the release. Whether any boundary
+located here survives contact with natural data is untested.
 
-\subsection{Reference-grid limitations}
+\paragraph{Small models.}
+Widths are in the tens to low hundreds and models have thousands of parameters.
+The design argument for this is given in \S\ref{sec:intro} --- fluctuation
+scaling needs many independent runs more than it needs any large one --- but it
+means the asymptotic regime may not have been entered in every family, and a
+drift fit that is inadmissible at these sizes may become admissible at larger
+ones.
 
-The GPU reference has only three widths, three nominal controls, five seeds,
-and 24 update steps. One nominal control pair collapses to the same effective
-data count, and all conditions reach the end of the short training horizon
-before the registered time-to-order criterion. These features limit both
-control resolution and dynamical interpretation. They are now shown directly
-rather than hidden by a smooth line.
+\paragraph{The Binder cumulant is a poor diagnostic for one-sided order
+parameters.} Several families use an order parameter that is non-negative by
+construction, such as the specialisation gap or a subspace overlap. The
+cumulant in \eqref{eq:chi-binder} is designed for a symmetric distribution
+around zero, and for these quantities its crossings are hard to interpret and
+mostly failed the consistency test. Where a crossing is reported as absent, the
+reader should attribute part of that to the diagnostic and not only to the
+system.
 
-Outer-seed intervals quantify initialization/data/minibatch variability under
-the registered generator but do not establish independent implementation
-replication. With only five seeds, susceptibility intervals are wide and power
-to detect small OOD penalties is limited. The negative phase result applies to
-the tested grid; it is not a proof of absence at larger width or longer time.
-
-\subsection{Exploratory multiplicity and confirmation}
-
-The broad tensor evaluates many families and observables. Its five-seed
-intervals are descriptive screens, not multiplicity-corrected hypothesis tests.
-The twelve-seed suite protects selected numerical contrasts with fresh seeds,
-but its hypotheses were chosen after inspecting the screen. It is a second-stage
-confirmation, not an independent external replication.
-
-Optimizer contrasts use frozen learning-rate slices but do not exhaustively
-match update norm, noise scale, training compute, or tuning budget. Corpus bits
-per byte are tokenizer independent, yet corpora differ in intrinsic
-predictability and preprocessing. Neither panel should be read as a universal
-ranking.
-
-\subsection{Construct validity}
-
-Performance-derived order remains a task order unless a semantic probe
-connects it to a latent or functional property. Attention entropy is not
-strategy entropy; spectral effective rank is not macrostate multiplicity; and
-temporal checkpoint variance is not outer-disorder susceptibility. The
-observable dictionary reduces these errors, but any misspecified latent probe or
-null can still compromise construct validity.
-
-Finite-size forms are empirical candidates outside solvable anchors. Width,
-depth, data, context, trajectory resolution, horizon, and population need not
-share an exponent. Data collapse can be overfit when too many exponents and
-windows are selected on the same sizes; the atlas therefore requires a
-prospective largest-size check before using phase language.
-
-\subsection{Broader use and non-goals}
-
-The atlas is intended to make claims easier to compare, reproduce, and falsify.
-It should not be used to lend physical prestige to a benchmark curve or to rank
-systems with a single evidence score. Theory, fidelity, evidence, and outcome
-remain vectors because collapsing them would erase the very distinctions the
-framework is designed to preserve.
-
-\FloatBarrier
+\paragraph{Optimiser and architecture are held fixed within a family.}
+Each family sweeps one control and one scale coordinate; the optimiser, the
+activation, and the initialisation scheme are fixed. A boundary located here is
+a boundary of that configuration, and the atlas does not establish that it is a
+property of the task alone.

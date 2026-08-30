@@ -148,6 +148,11 @@ results/
 !assets/
 !assets/**
 !examples/*.png
+
+# Keep manuscript figures: they are deliverables, not build artifacts, and the
+# blanket *.pdf rule above would otherwise drop every newly generated figure.
+!paper/figures/
+!paper/figures/**
 !screenshots/
 !screenshots/*.png
 

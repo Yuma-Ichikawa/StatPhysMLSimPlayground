@@ -1,0 +1,149 @@
+\section{Training dynamics and loss-landscape geometry}
+\label{sec:dynamics}
+
+High-dimensional theory is at its strongest for equilibrium properties of a
+trained network. It has much less to say about the training \emph{process}:
+when generalisation arrives relative to memorisation, why test risk can be
+non-monotone in model size, whether a network stays near its linearised
+trajectory or reshapes its features, whether independently trained solutions
+share a basin, and whether minibatch noise acts as a genuine temperature. Each
+family below turns one of those questions into a single measured number.
+
+\subsection{The lazy--rich crossover}
+
+\manuscriptfigure{figures/family_lazy_rich.pdf}{%
+  \textbf{Feature learning as a function of initialisation scale.} The order
+  parameter is the centred alignment \eqref{eq:lazy} between the representation
+  kernel at initialisation and after training: alignment near one means the
+  network never left its linearised regime. Panel~B shows the disorder
+  susceptibility, whose interior maximum is present at every width.%
+}{fig:lazy-rich}
+
+\paragraph{Observation.}
+Sweeping the initialisation scale over
+$\AtlasLazyRichControlRange{}$ at \AtlasLazyRichSizes{} widths, the
+initial-to-final kernel alignment rises from roughly $0.5$ to $0.99$ while the
+relative weight movement \eqref{eq:lazy} falls by more than an order of
+magnitude over the same range. The order parameter spans
+$\AtlasLazyRichSemanticRatio{}$ times its own $95\%$ interval --- the largest
+signal-to-noise ratio in the release --- and the susceptibility has an interior
+peak at \emph{every} width, with height growing as
+$N^{\AtlasLazyRichSharpening{}}$. Verdict
+\emph{\AtlasLazyRichVerdict{}}, grade \AtlasLazyRichGrade{}.
+
+\paragraph{Interpretation.}
+The lazy and rich regimes are separated by a genuinely critical response, not a
+gentle crossover: the disorder susceptibility of the kernel-alignment order
+parameter diverges with width along the sampled path. Both halves of the
+operational definition move together, which is the check that the alignment is
+measuring feature learning rather than an optimisation artefact.
+
+\paragraph{Not established.}
+The location. The peak drifts and its extrapolation is inadmissible, so we
+report a critical response without naming a critical initialisation scale.
+Nothing here identifies the exponent with a known universality class.
+
+\paragraph{Next falsifier.}
+Extend the width path by a further factor of four. If the peak positions
+stabilise, the drift fit becomes admissible and the crossover acquires a
+location; if the peak height stops growing, the divergence is a small-width
+effect and the verdict should fall to a crossover.
+
+\subsection{Grokking as a delayed-generalisation transition}
+
+\paragraph{Observation.}
+An overparameterised student on a small training set fits almost immediately
+and generalises much later, if at all. Across
+\AtlasGrokkingConditions{} conditions the measured delay ranges over
+$\AtlasGrokkingSemanticRatio{}$ times its interval, and the susceptibility of
+the delay has an interior peak at every training-set size with height growing as
+$N^{\AtlasGrokkingSharpening{}}$. Verdict \emph{\AtlasGrokkingVerdict{}}.
+
+\paragraph{Interpretation.}
+Delayed generalisation behaves like a critical phenomenon in the weight-decay
+control: the run-to-run spread of the delay --- not merely its mean --- peaks in
+the interior and grows with training-set size. That is a stronger statement than
+the usual demonstration that a delay exists, and it is the quantity a theory of
+grokking would have to reproduce.
+
+\paragraph{Not established.}
+A critical weight decay. Much of the grid is censored by construction: below a
+threshold the student never generalises within the budget and above it the
+delay vanishes, so the delay is only defined in a window. Censored runs are
+flagged rather than being assigned a delay of zero --- differencing two censored
+endpoints would report the \emph{opposite} of what happened, and this was a real
+defect in an earlier version of the estimator.
+
+\paragraph{Next falsifier.}
+Lengthen the training budget by an order of magnitude. If the censored region
+shrinks and the peak stays put, the boundary is real; if the peak simply tracks
+the budget, the delay is a property of the stopping rule.
+
+\subsection{Double descent}
+
+\paragraph{Observation.}
+Sweeping the parameterisation ratio across the interpolation threshold at three
+label-noise levels reproduces the non-monotone risk curve, with the order
+parameter spanning $\AtlasDoubleDescentSemanticRatio{}$ times its interval.
+Verdict \emph{\AtlasDoubleDescentVerdict{}}.
+
+\paragraph{Interpretation.}
+The peak in test risk is located on the control axis and grows with label
+noise, as expected. But the second axis here is the noise level, which changes
+the problem rather than the size of one system, so under the rule of
+\S\ref{sec:gates} this family cannot make a finite-size claim at all. The
+result is a located threshold with no critical content --- which is precisely
+what most double-descent figures in the literature actually establish.
+
+\paragraph{Not established.}
+That the interpolation peak sharpens. Demonstrating that requires a genuine
+width or sample-size scale path at fixed noise, which this design does not have.
+
+\subsection{SGD noise as an effective temperature}
+
+\paragraph{Observation.}
+The control is the ratio $T\simeq\eta/B$ of learning rate to batch size, swept
+so that several distinct $(\eta,B)$ pairs realise the same $T$. The stationary
+risk varies over $\AtlasSgdTemperatureSemanticRatio{}$ times its interval and
+its susceptibility peaks in the interior at every size, with height growing as
+$N^{\AtlasSgdTemperatureSharpening{}}$. Verdict
+\emph{\AtlasSgdTemperatureVerdict{}}, grade \AtlasSgdTemperatureGrade{}.
+
+\paragraph{Interpretation.}
+The stationary state responds critically to the effective temperature, and the
+design permits the sharper question --- whether the state depends on
+$\eta$ and $B$ only through their ratio --- because the same $T$ is realised by
+several pairs. That collapse is the operational content of calling $\eta/B$ a
+temperature at all.
+
+\paragraph{Not established.}
+A critical temperature, for the usual reason: the peak location does not
+extrapolate within the sampled window. We also do not claim the
+$(\eta,B)$ collapse is exact, only that the design can test it.
+
+\subsection{Mode connectivity: a negative result}
+
+\paragraph{Observation.}
+Two students trained from independent initialisations on independent data are
+interpolated linearly, and the normalised barrier between them is measured
+against width at three depths. The barrier varies strongly with \emph{depth} ---
+roughly $0.4$ at depth two and above $1.2$ at depth four --- but its variation
+with width spans only $\AtlasModeConnectivitySemanticRatio{}$ times its $95\%$
+interval. The verdict is \emph{\AtlasModeConnectivityVerdict{}}, grade
+\AtlasModeConnectivityGrade{}.
+
+\paragraph{Interpretation.}
+At these widths and this replication, the barrier's width dependence does not
+separate from seed noise. We therefore report no width trend, in either
+direction. The depth dependence is large and unambiguous, but depth is the
+scale axis of this design, so it is a between-curve comparison rather than a
+finite-size trend.
+
+\paragraph{Not established.}
+Linear mode connectivity, in either direction. In particular this is
+\emph{not} evidence that barriers fail to vanish with width; it is evidence
+that the present design cannot see the trend.
+
+\paragraph{Next falsifier.}
+Twelve seeds and a width path extended upward by a factor of four, at fixed
+depth two, where the measured trend is at least in the expected direction.

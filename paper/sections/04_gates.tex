@@ -1,0 +1,133 @@
+\section{From curves to claims}
+\label{sec:gates}
+
+A rising curve is not a phase transition. This section states the decision
+procedure that converts condition-level estimates into one of a small set of
+named outcomes, including outcomes that block the strong reading.
+
+\subsection{Unit of independence and uncertainty}
+
+A \emph{condition} is one point of a family's design grid: a control value, a
+size, and any registered secondary knobs. A \emph{run} is one condition under
+one outer seed, and the run is the unit of independence. Inner stochastic
+evaluations are averaged within a run before uncertainty is computed, so no
+inner replicate is ever promoted to an outer sample. Intervals are two-sided
+$95\%$ Student-$t$ over the realised outer-seed count, which is carried through
+aggregation and printed on every figure.
+
+\subsection{Three finite-size signatures}
+
+For each family we compute three independent signatures from the same
+condition-level data.
+
+\paragraph{Sharpening.} At each size we locate the interior maximum of
+$\chi_N$. A maximum at either end of the sampled control range is
+\emph{censored} rather than reported as a critical point: the grid does not
+contain the boundary, and naming the endpoint would manufacture one. Across the
+sizes that do have an interior peak we fit
+\begin{equation}
+  \chi_N^{\rm peak}\propto N^{\,\omega},
+  \label{eq:sharpening}
+\end{equation}
+and $\omega>0$ is the signature that the response diverges rather than
+saturating.
+
+\paragraph{Location.} The peak position itself drifts with size as
+\begin{equation}
+  c_{\rm peak}(N)=c_\infty+A\,N^{-1/\nu},
+  \label{eq:drift}
+\end{equation}
+so the boundary of the infinite system is obtained by extrapolation, never by
+reading off the largest size available. A fit is admissible only if $c_\infty$
+is finite, precisely estimated, and interior to the sampled range. Peaks that
+march monotonically out of the sampled window produce a formally convergent
+least-squares fit with an enormous intercept and an enormous standard error;
+that situation is recorded as an \emph{unresolved boundary}, which is a
+different --- and weaker --- statement than a measured one.
+
+\paragraph{Collapse.} Independently, we scan $(c^\ast,1/\nu)$ for the best
+finite-size collapse $m=F\!\left[(c-c^\ast)N^{1/\nu}\right]$ and compare its
+residual against the best collapse obtainable after \emph{shuffling the size
+labels}. A collapse is claimed only when it beats that null by a factor of two,
+which prevents the two free parameters from manufacturing agreement.
+
+\subsection{The consistency requirement}
+
+Signatures are not allowed to accumulate merely by being individually
+admissible. Each admissible signature contributes a boundary estimate, and the
+estimates must agree to within $30\%$ of their mean before the family is
+credited with more than one signature. Two diagnostics naming boundaries an
+order of magnitude apart are evidence of an artefact, not of a transition; in
+that case the signature count is capped at one. This rule was not decorative in
+practice: it is what demoted our own flagship family from a transition claim to
+a candidate boundary on a first pass, before the design flaw responsible was
+found and corrected (\S\ref{sec:symmetry}).
+
+\subsection{A scale path is not any second axis}
+
+Finite-size analysis presumes that the second axis lists successive \emph{sizes
+of one system}. Several natural experimental axes do not: a planted rank, a
+number of experts, a generation count, and a label-noise level each change the
+problem rather than enlarge it. Susceptibility and Binder curves can still be
+computed along such an axis, and they usefully locate a threshold on the control
+axis, but they cannot certify a thermodynamic statement. Families therefore
+declare whether their second axis is a scale path, and those that do not are
+capped at the outcome \emph{threshold located (no scale path)} regardless of how
+clean their curves are. In this release that cap applies to
+\AtlasCountThresholdLocatedNoScalePath{} families whose diagnostics would
+otherwise have read as candidate boundaries.
+
+\subsection{Sharpening and location are separate claims}
+
+A susceptibility whose height diverges with size is evidence of criticality; it
+does not say \emph{where} the boundary is. We therefore separate the two, and
+the strongest verdict requires both. The resulting vocabulary is:
+
+\begin{table}[tbp]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}p{52mm}Y@{}}
+\toprule
+Outcome & Condition \\
+\midrule
+transition supported & $\ge2$ mutually consistent signatures \emph{and} a
+resolved boundary location \\
+critical response, boundary unresolved & diverging peak, but the location
+extrapolation is inadmissible \\
+candidate boundary & exactly one admissible signature \\
+threshold located (no scale path) & the threshold is located on the control
+axis, but the second axis is a problem parameter rather than a size, so no
+finite-size statement is available \\
+response shift (boundary off-grid) & the order parameter moves, and most sizes
+are censored \\
+response shift & the order parameter moves beyond its uncertainty; no
+finite-size signature \\
+no resolved response & the order parameter does not separate from its
+uncertainty \\
+\bottomrule
+\end{tabularx}
+\caption{Outcome vocabulary. Only the first row licenses phase language; the
+remaining rows are reported with equal prominence rather than omitted.}
+\label{tab:outcomes}
+\end{table}
+
+\subsection{Evidence grading}
+
+Orthogonally to the outcome, each family carries a six-component evidence
+vector --- semantics, replication, finite size, prediction, intervention, and
+external validity --- each scored $0$, $1$ or $2$. Grade~A requires semantics
+and replication both at $2$ with at least four components at $2$; grade~B
+requires both at least $1$ with four components at least $1$; grade~C requires
+replication at least $1$ with two components at least $1$. Replication reaches
+$2$ only at twelve or more outer seeds. The present release runs eight outer
+seeds per condition, which caps every family in this paper at grade~C by
+construction: the finite-size evidence is real, and the replication tier
+required for a stronger grade is deliberately not claimed.
+
+\subsection{What is not tested here}
+
+Two gates in the design remain open across the entire release and are stated
+once rather than repeated per family. There is no frozen prospective re-run at
+fresh seeds, so no result carries prospective confirmation. And no family is
+evaluated on natural data or on a pretrained model, so external validity scores
+zero throughout. Both are the natural next experiments rather than
+qualifications buried in a limitations section.

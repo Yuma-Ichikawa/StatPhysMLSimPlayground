@@ -1,0 +1,92 @@
+\section{What the atlas contains}
+\label{sec:design}
+
+The release comprises \AtlasTotalFamilies{} experiment families organised into
+\AtlasTotalBlocks{} blocks, \AtlasTotalConditions{} registered conditions, and
+\AtlasTotalRuns{} trained models. Figure~\ref{fig:atlas-taxonomy} places every
+family on two axes: the block it belongs to, and how much analytic support the
+setting already has.
+
+\manuscriptfigure{figures/atlas_taxonomy.pdf}{%
+  \textbf{Where theory ends.} Columns order settings by existing analytic
+  support, from closed form to none. Each card is one experiment family; its
+  border colour is the outcome returned by the decision procedure of
+  \S\ref{sec:gates} and the corner letter is its evidence grade. The left-most
+  column is the anchor block, whose only purpose is to show that the pipeline
+  reproduces results that are already known.%
+}{fig:atlas-taxonomy}
+
+\subsection{Design rules common to every family}
+
+\paragraph{The control grid must be able to hold a boundary.}
+Every family sweeps its primary control on a grid of at least twelve points,
+logarithmic where the control spans decades. This is not a cosmetic choice. An
+interior maximum cannot be distinguished from an endpoint on a three-point
+grid, and a Binder crossing cannot be interpolated from one; a coarse grid does
+not produce a weak result, it produces a structurally negative one. The single
+largest methodological difference between this release and its predecessor is
+the density of the control axis.
+
+\paragraph{The scale path must be a path.}
+Each family declares a scale coordinate --- width, dimension, depth, training
+set size, generation count --- and samples at least three, usually five or six,
+values of it. ``A larger model'' is not a scale path; the coordinate has to be
+named, because the finite-size fits of \eqref{eq:sharpening} and
+\eqref{eq:drift} are statements about a specific one.
+
+\paragraph{The disorder ensemble must be outer.}
+Every condition is run under \AtlasSpecializationSeeds{} independent outer
+seeds, each fixing both the initialisation and the data draw. This is what
+gives $\chi_N$ and $U_4$ in \eqref{eq:chi-binder} their meaning, and it is why
+no family here reports a fluctuation computed along a single trajectory.
+
+\paragraph{Optimisation quality must be equalised, not the epoch count.}
+Runs are trained to a common relative-improvement criterion with a generous
+cap, and each run records the epochs it used and whether the criterion was
+met. Under a fixed epoch budget a wider model is optimised less thoroughly than
+a narrow one, so an apparent size dependence of an order parameter can be
+optimisation shortfall wearing the costume of physics. We encountered exactly
+this: at a fixed budget the specialisation order parameter appeared to
+\emph{decrease} with width, reversing sign once the budget was replaced by a
+convergence criterion.
+
+\subsection{The blocks}
+
+\begin{table}[tbp]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}p{26mm}p{16mm}Y@{}}
+\toprule
+Block & Families & Question the block asks \\
+\midrule
+Anchors & \AtlasAnchorFamilies{} & Does the pipeline reproduce results that are
+already known in closed form? \\
+Symmetry breaking & 3 & Where does a hidden layer break permutation symmetry,
+and does the boundary survive depth and width mismatch? \\
+Dynamics \& landscape & 5 & Do training-time phenomena --- delayed
+generalisation, double descent, the lazy/rich crossover, mode connectivity,
+SGD temperature --- behave like collective transitions? \\
+Learning paradigms & 5 & Do contrastive collapse, model collapse, forgetting,
+expert specialisation and adapter rank admit order parameters at all? \\
+\bottomrule
+\end{tabularx}
+\caption{The blocks of this release. Anchors exist to be checked against
+theory; the rest exist because theory is unavailable.}
+\label{tab:blocks}
+\end{table}
+
+An attention and in-context-learning block --- the positional-versus-semantic
+transition, in-context-learning emergence against task diversity, induction-head
+formation, and context-length scaling --- is specified in the same form and is
+\emph{not} included in this release. It is named here rather than omitted
+silently, because a map that hides its empty regions is not a map; it is the
+largest single gap in the present coverage.
+
+\subsection{Reproducibility}
+
+Every run is content-addressed by its condition and seed, so an interrupted
+sweep is resumed rather than repeated and no result is silently recomputed
+under different code. All paths are supplied through environment variables, so
+the same code runs unchanged on a laptop, a scheduler, or a cloud runtime. The
+numbers quoted in this paper are generated as \LaTeX{} macros directly from the
+strict aggregate: a value in the prose that has no run behind it does not
+exist, which is a stronger guarantee than a careful author.

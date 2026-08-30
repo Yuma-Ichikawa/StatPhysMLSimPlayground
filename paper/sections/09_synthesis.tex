@@ -1,0 +1,114 @@
+\section{Synthesis: what the atlas hands to theory}
+\label{sec:synthesis}
+
+\manuscriptfigure{figures/atlas_map.pdf}{%
+  \textbf{Verdict map.} One row per family: block colour, the outcome returned
+  by the decision procedure, the evidence grade, and the six-component evidence
+  vector. Outcomes are always written as text; colour is redundant with the
+  label rather than carrying it.%
+}{fig:atlas-map}
+
+Figure~\ref{fig:atlas-map} is the release in one view. Of
+\AtlasTotalFamilies{} families, the procedure returned a spread rather than a
+uniform verdict, and the spread is the point: a method that returns
+``supported'' everywhere has not been tested.
+
+\subsection{The calibration result}
+
+The single most informative entry in the map is which family passed. Exactly
+\AtlasCountPhaseTransitionSupported{} of \AtlasTotalFamilies{} families
+received the verdict \emph{transition supported}, and it is the Gardner
+capacity --- the anchor whose answer was known before the experiment was run
+(\S\ref{sec:anchors}). Applied to the fourteen settings whose answers are not
+known, the same procedure certified nothing.
+
+We take that as the central evidence that the gates are calibrated rather than
+merely strict. A procedure that never fires is useless; one that fires
+everywhere is worse. This one fired once, on the case placed there to make it
+fire, and the boundary it reported,
+$\alpha=\AtlasPerceptronCapacityPeakControl{}$, sits at the grid point nearest
+the exact $\alpha_c=2$.
+
+\subsection{Three transferable findings}
+
+\paragraph{1. The control parameter is a hypothesis, and in the
+best-resolved family it fails.}
+The strongest critical response in the release --- an interior susceptibility
+peak at every size, with height growing as
+$N^{\AtlasSpecializationSharpening{}}$ --- comes with peak locations that drift
+systematically in $\alpha=n/d$. The fitted path exponent
+$\gamma=\AtlasSpecializationGamma{}$, with $95\%$ interval
+\AtlasSpecializationGammaCI{}, excludes the proportional regime $\gamma=1$.
+The immediate consequence is methodological rather than physical: a study that
+sweeps $\alpha$ at a single size is not holding the boundary fixed, and two
+such studies at different sizes can disagree without either being wrong.
+This is a quantitative, falsifiable target --- if a theory predicts a fixed
+$\alpha_c$ for this setting, it is in tension with \eqref{eq:gamma-spec}.
+
+\paragraph{2. Diverging response and locatable boundary are different
+achievements, and the second is much harder.}
+Several families produce a susceptibility that grows convincingly with size and
+still fail to yield a boundary location: the peak marches out of the sampled
+window, or the drift extrapolation and the collapse name places that differ by
+more than the consistency tolerance. Reporting only the first --- the usual
+practice --- would have produced several confident transition claims here that
+the location analysis does not support. We suggest that a susceptibility plot
+without an accompanying drift fit should be read as evidence of criticality and
+not as evidence of a critical point.
+
+\paragraph{3. Two design choices can manufacture or destroy a transition.}
+Both were found the hard way in this work. A control grid too coarse to hold an
+interior maximum yields a structurally censored result regardless of the
+physics; and a fixed epoch budget makes wider models appear \emph{less} ordered,
+because they are less optimised, which inverts the sign of the finite-size
+trend. Any finite-size claim about a learning system should therefore report
+grid density and the optimisation stopping rule alongside the seed count. We
+recommend training to a convergence criterion, and recording per run whether it
+was met, so that optimisation shortfall is a measured quantity rather than a
+hidden covariate.
+
+\subsection{The ledger}
+
+\begin{table}[tbp]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}p{34mm}p{20mm}Y@{}}
+\toprule
+Outcome & Families & Reading \\
+\midrule
+transition supported & \AtlasCountPhaseTransitionSupported{} & two consistent
+finite-size signatures and a located boundary \\
+critical response, boundary unresolved &
+\AtlasCountCriticalResponseBoundaryUnresolved{} & the response diverges; the
+window does not contain the boundary \\
+candidate boundary & \AtlasCountCandidateBoundary{} & one admissible signature;
+a second is needed \\
+response shift (off-grid) &
+\AtlasCountResponseShiftBoundaryOutsideGrid{} & the order parameter moves;
+most sizes censored \\
+no resolved response & \AtlasCountNoResolvedResponse{} & the order parameter
+does not separate from its uncertainty \\
+\bottomrule
+\end{tabularx}
+\caption{Outcome ledger for the release. Rows below the first are reported with
+the same prominence as the first; a map whose empty cells are hidden is not a
+map.}
+\label{tab:ledger}
+\end{table}
+
+\subsection{What we would do next, in order}
+
+\begin{enumerate}
+  \item \textbf{Twelve seeds on the four best-resolved families.} Every family
+    here is capped at grade~C purely by the replication tier. This is the
+    cheapest available upgrade and changes nothing else.
+  \item \textbf{Re-run the drifting families on the rescaled control
+    $n/d^{\gamma}$.} If the peaks return to the interior of the window, several
+    unresolved boundaries become locatable in a single sweep.
+  \item \textbf{A frozen prospective replication.} No result here has been
+    confirmed at fresh seeds after the analysis was fixed, which is the one
+    gate that no amount of re-analysis can substitute for.
+  \item \textbf{One natural-data endpoint.} External validity is zero across
+    the release by construction. A single family carried through to a natural
+    corpus would establish whether any of these boundaries survive contact with
+    real data, which is the question the whole programme is ultimately for.
+\end{enumerate}

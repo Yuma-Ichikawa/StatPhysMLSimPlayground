@@ -1,0 +1,131 @@
+\section{Order parameters in function space}
+\label{sec:observables}
+
+An atlas that spans committee machines, deep networks, attention layers and
+contrastive encoders cannot use weights as its state variable: those systems
+share no parameter coordinates, and any two of them can realise the same
+function with unrelated weights. Every primary observable in this work is
+therefore defined on a \emph{shared probe ensemble} of inputs
+$\mathcal X_{\rm probe}=\{x^{(1)},\dots,x^{(P)}\}$ drawn from the task
+distribution and held fixed across all systems compared in a figure.
+
+\subsection{The magnetisation sector}
+
+Write $f_s$ for the student and $f_t$ for the teacher, and let
+$\langle\cdot\rangle$ denote the average over $\mathcal X_{\rm probe}$. The
+three second moments
+\begin{equation}
+  \rho_f=\langle f_t^2\rangle,\qquad
+  q_f=\langle f_s^2\rangle,\qquad
+  m_f=\langle f_s f_t\rangle
+  \label{eq:moments}
+\end{equation}
+define the normalised teacher--student overlap
+\begin{equation}
+  \hat m \;=\; \frac{m_f}{\sqrt{q_f\,\rho_f}}\;\in\;[-1,1],
+  \label{eq:mhat}
+\end{equation}
+which plays the role of a magnetisation: it is $0$ for an uninformed student
+and $1$ for exact functional recovery. The normalisation in \eqref{eq:mhat} is
+what makes the quantity portable --- it is invariant to the output scale of
+either network, so a linear model and a transformer can be placed on the same
+axis --- but portability of the \emph{estimator} is not portability of its
+physical meaning, and we never treat equal values of $\hat m$ in two domains as
+the same physical state.
+
+For squared loss the generalisation error is fixed by
+\eqref{eq:moments} alone,
+\begin{equation}
+  \epsilon_g=\tfrac12\big\langle (f_s-f_t)^2\big\rangle
+  =\tfrac12\big(\rho_f+q_f-2m_f\big),
+  \label{eq:epsg}
+\end{equation}
+and every run records both sides of \eqref{eq:epsg} together with their
+residual. A non-zero residual indicates a broken normalisation convention
+rather than a physical effect, so this identity functions as a continuously
+monitored unit test on the entire measurement chain.
+
+\subsection{Replicas and multiplicity}
+
+Two students trained from independent initialisations on independent data draws
+are replicas of the same disorder-averaged problem. Their normalised functional
+overlap
+\begin{equation}
+  q_{ab}=\frac{\langle f_a f_b\rangle}
+              {\sqrt{\langle f_a^2\rangle\langle f_b^2\rangle}}
+  \label{eq:qab}
+\end{equation}
+measures whether learning selects a single function ($q_{ab}\to1$) or a
+degenerate set ($q_{ab}<1$ at large $\alpha$). We report $q_{ab}$ as
+\emph{functional multiplicity} and nothing stronger: identifying a low overlap
+with replica-symmetry breaking would require an ultrametric analysis of the
+full overlap distribution, which this design does not perform.
+
+\subsection{Disorder response and the finite-size sector}
+
+Let $\Omega$ index the outer disorder ensemble --- one draw of
+$\Omega$ fixes an initialisation \emph{and} a data set --- and let $m_\omega$
+be the order parameter measured on draw $\omega$. The susceptibility and Binder
+cumulant are
+\begin{equation}
+  \chi_N = N\,\operatorname{Var}_\Omega\!\left[m_\omega\right],
+  \qquad
+  U_4 = 1-\frac{\langle m^4\rangle_\Omega}{3\langle m^2\rangle_\Omega^2}.
+  \label{eq:chi-binder}
+\end{equation}
+Equation \eqref{eq:chi-binder} is the one place where the atlas is most easily
+abused, so its ensemble is stated as a rule: \emph{the average in
+\eqref{eq:chi-binder} runs over independent outer seeds only}. Fluctuation
+between checkpoints of a single training trajectory is a temporal variance
+measuring non-stationarity, is recorded under a different name, and is never
+substituted into \eqref{eq:chi-binder}.
+
+\subsection{Symmetry breaking, subspaces and geometry}
+
+Permutation symmetry of a hidden layer is broken when each student unit commits
+to one teacher unit. Given the matrix $R_{ij}$ of normalised overlaps between
+student unit $i$ and teacher unit $j$, a greedy matching $\pi$ yields
+\begin{equation}
+  \Delta=\frac{1}{K}\sum_{i}R_{i\pi(i)}
+        -\frac{1}{K_sK_t-K}\sum_{(i,j)\notin\pi}R_{ij},
+  \label{eq:specgap}
+\end{equation}
+the \emph{specialisation gap}, which vanishes in the permutation-symmetric
+phase by construction. When the student and teacher widths differ, unit
+matching is meaningless and we instead use the principal angles between the
+relevant subspaces,
+\begin{equation}
+  \Sigma(A,B)=\frac{1}{k}\sum_{i=1}^{k}\cos^2\theta_i,
+  \qquad k=\min(k_A,k_B),
+  \label{eq:subspace}
+\end{equation}
+which is basis- and permutation-invariant and defined for mismatched widths.
+
+Representation geometry is summarised by the spectrum $\{\lambda_i\}$ of the
+centred feature covariance through the participation ratio and the effective
+rank,
+\begin{equation}
+  \mathrm{PR}=\frac{\big(\sum_i\lambda_i\big)^2}{\sum_i\lambda_i^2},
+  \qquad
+  r_{\rm eff}=\exp\Big(-\sum_i p_i\log p_i\Big),\quad
+  p_i=\frac{\lambda_i}{\sum_j\lambda_j}.
+  \label{eq:effrank}
+\end{equation}
+The effective rank $r_{\rm eff}$ is the order parameter of dimensional collapse
+in the self-supervised setting of \S\ref{sec:paradigm}.
+
+Finally, the training regime itself is measured rather than assumed. With
+$\theta_0$ and $\theta_T$ the parameters before and after training, and
+$K_0,K_T$ the corresponding representation Gram matrices on the probe set,
+\begin{equation}
+  \delta_\theta=\frac{\lVert\theta_T-\theta_0\rVert}{\lVert\theta_0\rVert},
+  \qquad
+  \mathcal A(K_0,K_T)=
+  \frac{\langle \tilde K_0,\tilde K_T\rangle_F}
+       {\lVert \tilde K_0\rVert_F\,\lVert \tilde K_T\rVert_F},
+  \label{eq:lazy}
+\end{equation}
+where $\tilde K$ denotes the centred Gram matrix. The lazy (kernel) regime is
+the joint statement $\delta_\theta\to0$ and $\mathcal A\to1$; the rich regime
+is its negation. Reporting both makes the regime an observable of the
+experiment rather than a property asserted of the parametrisation.

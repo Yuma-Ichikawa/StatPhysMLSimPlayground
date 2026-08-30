@@ -1,22 +1,43 @@
 \section{Conclusion}
+\label{sec:conclusion}
 
-We presented an evidence-aware statistical-mechanics atlas for numerical studies
-of modern machine learning. Seven scientific coordinates state what is being
-studied; a PhaseCard states how it is measured, perturbed, and held out; and an
-independent evidence record states what may be claimed. This separation turns
-semantic failure, censoring, unresolved contrasts, duplicated controls, and
-model misspecification into reportable outcomes rather than discarded runs.
+The statistical mechanics of learning is usually presented as a body of exact
+results waiting to be extended. This paper treats it instead as a
+\emph{measurement discipline} that can be applied wherever the exact result is
+missing, provided the measurement is done to the standard the discipline
+already requires elsewhere: a control grid dense enough to hold a boundary, a
+named scale path, an outer disorder ensemble, and a decision procedure willing
+to return nothing.
 
-The empirical program demonstrates why this discipline matters. Small
-Transformers show clear width-, data-, module-, optimizer-, and corpus-dependent
-responses, with frozen confirmations for selected contrasts. Yet the public GPU
-reference fails the finite-size gates required for a phase boundary. Diffusion,
-reinforcement-learning, and multi-agent dossiers show how trajectory, feedback,
-and population observables fit the same grammar without asserting shared
-universality. The immediate next step is prospective: execute the registered
-dense Transformer grid, hold out its largest width, and let prediction,
-crossing, or censoring determine the outcome. More broadly, the atlas provides a
-common route from suggestive plots to explicit ensembles, falsifiers, bounded
-claims, and cumulative negative knowledge.
+Across \AtlasTotalFamilies{} settings and \AtlasTotalRuns{} trained models, the
+procedure returned a spread of outcomes rather than a uniform confirmation. It
+found genuinely diverging responses, candidate boundaries whose location it
+declined to fix, crossovers that look like transitions until the finite-size
+analysis is run, and at least one cell where the order parameter never
+separated from its own uncertainty. Those refusals are the evidence that the
+positive entries mean something.
 
-\FloatBarrier
+Two lessons generalise beyond the specific cells.
+
+The first is that \textbf{design choices routinely masquerade as physics}. A
+three-point control grid cannot produce anything but a censored boundary; a
+fixed epoch budget makes wider models look less ordered because they are simply
+less optimised. Both artefacts appeared in our own work and both survived until
+a consistency check between independent finite-size signatures caught them.
+Any claim of a phase boundary in a learning system should be accompanied by the
+grid density, the optimisation stopping rule, and the disorder ensemble, because
+those three choices can produce or destroy the result on their own.
+
+The second is that \textbf{the control parameter itself is a hypothesis}. The
+proportional ratio $\alpha=n/d$ is so standard that it is rarely questioned,
+yet in the one family here with the cleanest critical response the finite-size
+peaks drift systematically in $\alpha$, and the fitted path exponent excludes
+the proportional regime. If that holds up at larger sizes, a body of numerical
+work that sweeps $\alpha$ at a single size has been reading a moving target.
+
+What the atlas offers a theorist is not an explanation but a specification: a
+list of settings, each with a measured exponent or boundary, an interval, and
+the experiment that would falsify it. Those entries are deliberately
+uncomfortable --- several of them say that a widely used framing does not
+survive its own finite-size analysis. That is the most useful thing a numerical
+map can do for a theory that has not been written yet.

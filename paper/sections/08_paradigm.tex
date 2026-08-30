@@ -1,0 +1,150 @@
+\section{Learning paradigms beyond supervised regression}
+\label{sec:paradigm}
+
+The settings in this block are the furthest from analytic reach: self-supervised
+representation learning, recursive training on generated data, sequential task
+acquisition, conditional computation, and low-rank adaptation. Each is reduced
+to a controlled teacher--student form in which a single deformation can be
+dialled continuously, so that a boundary --- if one exists --- has somewhere to
+be.
+
+\subsection{Dimensional collapse in contrastive learning}
+
+An encoder is trained with an InfoNCE objective on paired views of a planted
+low-dimensional latent, and the order parameter is the normalised effective
+rank $r_{\rm eff}$ of \eqref{eq:effrank}.
+
+\paragraph{Observation.} Across the temperature range
+$\AtlasContrastiveCollapseControlRange{}$ the normalised effective rank moves
+over a range of $\AtlasContrastiveCollapseSemanticRatio{}$ times its own
+$95\%$ interval, with the representation occupying a small fraction of the
+available embedding directions at low temperature and expanding as temperature
+rises. The family is graded
+\AtlasContrastiveCollapseGrade{} with verdict
+\emph{\AtlasContrastiveCollapseVerdict{}} over
+\AtlasContrastiveCollapseConditions{} conditions.
+
+\paragraph{Interpretation.} Temperature controls how strongly the objective
+penalises the uniformity term, and the effective rank responds to it
+monotonically and far outside seed noise. Dimensional collapse in this setting
+is a continuously tunable property of the objective, not an accident of
+optimisation.
+
+\paragraph{Not established.} We do not claim a critical temperature. Only one
+finite-size signature is admissible, so the outcome is a candidate boundary; a
+collapse that is sharp in the embedding dimension has not been demonstrated.
+
+\paragraph{Next falsifier.} Extend the embedding-dimension path and test
+whether the transition in $r_{\rm eff}$ sharpens with it. If the curve simply
+translates without steepening, the effect is a crossover and the candidate
+boundary should be withdrawn.
+
+\subsection{Model collapse under recursive training}
+
+Each generation trains on a mixture of a fraction $p_{\rm real}$ of fresh
+teacher data and $1-p_{\rm real}$ of the previous generation's own output.
+
+\paragraph{Observation.} The terminal teacher overlap falls monotonically as
+$p_{\rm real}\to0$, moving over
+$\AtlasModelCollapseSemanticRatio{}$ times its interval across
+\AtlasModelCollapseConditions{} conditions; verdict
+\emph{\AtlasModelCollapseVerdict{}}, grade \AtlasModelCollapseGrade{}.
+
+\paragraph{Interpretation.} A finite real-data fraction anchors the loop. The
+measured quantity is the anchoring \emph{strength} as a function of
+$p_{\rm real}$, which is the input a theory of generational drift would need to
+reproduce.
+
+\paragraph{Not established.} Whether the anchoring is a true threshold in
+$p_{\rm real}$ or a smooth degradation is not resolved. The second axis is the
+generation count, which advances the process rather than enlarging one system,
+so it is not a scale path and no finite-size claim is available --- the verdict
+is \emph{\AtlasModelCollapseVerdict{}}.
+
+\paragraph{Next falsifier.} Repeat the sweep with model width as the second
+axis at a fixed generation count. If the degradation curve steepens with width,
+the anchoring becomes a candidate transition; if it merely translates, model
+collapse is a smooth erosion and should never be described as a phase.
+
+\subsection{Forgetting and transfer under task similarity}
+
+Two teachers are constructed with an exact correlation dial
+$\rho$, training proceeds on task~A and then task~B, and retention of A is
+measured against a from-scratch baseline on B.
+
+\paragraph{Observation.} Forgetting spans
+$\AtlasContinualForgettingSemanticRatio{}$ times its interval over
+$\rho\in\AtlasContinualForgettingControlRange{}$, and the susceptibility peak
+height grows with the scale path as $N^{\AtlasContinualForgettingSharpening{}}$.
+The verdict is \emph{\AtlasContinualForgettingVerdict{}}.
+
+\paragraph{Interpretation.} The response is genuinely critical --- the disorder
+susceptibility diverges along the sampled scale path --- but the location of
+the boundary does not extrapolate within the sampled window, so the interference
+threshold in $\rho$ is measured to exist and not measured to be anywhere in
+particular.
+
+\paragraph{Not established.} No value of $\rho$ is reported as a critical task
+similarity. The transfer sign change is visible but is not certified by an
+admissible location fit.
+
+\paragraph{Next falsifier.} Widen the $\rho$ grid past the current window and
+re-fit \eqref{eq:drift}; if $c_\infty$ becomes admissible and interior, the
+verdict upgrades, and if the peaks continue to march outward the correct
+conclusion is that similarity is not the controlling variable.
+
+\subsection{Expert specialisation and load balancing}
+
+A mixture-of-experts layer is trained on a target composed of distinct
+sub-functions, with the load-balancing coefficient as the control.
+
+\paragraph{Observation.} The specialisation gap \eqref{eq:specgap} moves by only
+$\AtlasMoeSpecializationSemanticRatio{}$ times its $95\%$ interval across the
+sampled range. The verdict is \emph{\AtlasMoeSpecializationVerdict{}}.
+
+\paragraph{Interpretation.} This is a negative result and is reported as one.
+Under the registered budget the expert assignment does not separate from its
+uncertainty, so no claim about symmetry breaking among experts is supported ---
+in either direction.
+
+\paragraph{Not established.} We cannot conclude that load balancing has no
+effect; we conclude that this design lacks the resolution to detect one.
+
+\paragraph{Next falsifier.} Increase the contrast between sub-functions and the
+number of experts. If the gap remains within noise at higher contrast, the
+absence becomes a substantive finding rather than a resolution limit.
+
+\subsection{A rank threshold for low-rank adaptation}
+
+A frozen backbone is adapted by a rank-$r$ update to a target displaced by a
+planted perturbation of known rank $r^\ast$.
+
+\paragraph{Observation.} Recovery of the planted subspace, measured by
+\eqref{eq:subspace}, rises from near chance to essentially complete across the
+adapter-rank grid, spanning
+$\AtlasLoraRankSemanticRatio{}$ times its interval over
+\AtlasLoraRankConditions{} conditions; verdict \emph{\AtlasLoraRankVerdict{}},
+grade \AtlasLoraRankGrade{}.
+
+\paragraph{Interpretation.} Adapter capacity behaves like a storage constraint:
+below the planted rank the update cannot represent the required displacement,
+and above it recovery saturates. The threshold is not merely near $r^\ast$ but
+\emph{locked} to it --- for every planted rank in the sweep, the disorder
+susceptibility has its maximum exactly at $r=r^\ast$, and recovery saturates
+from that point on. This is the cleanest capacity statement in the block and
+the closest of these settings to something a Gardner-style calculation could
+plausibly address.
+
+\paragraph{Not established.} Nothing thermodynamic. The second axis here is the
+planted rank $r^\ast$, which changes the problem rather than the size of one
+system, so it is not a scale path and the finite-size machinery of
+\S\ref{sec:gates} does not apply --- hence the verdict
+\emph{\AtlasLoraRankVerdict{}}. The threshold is located along the control
+axis; whether it \emph{sharpens} is a separate question this design cannot
+answer.
+
+\paragraph{Next falsifier.} Hold $r^\ast$ fixed and sweep the backbone width as
+a genuine scale path. A capacity transition requires the step in $r$ to sharpen
+with width; if the transition width stays constant, the effect is an
+approximation-error crossover rather than a transition, and the present result
+remains a locked threshold with no critical content.

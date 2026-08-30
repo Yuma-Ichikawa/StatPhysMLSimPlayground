@@ -1,0 +1,125 @@
+\section{Anchors: does the pipeline reproduce what is already known?}
+\label{sec:anchors}
+
+Everything that follows depends on the measurement chain being sound, so the
+atlas opens with two settings whose answers are known exactly. Neither is a
+discovery. Their purpose is that a regression anywhere in the chain --- an
+order-parameter normalisation, a censoring rule, a finite-size fit --- shows up
+here as a number rather than as a vague loss of agreement downstream.
+
+\subsection{Gardner storage capacity}
+
+A spherical perceptron in $d$ dimensions is asked to separate $P=\alpha d$
+random $\pm1$ labels on random Gaussian patterns. The classical result is that
+the probability of success tends to one below $\alpha_c=2$ and to zero above
+it, with the step sharpening as $d$ grows.
+
+Separability is decided by a linear program rather than by training: a weight
+vector satisfying $y_i\,w^\top x_i\ge1$ for all patterns exists if and only if
+the labelling is separable. This matters for an anchor. Training to zero error
+and declaring failure when it is not reached would conflate ``not separable''
+with ``not optimised long enough'', which is exactly the confound the anchor
+block exists to exclude.
+
+\manuscriptfigure{figures/family_perceptron_capacity.pdf}{%
+  \textbf{The anchor.} Separability probability (A) steps from one to zero near
+  the Gardner capacity and the step steepens with $d$; the disorder
+  susceptibility (B) peaks at the same load
+  $\alpha=\AtlasPerceptronCapacityPeakControl{}$ at every dimension, with
+  height growing as
+  $N^{\AtlasPerceptronCapacitySharpening{}}$. This is the only family in the
+  release to pass every gate --- and its answer was known in advance.%
+}{fig:perceptron}
+
+\paragraph{Observation.}
+Over \AtlasPerceptronCapacityConditions{} conditions spanning
+$\alpha\in\AtlasPerceptronCapacityControlRange{}$ at
+\AtlasPerceptronCapacitySizes{} dimensions with
+\AtlasPerceptronCapacitySeeds{} outer seeds, the measured separability
+probability holds at one well below the predicted capacity, falls through the
+neighbourhood of $\alpha=2$, and reaches zero above it. The disorder
+susceptibility has an interior maximum at
+$\alpha=\AtlasPerceptronCapacityPeakControl{}$ --- against the exact
+$\alpha_c=2$, and at the grid point nearest to it --- and that location is
+\emph{identical at all four dimensions}, while the peak height grows as
+$N^{\AtlasPerceptronCapacitySharpening{}}$ with
+$R^2=\AtlasPerceptronCapacitySharpeningRSq{}$. The Binder curves cross at
+$\alpha=\AtlasPerceptronCapacityCrossingControl{}$. The verdict is
+\emph{\AtlasPerceptronCapacityVerdict{}}, grade
+\AtlasPerceptronCapacityGrade{}.
+
+\paragraph{Interpretation.}
+The pipeline recovers the transition at the right location, and its finite-size
+machinery behaves as it should on a case where the truth is known. The
+size-independence of the peak is worth stating explicitly: a critical capacity
+that does not move with $d$ is exactly what the Gardner result asserts, and it
+is what makes the contrast with \S\ref{sec:symmetry} --- where the peak
+\emph{does} move --- a measurement rather than an artefact of the analysis.
+
+This is also the only family in the release that the decision procedure awards
+its strongest verdict. We regard that as the main evidence that the procedure
+is calibrated rather than permissive: applied to fourteen settings whose
+answers are not known, it declined to certify a transition in every one, and
+certified the single case that was placed there because the answer was known
+in advance.
+
+A solver status other than ``feasible'' or ``provably infeasible'' is recorded
+per run as a flag, so no numerical failure can be silently absorbed into the
+order parameter.
+
+\paragraph{Not established.}
+We do not fit a critical exponent here. The grid was chosen to bracket a known
+answer, not to resolve the width of the transition, and the binary order
+parameter makes the susceptibility a coarse instrument at these sizes.
+
+\subsection{The Gaussian-mixture error formula}
+
+For an isotropic two-component mixture with centres $\pm\mu v$, a unit rule $w$
+at angle $\theta$ to $v$ has generalisation error exactly
+\begin{equation}
+  \epsilon_g(\theta)=\Phi\!\left(-\mu\cos\theta\right),
+  \qquad
+  \epsilon_g^{\star}=\Phi(-\mu),
+  \label{eq:bayes}
+\end{equation}
+the second being the Bayes error attained at $\cos\theta=1$. Equation
+\eqref{eq:bayes} has no free constants, so comparing it against a measured
+error is a direct test of the error bookkeeping rather than of any learning
+algorithm.
+
+\paragraph{Observation.}
+Across \AtlasMixtureBayesConditions{} conditions and
+\AtlasMixtureBayesSizes{} dimensions, the measured misclassification rate of a
+fitted linear rule agrees with \eqref{eq:bayes} evaluated at the
+\emph{measured} $\cos\theta$ to within probe-set sampling noise; a
+representative condition gives measured $0.0129$ against a predicted $0.0135$,
+a residual of $-5\times10^{-4}$. The excess over the Bayes floor is
+non-negative at every condition, as it must be.
+
+\paragraph{Interpretation.}
+The function-space error identity \eqref{eq:epsg} and the classification error
+convention used throughout the atlas are correct as implemented. Every
+$\epsilon_g$ reported in later sections is produced by the same code path that
+reproduces \eqref{eq:bayes} here.
+
+The verdict returned for this family is
+\emph{\AtlasMixtureBayesVerdict{}}, and that is the correct answer: there is no
+transition in $\mu$ to find. The order parameter moves over
+$\AtlasMixtureBayesSemanticRatio{}$ times its interval, so the response is
+unambiguous, and the analysis declines to invent a boundary in a setting that
+has none. An anchor that is not a transition is a useful second test of the
+decision procedure --- a permissive procedure would have found something here.
+
+\paragraph{Not established.}
+This anchor validates the estimator, not the learning theory: the fitted rule
+is ordinary least squares, and its distance from the Bayes direction is
+measured rather than predicted. A stronger anchor would compare $\cos\theta$
+itself against its asymptotic prediction, which we do not attempt.
+
+\paragraph{Why only two anchors.}
+An anchor is only useful if its closed form is unambiguous and short enough to
+state without hidden conventions. We considered adding the replica prediction
+for ridge regression and the Saad--Solla plateau, and did not include them in
+this release: both require normalisation conventions that would have to be
+checked as carefully as the thing they are meant to certify, and a wrong anchor
+is worse than none. They are the obvious next additions to this block.
