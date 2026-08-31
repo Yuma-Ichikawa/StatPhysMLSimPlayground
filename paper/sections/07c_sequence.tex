@@ -1,0 +1,173 @@
+\section{Attention, context, and in-context learning}
+\label{sec:sequence}
+
+Two claims about attention are cited far more often than they are tested: that
+attention switches between a \emph{positional} and a \emph{semantic} mechanism,
+and that in-context learning \emph{emerges} above a threshold of pretraining
+task diversity. Both are usually supported by a single curve at a single model
+size, which cannot distinguish a transition from a crossover. This block puts
+each on a fine control grid with a real scale path, and adds two measurements a
+risk curve cannot make: a causal ablation that separates the two attention
+routes, and an attention-entropy comparison against the uniform-attention null.
+
+\subsection{The positional--semantic switch}
+
+\manuscriptfigure{figures/family_positional_semantic.pdf}{%
+  \textbf{Which route attention learns.} The order parameter is
+  $(S-P)/(S+P)$, where $S$ and $P$ are the variance explained when the
+  \emph{other} cue has been destroyed by intervention. It runs from $-1$
+  (purely positional) to $+1$ (purely semantic).%
+}{fig:positional-semantic}
+
+The usual version of this experiment makes the semantic cue perfect, in which
+case it wins for every $p>0$ and the ``transition'' is an artefact of the data
+rather than a property of the model. We therefore give \emph{both} cues a
+finite reliability: the answer token sits at position zero with probability
+$1-p$, and carries its true tag with probability $1-q$, with $q$ fixed. A model
+that simply follows the more reliable cue should switch route near $p=q$, so
+the measurement has a predicted location to agree or disagree with.
+
+\paragraph{Observation.}
+Over \AtlasPositionalSemanticConditions{} conditions at
+\AtlasPositionalSemanticSizes{} widths, the mechanism order parameter runs the
+full range: it sits at $-1$ when the positional cue is reliable and saturates at
+$+1$ once that cue is worse than the semantic one. The sign change is
+remarkably stable across widths --- $p=0.235$, $0.239$, $0.247$ and $0.245$ at
+widths $24$ through $64$ --- against the registered prediction $p=q=0.30$. The
+disorder susceptibility peaks earlier, near $p\approx0.13$, but at three of the
+four widths that maximum is a single-point spike and is rejected, so no
+finite-size signature survives. The order parameter spans
+\AtlasPositionalSemanticSemanticRatio{} times its $95\%$ interval; the verdict
+is \emph{\AtlasPositionalSemanticVerdict{}}, grade
+\AtlasPositionalSemanticGrade{}.
+
+\paragraph{Interpretation.}
+The switch is real, it is measured at the level of mechanism rather than
+performance, and it lands close to where a reliability-following model would
+put it. The causal ablations are what make this a mechanism claim: the model's
+risk barely changes across much of the range, so a risk curve alone would have
+shown almost nothing.
+
+The offset between the two locations is suggestive rather than established.
+The fluctuation maximum sits below the mean sign change, which is what one
+expects when runs begin to \emph{disagree} about which route to take before the
+average route has switched. But at eight seeds that maximum is exactly the
+regime in which a single excursion dominates the variance, and the spike test
+rejects it at three widths out of four. The stable quantity here is the mean
+sign change; the fluctuation story needs more seeds before it can be told.
+
+\paragraph{Not established.}
+Whether the switch is a transition. No admissible finite-size signature
+survives, so the verdict is a response shift: the mechanism reversal is
+unambiguous, its criticality is not tested.
+
+\paragraph{Next falsifier.}
+Vary $q$ and check that the crossover tracks it. If the sign change stays near
+$p\approx0.24$ when $q$ is moved to $0.1$ or $0.5$, the model is not following
+cue reliability and the interpretation above is wrong.
+
+\subsection{In-context learning versus task diversity}
+
+A small causal transformer is pretrained on in-context linear regression whose
+task vectors are drawn from a pool of size $M$. The order parameter is not the
+risk but the normalised alignment between the model's predictions on
+\emph{fresh} tasks and the exact in-context ridge predictor computed from the
+context --- that is, whether the model has reproduced the algorithm, not
+whether it scores well.
+
+\manuscriptfigure{figures/family_icl_task_diversity.pdf}{%
+  \textbf{From memorising a task pool to running an algorithm.} The order
+  parameter is alignment with the exact in-context ridge predictor on
+  \emph{fresh} tasks --- zero for a model that has memorised its pretraining
+  pool, one for a model that has reproduced the Bayes-optimal rule.%
+}{fig:icl}
+
+\paragraph{Observation.}
+Across \AtlasIclTaskDiversityConditions{} conditions the two quantities move
+together and in opposite directions. At a pool of one task the model memorises
+completely: the fresh-versus-pool risk gap is about $+2$ and the ridge
+alignment is indistinguishable from zero. Both change through
+$M\approx8$--$64$; the gap reaches zero near $M\approx10^2$ and the alignment
+saturates around $0.7$ beyond it, with no further improvement out to an
+unbounded pool. The order parameter spans
+\AtlasIclTaskDiversitySemanticRatio{} times its $95\%$ interval. The verdict is
+\emph{\AtlasIclTaskDiversityVerdict{}}, grade
+\AtlasIclTaskDiversityGrade{}.
+
+The disorder susceptibility of the alignment has an interior maximum near
+$M\approx4$--$8$ at two of the three widths; at the third the global maximum is
+an isolated spike and is rejected, leaving too few sizes to fit a sharpening
+exponent.
+
+\paragraph{Interpretation.}
+The memorisation-to-algorithm change is visible in a quantity that separates
+the two explanations, which a learning curve does not. Alignment with the
+Bayes-optimal in-context rule is the right order parameter for this claim
+precisely because a memorising model can have low risk on its own pool while
+having no alignment on fresh tasks.
+
+The susceptibility maxima that do survive sit at a pool of four to eight tasks,
+inside the range usually quoted for the onset of in-context learning --- where
+independently seeded models disagree most about whether to memorise or to
+generalise. With only two admissible sizes this is a coincidence worth
+following up, not a finite-size result.
+
+\paragraph{Not established.}
+That the change is an emergence threshold. At the model scale used here the
+transformer remains far from the ridge baseline in absolute risk even at an
+unbounded pool, so what is measured is the onset of algorithmic behaviour, not
+its completion.
+
+\paragraph{Next falsifier.}
+Train an order of magnitude longer at fixed $M$. If the alignment curve shifts
+left with training budget, what looks like a task-diversity threshold is partly
+an optimisation threshold, and the control variable is not the one the claim
+names.
+
+\subsection{Induction-head formation}
+
+\paragraph{Observation.}
+On the canonical induction task --- predict the token that followed the
+previous occurrence of the current token --- a two-layer causal model reaches an
+accuracy well above the unigram null across
+\AtlasInductionHeadConditions{} conditions, and the second layer's attention at
+the query position concentrates on exactly the token after the earlier
+occurrence. Both the behavioural lift and the attention-level induction score
+fall as the vocabulary grows. The verdict is
+\emph{\AtlasInductionHeadVerdict{}}, grade \AtlasInductionHeadGrade{}.
+
+\paragraph{Interpretation.}
+The circuit is measured twice, once behaviourally and once by reading the
+attention pattern, and the two agree: where the lift is large the attention
+score is above its uniform null, and where the lift collapses the attention
+score returns to null. That agreement is the evidence that the behavioural
+number reflects an induction mechanism rather than some other shortcut.
+
+\paragraph{Not established.}
+Abruptness as a critical phenomenon. We record the formation step and the
+steepest per-checkpoint gain, and censor runs that never cross the registered
+lift threshold, but a sharp rise in training time is not by itself a phase
+transition in any control parameter.
+
+\subsection{Does attention select, or dilute?}
+
+\paragraph{Observation.}
+Sweeping context length over
+$L\in\AtlasContextScalingControlRange{}$, the entropy of the query position's
+attention distribution stays measurably below the uniform null $\log L$; the
+gap is positive throughout and spans
+\AtlasContextScalingSemanticRatio{} times its interval across
+\AtlasContextScalingConditions{} conditions. The verdict is
+\emph{\AtlasContextScalingVerdict{}}, grade \AtlasContextScalingGrade{}.
+
+\paragraph{Interpretation.}
+Attention is genuinely selecting rather than spreading: the entropy does grow
+with context, but more slowly than the uniform baseline, so the effective
+number of attended tokens grows sub-linearly. Reporting the null alongside the
+entropy is the whole point --- an entropy that rises with $L$ is compatible with
+no selection at all, and only the gap distinguishes the two.
+
+\paragraph{Next falsifier.}
+Extend the context grid by another octave. If the gap stops growing, the
+effective attended set has saturated, which is a concrete and testable
+statement about how far a fixed-width model can use its context.

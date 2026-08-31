@@ -23,49 +23,55 @@ longer matches the teacher's.
 \paragraph{Observation.}
 Across \AtlasSpecializationConditions{} conditions spanning
 $\alpha\in\AtlasSpecializationControlRange{}$ and
-\AtlasSpecializationSizes{} sizes, the disorder susceptibility has an interior
-maximum at \emph{every} size --- no size is censored --- and the peak height
-grows as $N^{\AtlasSpecializationSharpening{}}$. The peak \emph{location}
-moves systematically with size, and fitting
-$\alpha_{\rm peak}\propto d^{\,\gamma-1}$ gives
+\AtlasSpecializationSizes{} sizes, the disorder susceptibility has an
+admissible interior maximum at three of the six sizes, with peak height growing
+as $N^{\AtlasSpecializationSharpening{}}$ over those three. At the other three
+the maximum is a single-point spike --- one seed of eight inflates the variance
+at exactly one control value --- and is rejected rather than reported
+(\S\ref{sec:gates}). Fitting the drift of the surviving peak locations,
+$\alpha_{\rm peak}\propto d^{\,\gamma-1}$, gives
 \begin{equation}
   \gamma=\AtlasSpecializationGamma{},\qquad
-  95\%\ \text{CI}\;\AtlasSpecializationGammaCI{}.
+  95\%\ \text{CI}\;\AtlasSpecializationGammaCI{},
   \label{eq:gamma-spec}
 \end{equation}
-The verdict is \emph{\AtlasSpecializationVerdict{}} at grade
-\AtlasSpecializationGrade{}.
+which \emph{includes} the proportional value $\gamma=1$. The verdict is
+\emph{\AtlasSpecializationVerdict{}} at grade \AtlasSpecializationGrade{}.
 
 \paragraph{Interpretation.}
-Two statements are supported. First, the response is genuinely critical: the
-susceptibility diverges with size rather than saturating, which is the
-finite-size signature the design was built to detect. Second, and more
-consequential, \emph{the transition does not sit at a fixed sample ratio}. The
-interval in \eqref{eq:gamma-spec} excludes $\gamma=1$, so the boundary lies on
-the path $n\propto d^{\gamma}$ with $\gamma$ appreciably above unity, not on
-the proportional path $n\propto d$ that the analytic literature conventionally
-adopts. Since $\alpha=n/d$ is the wrong abscissa, a study that sweeps $\alpha$
-at fixed size --- as most do --- will see a boundary that appears to move for
-no reason.
+The response is critical in the sense the design was built to detect: over the
+sizes where the peak survives the spike test, its height grows with $N$ rather
+than saturating. Nothing about the boundary's \emph{position} is established.
+
+This family is worth recounting because it is where the analysis and the
+authors disagreed twice. On a first pass, with a coarse control grid and a
+fixed epoch budget, it produced a confident transition claim that the
+consistency requirement rejected. Repaired --- a grid of
+\AtlasSpecializationConditions{} conditions and training to a convergence
+criterion --- it produced an apparently strong second result: peaks at all six
+sizes and a drift exponent whose interval excluded $\gamma=1$, which we wrote up
+as evidence that the specialisation boundary does not lie on the proportional
+path $n\propto d$. Adding the spike test then removed half the peaks and widened
+the interval to \eqref{eq:gamma-spec}, which no longer excludes anything. We
+report the weaker result. The stronger one was an artefact of counting
+single-seed outliers as critical peaks, and it is the kind of claim this paper
+exists to avoid making.
 
 \paragraph{Not established.}
-The location is not pinned down. The drift extrapolation \eqref{eq:drift} and
-the collapse disagree by more than the consistency tolerance of
-\S\ref{sec:gates}, so the signature count is capped at one and the outcome is a
-candidate boundary rather than a supported transition. We also tried the
-obvious follow-up --- redoing the collapse in the rescaled variable
+The location, and now also the scaling path. The drift extrapolation
+\eqref{eq:drift} and the collapse disagree by more than the consistency
+tolerance of \S\ref{sec:gates}, so the signature count is capped at one. We also
+tried the obvious follow-up --- redoing the collapse in the rescaled variable
 $n/d^{\gamma}$, with $\gamma$ fixed in advance by the peak locations --- and it
-did \emph{not} improve on the collapse in $\alpha$. So while the drift exponent
-is measured with an interval that excludes the proportional regime, we do not
-have a scaling function to go with it.
+did \emph{not} improve on the collapse in $\alpha$.
 
 \paragraph{Next falsifier.}
-Extend the size path upward by a further factor of four and re-fit
-\eqref{eq:gamma-spec}. If $\gamma$ drifts back towards $1$ as the sizes grow,
-the exponent measured here is a pre-asymptotic effect and the claim should be
-withdrawn; if it stabilises, the collapse should be re-attempted on
-$n/d^{\gamma}$ with the enlarged range, where the present disagreement between
-drift and collapse would have to resolve one way or the other.
+More seeds before more sizes. The binding constraint here is that eight seeds
+are not enough to estimate a variance cleanly: half the size-curves in this
+family carry a single-point artefact. At twelve or twenty-four seeds the spike
+test should reject far fewer peaks, and \eqref{eq:gamma-spec} would then be
+fitted on six points rather than three --- which is what would settle whether
+$\gamma$ differs from one.
 
 \subsection{Depth: the boundary leaves the window}
 

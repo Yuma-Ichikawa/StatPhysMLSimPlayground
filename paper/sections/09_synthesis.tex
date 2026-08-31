@@ -31,19 +31,35 @@ the exact $\alpha_c=2$.
 
 \subsection{Three transferable findings}
 
-\paragraph{1. The control parameter is a hypothesis, and in the
-best-resolved family it fails.}
-The strongest critical response in the release --- an interior susceptibility
-peak at every size, with height growing as
-$N^{\AtlasSpecializationSharpening{}}$ --- comes with peak locations that drift
-systematically in $\alpha=n/d$. The fitted path exponent
-$\gamma=\AtlasSpecializationGamma{}$, with $95\%$ interval
-\AtlasSpecializationGammaCI{}, excludes the proportional regime $\gamma=1$.
-The immediate consequence is methodological rather than physical: a study that
-sweeps $\alpha$ at a single size is not holding the boundary fixed, and two
-such studies at different sizes can disagree without either being wrong.
-This is a quantitative, falsifiable target --- if a theory predicts a fixed
-$\alpha_c$ for this setting, it is in tension with \eqref{eq:gamma-spec}.
+\paragraph{1. At eight seeds, a quarter of susceptibility curves carry a
+single-point artefact.}
+Across the release, \AtlasSpikeRejected{} of \AtlasSpikeTotal{} size-curves have
+their global susceptibility maximum at an isolated spike: one diverged run out
+of eight inflates the variance at exactly one control value, and the neighbours
+sit at the floor. A plain argmax reports each of these as a boundary, and its
+height then enters the sharpening fit. Rejecting them --- by requiring a
+neighbour to rise with the peak, which a genuine critical swelling does and an
+outlier does not --- changed the verdict of several families in this paper,
+including our own headline. We would not have found this without measuring the
+same quantity at several sizes and asking whether the answers agreed.
+
+The practical recommendation is uncomfortable but simple: at this replication,
+a single susceptibility peak is not evidence. Either replicate to twelve or
+more seeds, or report the peak together with an explicit test that it is not
+one seed's excursion.
+
+\paragraph{2. The control parameter is a hypothesis --- and testing it needs
+more seeds than we had.}
+The specialisation family's peak locations drift with size in $\alpha=n/d$,
+which would mean the boundary lies on $n\propto d^{\gamma}$ rather than on the
+proportional path. With six admissible sizes the fitted exponent excluded
+$\gamma=1$; with the three that survive the spike test it is
+$\gamma=\AtlasSpecializationGamma{}$ with interval
+\AtlasSpecializationGammaCI{}, which does not. We report the weaker statement
+(\S\ref{sec:symmetry}). The question is worth someone's twelve-seed budget: if
+$\alpha$ is the wrong abscissa, a study sweeping it at a single size is not
+holding the boundary fixed, and two such studies at different sizes can
+disagree without either being wrong.
 
 \paragraph{2. Diverging response and locatable boundary are different
 achievements, and the second is much harder.}
@@ -66,6 +82,24 @@ grid density and the optimisation stopping rule alongside the seed count. We
 recommend training to a convergence criterion, and recording per run whether it
 was met, so that optimisation shortfall is a measured quantity rather than a
 hidden covariate.
+
+\paragraph{4. A risk curve can be flat while the mechanism reverses.}
+In the positional--semantic family (\S\ref{sec:sequence}) the model's risk
+barely moves across most of the control range, while the causal ablation shows
+the learned solution swinging from purely positional to purely semantic. Had we
+measured only performance, we would have reported nothing happening. This is a
+general hazard for claims about attention: the behavioural quantity that is
+easiest to plot is often the one least sensitive to the mechanism the claim is
+about, and an intervention that removes one route at a time costs little more
+than the evaluation itself.
+
+The same experiment illustrates the value of registering a predicted location.
+Giving both cues a finite reliability $1-p$ and $1-q$ makes a
+reliability-following model switch near $p=q$; the measured sign change lands
+close to it, which is a far stronger statement than observing that a switch
+occurred somewhere. When the semantic cue is left perfect --- the usual setup ---
+it wins for every $p>0$ and the apparent transition is a property of the data,
+not of the model.
 
 \subsection{The ledger}
 

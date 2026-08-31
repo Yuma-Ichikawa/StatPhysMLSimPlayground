@@ -32,6 +32,18 @@ sizes that do have an interior peak we fit
 and $\omega>0$ is the signature that the response diverges rather than
 saturating.
 
+\paragraph{Spikes are not peaks.}
+Before any of this, the maximum has to be real. A susceptibility estimated from
+eight seeds regularly throws a single-point spike: one diverged run inflates the
+variance at exactly one control value while its neighbours sit at the floor. A
+plain argmax reports that spike as the boundary and feeds its height into
+\eqref{eq:sharpening}. We therefore require a \emph{shoulder}: the larger
+neighbour of the maximum must itself rise appreciably above the curve's
+baseline, which a genuine critical swelling does and an isolated outlier does
+not. In this release the test rejects \AtlasSpikeRejected{} of
+\AtlasSpikeTotal{} size-curves --- a rate high enough that omitting the test
+would have changed the paper's conclusions, as \S\ref{sec:symmetry} records.
+
 \paragraph{Location.} The peak position itself drifts with size as
 \begin{equation}
   c_{\rm peak}(N)=c_\infty+A\,N^{-1/\nu},

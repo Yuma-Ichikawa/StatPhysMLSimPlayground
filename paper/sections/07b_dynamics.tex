@@ -55,16 +55,16 @@ effect and the verdict should fall to a crossover.
 An overparameterised student on a small training set fits almost immediately
 and generalises much later, if at all. Across
 \AtlasGrokkingConditions{} conditions the measured delay ranges over
-$\AtlasGrokkingSemanticRatio{}$ times its interval, and the susceptibility of
-the delay has an interior peak at every training-set size with height growing as
-$N^{\AtlasGrokkingSharpening{}}$. Verdict \emph{\AtlasGrokkingVerdict{}}.
+$\AtlasGrokkingSemanticRatio{}$ times its interval. The susceptibility of the
+delay peaks in the interior at two of the three training-set sizes; at the
+third the maximum is an isolated spike and is rejected, so no sharpening
+exponent is fitted. Verdict \emph{\AtlasGrokkingVerdict{}}.
 
 \paragraph{Interpretation.}
-Delayed generalisation behaves like a critical phenomenon in the weight-decay
-control: the run-to-run spread of the delay --- not merely its mean --- peaks in
-the interior and grows with training-set size. That is a stronger statement than
-the usual demonstration that a delay exists, and it is the quantity a theory of
-grokking would have to reproduce.
+Delayed generalisation exists and is controlled: the delay varies far outside
+seed noise across the weight-decay axis, and the run-to-run spread peaks in the
+interior rather than at an endpoint. Whether that spread \emph{diverges} with
+size is not established at this replication.
 
 \paragraph{Not established.}
 A critical weight decay. Much of the grid is censored by construction: below a
