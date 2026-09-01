@@ -23,55 +23,64 @@ longer matches the teacher's.
 \paragraph{Observation.}
 Across \AtlasSpecializationConditions{} conditions spanning
 $\alpha\in\AtlasSpecializationControlRange{}$ and
-\AtlasSpecializationSizes{} sizes, the disorder susceptibility has an
-admissible interior maximum at three of the six sizes, with peak height growing
-as $N^{\AtlasSpecializationSharpening{}}$ over those three. At the other three
-the maximum is a single-point spike --- one seed of eight inflates the variance
-at exactly one control value --- and is rejected rather than reported
-(\S\ref{sec:gates}). Fitting the drift of the surviving peak locations,
+\AtlasSpecializationSizes{} sizes at \AtlasSpecializationSeeds{} outer seeds,
+the disorder susceptibility has an admissible interior maximum at four of the
+six sizes, with peak height growing as
+$N^{\AtlasSpecializationSharpening{}}$ over those four. At the other two the
+maximum is a single-point spike --- one seed inflates the variance at exactly one
+control value --- and is rejected rather than reported (\S\ref{sec:gates}).
+Fitting the drift of the surviving peak locations,
 $\alpha_{\rm peak}\propto d^{\,\gamma-1}$, gives
 \begin{equation}
   \gamma=\AtlasSpecializationGamma{},\qquad
   95\%\ \text{CI}\;\AtlasSpecializationGammaCI{},
   \label{eq:gamma-spec}
 \end{equation}
-which \emph{includes} the proportional value $\gamma=1$. The verdict is
-\emph{\AtlasSpecializationVerdict{}} at grade \AtlasSpecializationGrade{}.
+whose lower limit sits \emph{at} the proportional value $\gamma=1$. The
+bootstrap puts $\AtlasSpecializationGammaProb{}$ of its mass above one. The
+verdict is \emph{\AtlasSpecializationVerdict{}} at grade
+\AtlasSpecializationGrade{}.
 
 \paragraph{Interpretation.}
 The response is critical in the sense the design was built to detect: over the
 sizes where the peak survives the spike test, its height grows with $N$ rather
-than saturating. Nothing about the boundary's \emph{position} is established.
+than saturating. The boundary's \emph{position} is not established, and neither
+is the scaling path.
 
-This family is worth recounting because it is where the analysis and the
-authors disagreed twice. On a first pass, with a coarse control grid and a
-fixed epoch budget, it produced a confident transition claim that the
-consistency requirement rejected. Repaired --- a grid of
-\AtlasSpecializationConditions{} conditions and training to a convergence
-criterion --- it produced an apparently strong second result: peaks at all six
-sizes and a drift exponent whose interval excluded $\gamma=1$, which we wrote up
-as evidence that the specialisation boundary does not lie on the proportional
-path $n\propto d$. Adding the spike test then removed half the peaks and widened
-the interval to \eqref{eq:gamma-spec}, which no longer excludes anything. We
-report the weaker result. The stronger one was an artefact of counting
-single-seed outliers as critical peaks, and it is the kind of claim this paper
-exists to avoid making.
+This family is worth recounting, because it is where the analysis and the
+authors disagreed three times. A first pass, with a coarse control grid and a
+fixed epoch budget, produced a confident transition claim that the consistency
+requirement rejected. Repaired --- a dense grid and training to a convergence
+criterion --- it produced peaks at all six sizes and a drift exponent whose
+interval excluded $\gamma=1$, which we wrote up as evidence that the
+specialisation boundary does not lie on the proportional path $n\propto d$.
+Adding the spike test removed half those peaks and widened the interval until it
+excluded nothing.
+
+We then did the obvious thing and bought more seeds, raising every condition
+from eight to \AtlasSpecializationSeeds{}. That recovered one peak, tightened
+the fit, and moved the bootstrap mass above one to
+$\AtlasSpecializationGammaProb{}$ --- and the interval's lower limit still lands
+on $1$. A fourth version of this paragraph would have claimed exclusion on a
+lower limit of $1.0000000000000004$, which is a floating-point residue, not
+evidence; the exclusion test now requires a margin that means something on an
+exponent. The honest summary is that the drift leans towards $\gamma>1$ and does
+not establish it.
 
 \paragraph{Not established.}
-The location, and now also the scaling path. The drift extrapolation
-\eqref{eq:drift} and the collapse disagree by more than the consistency
-tolerance of \S\ref{sec:gates}, so the signature count is capped at one. We also
-tried the obvious follow-up --- redoing the collapse in the rescaled variable
-$n/d^{\gamma}$, with $\gamma$ fixed in advance by the peak locations --- and it
-did \emph{not} improve on the collapse in $\alpha$.
+The location and the scaling path. The drift extrapolation \eqref{eq:drift} and
+the collapse disagree by more than the consistency tolerance of
+\S\ref{sec:gates}, so the signature count is capped at one. We also tried
+redoing the collapse in the rescaled variable $n/d^{\gamma}$, with $\gamma$
+fixed in advance by the peak locations, and it did \emph{not} improve on the
+collapse in $\alpha$.
 
 \paragraph{Next falsifier.}
-More seeds before more sizes. The binding constraint here is that eight seeds
-are not enough to estimate a variance cleanly: half the size-curves in this
-family carry a single-point artefact. At twelve or twenty-four seeds the spike
-test should reject far fewer peaks, and \eqref{eq:gamma-spec} would then be
-fitted on six points rather than three --- which is what would settle whether
-$\gamma$ differs from one.
+Sizes, now, rather than seeds. Going from eight to twelve seeds bought one peak
+and a slightly tighter interval, so the remaining uncertainty is dominated by
+having only six sizes spanning a factor of six. Extending the size path upward
+by a further factor of four would fit \eqref{eq:gamma-spec} over a decade, which
+is what would settle whether $\gamma$ differs from one.
 
 \subsection{Depth: the boundary leaves the window}
 

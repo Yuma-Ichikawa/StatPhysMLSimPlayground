@@ -31,12 +31,13 @@ the exact $\alpha_c=2$.
 
 \subsection{Transferable findings}
 
-\paragraph{1. At eight seeds, a quarter of susceptibility curves carry a
-single-point artefact.}
+\paragraph{1. A susceptibility peak from a handful of seeds is often one run.}
 Across the release, \AtlasSpikeRejected{} of \AtlasSpikeTotal{} size-curves have
-their global susceptibility maximum at an isolated spike: one diverged run out
-of eight inflates the variance at exactly one control value, and the neighbours
-sit at the floor. A plain argmax reports each of these as a boundary, and its
+their global susceptibility maximum at an isolated spike: one diverged run
+inflates the variance at exactly one control value, and the neighbours sit at
+the floor. At eight outer seeds the rate was one in four; going to twelve
+lowered it, which is the cleanest evidence we have that these are replication
+artefacts rather than physics. A plain argmax reports each of these as a boundary, and its
 height then enters the sharpening fit. Rejecting them --- by requiring a
 neighbour to rise with the peak, which a genuine critical swelling does and an
 outlier does not --- changed the verdict of several families in this paper,

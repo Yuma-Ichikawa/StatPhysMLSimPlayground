@@ -34,7 +34,7 @@ saturating.
 
 \paragraph{Spikes are not peaks.}
 Before any of this, the maximum has to be real. A susceptibility estimated from
-eight seeds regularly throws a single-point spike: one diverged run inflates the
+a dozen seeds still throws single-point spikes: one diverged run inflates the
 variance at exactly one control value while its neighbours sit at the floor. A
 plain argmax reports that spike as the boundary and feeds its height into
 \eqref{eq:sharpening}. We therefore require a \emph{shoulder}: the larger
@@ -43,6 +43,11 @@ baseline, which a genuine critical swelling does and an isolated outlier does
 not. In this release the test rejects \AtlasSpikeRejected{} of
 \AtlasSpikeTotal{} size-curves --- a rate high enough that omitting the test
 would have changed the paper's conclusions, as \S\ref{sec:symmetry} records.
+
+The rate is itself a measurement of the replication level. Run at eight outer
+seeds the same test rejected $17$ of $68$ curves, or one in four; at twelve it
+rejects \AtlasSpikeRejected{}. Adding seeds buys fewer artefacts, not only
+narrower intervals.
 
 \paragraph{Location.} The peak position itself drifts with size as
 \begin{equation}
@@ -130,10 +135,14 @@ external validity --- each scored $0$, $1$ or $2$. Grade~A requires semantics
 and replication both at $2$ with at least four components at $2$; grade~B
 requires both at least $1$ with four components at least $1$; grade~C requires
 replication at least $1$ with two components at least $1$. Replication reaches
-$2$ only at twelve or more outer seeds. The present release runs eight outer
-seeds per condition, which caps every family in this paper at grade~C by
-construction: the finite-size evidence is real, and the replication tier
-required for a stronger grade is deliberately not claimed.
+$2$ only at twelve or more outer seeds, which this release satisfies: every
+condition is run at \AtlasSpecializationSeeds{} outer seeds. The remaining cap
+is different in kind. Two components --- intervention and external validity ---
+score zero for every family here, so the highest reachable score is four
+components at $\ge1$, and grade~B additionally requires a theory anchor to lift
+\emph{prediction} above zero. Grade~A is therefore available only to a family
+that is both replicated and theory-anchored, which is exactly one family
+(\S\ref{sec:anchors}).
 
 \subsection{What is not tested here}
 

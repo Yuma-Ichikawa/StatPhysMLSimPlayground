@@ -104,22 +104,25 @@ width or sample-size scale path at fixed noise, which this design does not have.
 \paragraph{Observation.}
 The control is the ratio $T\simeq\eta/B$ of learning rate to batch size, swept
 so that several distinct $(\eta,B)$ pairs realise the same $T$. The stationary
-risk varies over $\AtlasSgdTemperatureSemanticRatio{}$ times its interval and
-its susceptibility peaks in the interior at every size, with height growing as
-$N^{\AtlasSgdTemperatureSharpening{}}$. Verdict
-\emph{\AtlasSgdTemperatureVerdict{}}, grade \AtlasSgdTemperatureGrade{}.
+risk varies over $\AtlasSgdTemperatureSemanticRatio{}$ times its interval, but
+its susceptibility maxima fall at the edge of the sampled temperature range and
+are censored. Verdict \emph{\AtlasSgdTemperatureVerdict{}}, grade
+\AtlasSgdTemperatureGrade{}.
 
 \paragraph{Interpretation.}
-The stationary state responds critically to the effective temperature, and the
+The stationary state responds strongly to the effective temperature, and the
 design permits the sharper question --- whether the state depends on
 $\eta$ and $B$ only through their ratio --- because the same $T$ is realised by
 several pairs. That collapse is the operational content of calling $\eta/B$ a
 temperature at all.
 
 \paragraph{Not established.}
-A critical temperature, for the usual reason: the peak location does not
-extrapolate within the sampled window. We also do not claim the
-$(\eta,B)$ collapse is exact, only that the design can test it.
+A critical temperature. The response is unambiguous but its maxima sit outside
+the sampled window, so nothing is located. At eight seeds this family did show
+an interior peak that sharpened with size; at twelve it does not, which is the
+right direction for a diagnostic to move when the extra seeds reveal that the
+earlier maximum was noise. We also do not claim the $(\eta,B)$ collapse is
+exact, only that the design can test it.
 
 \subsection{Mode connectivity: a negative result}
 

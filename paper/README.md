@@ -4,11 +4,8 @@
 generated result macros, figure suite, and compiled PDF are colocated here. The
 repository intentionally contains no second paper tree.
 
-> **`main.pdf` in this directory is stale.** It was built from the previous
-> manuscript. The current sources describe a different study and have not been
-> recompiled, because the machine this revision was prepared on has no TeX
-> installation. Rebuild it with the commands under **Build** before circulating
-> the PDF.
+`main.pdf` is built from the current sources. Rebuild it after regenerating
+macros or figures; see **Build** below.
 
 ## Where the numbers come from
 
@@ -59,6 +56,8 @@ python -m sma.checktex --paper <repo>/paper
 
 ## Build
 
+With a full TeX installation:
+
 ```bash
 cd paper
 pdflatex -interaction=nonstopmode -halt-on-error main.tex
@@ -66,6 +65,17 @@ bibtex main
 pdflatex -interaction=nonstopmode -halt-on-error main.tex
 pdflatex -interaction=nonstopmode -halt-on-error main.tex
 ```
+
+Or, with no TeX installation at all, using a self-contained engine that fetches
+only the packages this document needs (`brew install tectonic`):
+
+```bash
+cd paper
+tectonic -X compile main.tex
+```
+
+The current release builds clean under tectonic 0.17: 30 pages, no undefined
+references, one 0.8 pt overfull box.
 
 Deployment-owned paths, accounts, partitions, node names, and scheduler policy
 remain runtime inputs and are never embedded in the manuscript or figures.

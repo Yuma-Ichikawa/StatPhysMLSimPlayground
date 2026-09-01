@@ -1,13 +1,15 @@
 \section{Limitations}
 \label{sec:limitations}
 
-\paragraph{Every family is capped at grade~C by construction.}
-The release runs \AtlasSpecializationSeeds{} outer seeds per condition. The
-grading scheme reserves a replication score of $2$ for twelve or more, so no
-family in this paper can reach grade~A or~B however clean its finite-size
-evidence. This is a deliberate allocation --- breadth across settings in
-preference to depth within one --- and it is the first thing a follow-up should
-change.
+\paragraph{Two evidence components are zero everywhere.}
+Replication is no longer the binding constraint: every condition is run at
+\AtlasSpecializationSeeds{} outer seeds, which is the tier the grading scheme
+requires. What caps the release now is that \emph{intervention} and
+\emph{external validity} score zero for every family. No family is evaluated on
+natural data or a pretrained model, and only the attention block performs a
+causal ablation --- which is scored under its own order parameter rather than as
+an intervention on a boundary claim. Grade~A consequently requires a family that
+is both replicated and theory-anchored, and exactly one is.
 
 \paragraph{No prospective confirmation.}
 Nothing here has been re-run frozen at fresh seeds after the analysis was
