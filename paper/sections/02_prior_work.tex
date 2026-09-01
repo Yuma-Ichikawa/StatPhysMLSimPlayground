@@ -50,19 +50,19 @@ depth, context, and data are distinct deformations; compute-optimal scaling and
 hyperparameter transfer do not make them one thermodynamic coordinate
 \cite{tensor_chinchilla_hoffmann2022,tensor_mup_yang2022}.
 
-For diffusion, the published oracle-score analysis distinguishes early
-speciation from later collapse toward memorized samples
-\cite{biroli2024dynamical}; learned DDPM and DiT endpoints add score error,
-architecture, and solver effects \cite{ho2020ddpm,peebles2023dit}. For
-reinforcement learning, reward-model overoptimization demonstrates why proxy
-reward, gold reward, KL pressure, and strategy support must be measured jointly
-\cite{gao2023reward,rafailov2024overoptimization}. For multi-agent systems,
-classical consensus dynamics and modern MARL or language-agent interactions add
-field, coupling, topology, and population coordinates
-\cite{degroot1974consensus,lowe2017maddpg,du2024debate}. Recent 2026 claims about
-diffusion and collective language-agent behavior are treated as hypotheses
-rather than established anchors \cite{zhang2026concurrence,denobili2026collective,
-bertalanic2026ringelmann}.
+Beyond supervised learning the same questions recur with different order
+parameters: diffusion models separate early speciation from later collapse
+toward memorised samples \cite{biroli2024dynamical,ho2020ddpm,peebles2023dit},
+reward-model overoptimization requires proxy reward, gold reward, KL pressure
+and strategy support to be measured jointly
+\cite{gao2023reward,rafailov2024overoptimization}, and multi-agent systems add
+field, coupling, topology and population coordinates
+\cite{degroot1974consensus,lowe2017maddpg,du2024debate}. None of these is part
+of the present release. They are expressible in the coordinates of
+\S\ref{sec:taxonomy}, and naming them here is a statement about the grammar's
+reach, not about this paper's coverage; recent claims in those areas are treated
+as hypotheses rather than anchors \cite{zhang2026concurrence,
+denobili2026collective,bertalanic2026ringelmann}.
 
 \subsection{Reproducibility and the gap addressed here}
 
@@ -76,10 +76,22 @@ threshold is censored. Conversely, a phase diagram alone does not encode
 holdouts, provenance, or invalidation. The present work joins these two
 traditions through a typed condition record and an evidence vector.
 
+\subsection{Two cited claims that this release tests}
+
+Two of the results above are usually cited rather than re-measured, and both are
+tested here directly. The positional--semantic transition in attention
+\cite{cui2024phase} is measured in \S\ref{sec:sequence} with a causal ablation
+of each route in turn, on data in which \emph{both} cues carry a finite
+reliability --- the configuration that makes the switch a property of the model
+rather than of the data. And the lazy limit of wide networks
+\cite{jacot2018neural} is measured, not assumed, through the joint statement
+$\delta_\theta\to0$ and $\mathcal A\to1$ of \eqref{eq:lazy}, so that the
+regime is an observable of each run.
+
 The positioning is therefore precise. We contribute neither a new universal
-critical exponent nor a comprehensive survey of every physics-inspired machine
+critical exponent nor a comprehensive survey of physics-inspired machine
 learning theory. We contribute an operational taxonomy for numerical studies of
-modern learning systems and demonstrate it on a deliberately heterogeneous set
-of artifacts.
+modern learning systems, a decision procedure willing to return nothing, and a
+map of \AtlasTotalFamilies{} settings measured under both.
 
 \FloatBarrier

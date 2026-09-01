@@ -1,117 +1,116 @@
 \section{Taxonomy: what is being studied?}
 \label{sec:taxonomy}
 
-The taxonomy classifies a \emph{scientific object}, not a software module and
-not a level of evidence. A registered atlas point is the seven-tuple
+Before any measurement, the object has to be named. Most disagreements about
+whether a learning system ``has a phase transition'' are disagreements about
+what was held fixed, and they are invisible until the coordinates are written
+down. A registered atlas point is the seven-tuple
 \begin{equation}
   \mathcal A=(D,X,\delta,\Omega,\mathbf N,m,H),
   \label{eq:atlas-tuple}
 \end{equation}
 where $D$ is the system, $X$ the state object, $\delta$ the deformation,
-$\Omega$ the disorder ensemble, $\mathbf N$ the scale vector and path, $m$ the
-observable, and $H$ the hypothesized phenomenon. Two studies can be compared
-only after the components that are asserted equivalent have been named.
+$\Omega$ the disorder ensemble, $\mathbf N$ the scale coordinate and path, $m$
+the observable, and $H$ the hypothesised phenomenon. Two studies can be
+compared only after the components asserted to be equivalent have been named.
 
-\subsection{The seven scientific coordinates}
+\subsection{The seven coordinates}
 
 \paragraph{1. System $D$.}
-The system fixes the update law and interaction structure: Transformer,
-diffusion process, reinforcement learner, or multi-agent population in this
-release. A domain label is a root node, not a claim that all descendants share
-one ensemble.
+The update law and interaction structure. This release spans perceptrons and
+linear rules, soft committee machines, deep MLPs, single- and two-layer causal
+attention models, a mixture-of-experts layer, and a contrastive encoder. A
+family name is a root node, not a claim that its descendants share an ensemble.
 
 \paragraph{2. State object $X$.}
-Examples include trained parameters, hidden representations, attention maps,
-feed-forward activations, optimizer trajectories, generated samples, policy
-occupancy, reward trajectories, beliefs, messages, and agent actions. A single
-run may expose several state objects, but each observable names the one on which
-it is defined.
+Trained parameters, hidden representations, attention maps, the interpolating
+path between two solutions, embedding covariance spectra, and epoch-resolved
+trajectories all appear here. A single run may expose several; every observable
+names the one it is defined on. This is why the primary observables of
+\S\ref{sec:observables} live in function space --- it is the only state object
+the systems above share.
 
 \paragraph{3. Deformation $\delta$.}
-A deformation changes data or environment, architecture or interaction,
-objective or feedback, dynamics or optimizer, or lifecycle. Width is a scale
-coordinate, whereas replacing a feed-forward activation is an architectural
-deformation; conflating them makes a scaling statement ambiguous.
+What is varied: sample ratio, weight decay, initialisation scale, effective
+temperature, InfoNCE temperature, task similarity, real-data fraction,
+load-balancing weight, adapter rank, task-pool size, cue reliability, context
+length. Width is a scale coordinate; replacing an activation is an
+architectural deformation. Conflating the two makes a scaling statement
+ambiguous.
 
 \paragraph{4. Disorder ensemble $\Omega$.}
-Initialization, data draw, minibatch order, environment instance, evaluation
-sample, dropout, diffusion noise, rollout, and inner replica are distinct random
-variables. The independent outer unit used for uncertainty must be declared.
+Initialisation, data draw, minibatch order, and evaluation sample are distinct
+random variables. One draw of the \emph{outer} ensemble fixes an initialisation
+\emph{and} a data set, and that is the unit of independence throughout
+(\S\ref{sec:gates}). Declaring it is not bookkeeping: the susceptibility in
+\eqref{eq:chi-binder} means nothing until it is fixed.
 
 \paragraph{5. Scale path $\mathbf N$.}
-Scale is a vector such as $(d,L,n,T,C,A,\ldots)$ for width, depth, data,
-context, compute, and population. A finite-size study declares one coordinate
-as $N$ and registers how all others move or remain fixed. ``Larger model'' is not
-a scaling path.
+Scale is a vector $(d,\text{width},\text{depth},n,L,\ldots)$. A finite-size
+study declares one coordinate as $N$ and registers how the others move.
+``A larger model'' is not a scaling path --- and, as \S\ref{sec:gates} makes
+operational, neither is every second axis a scale path at all: a planted rank
+or a generation count changes the problem rather than enlarging it.
 
 \paragraph{6. Observable $m$.}
-An observable is an estimator together with units, normalization, ensemble,
-null, and validity range. Normalized risk, semantic order, susceptibility,
-Binder cumulant, participation ratio, attention entropy, causal risk difference,
-gold reward, and truth-conditioned consensus are different observables even when
-all are dimensionless.
+An estimator together with its units, normalisation, ensemble, null, and
+validity range. Normalised risk, function-space overlap, replica overlap,
+susceptibility, Binder cumulant, effective rank, kernel alignment, barrier
+height, attention entropy and a causal ablation difference are different
+observables even though all are dimensionless.
 
 \paragraph{7. Phenomenon $H$.}
-The hypothesis may concern recovery, specialization, locality, multiplicity,
-symmetry breaking, crossover, criticality, glassiness, dynamical arrest,
-speciation, reward collapse, or collective alignment. A phenomenon is not
-assigned from visual slope; it is adjudicated by registered diagnostics.
+The hypothesis: recovery, specialisation, symmetry breaking, crossover,
+criticality, multiplicity, dynamical delay, mechanism switching, or collapse.
+A phenomenon is never assigned from the visual slope of a curve; it is
+adjudicated by the registered diagnostics of \S\ref{sec:gates}.
+
+\subsection{The release in these coordinates}
 
 \begin{table}[tbp]
 \centering\small
-\begin{tabularx}{\linewidth}{@{}p{18mm}YYYY@{}}
+\begin{tabularx}{\linewidth}{@{}p{20mm}YYY@{}}
 \toprule
-Coordinate & Transformer & Diffusion & Reinforcement learning & Multi-agent \\
+Coordinate & Solvable rules & Shallow networks & Attention models \\
 \midrule
-State $X$ & representations, attention, MLP, optimizer path & score/sample
-trajectory, endpoint & occupancy, policy, reward path & beliefs, messages,
-actions, population \\
-Deformation $\delta$ & data, block, objective, optimizer, lifecycle & score,
-schedule, solver, guidance & environment, verifier, KL, update rule & field,
-coupling, topology, memory, roles \\
-Disorder $\Omega$ & initialization, data, minibatch, evaluation & data, score
-noise, reverse noise & environment, rollout, verifier noise & private evidence,
-topology, update order \\
-Scale $\mathbf N$ & width, depth, data, context, steps & resolution, NFE, data,
-model size & horizon, samples, verifier calls & population, messages, rounds \\
-Observable $m$ & semantic order, risks, spectra, interventions & speciation,
-nonlocality, commitment, proximity & gold/proxy reward, support, entropy &
-truth consensus, polarization, accuracy \\
-Phenomenon $H$ & recovery, specialization, crossover & speciation, collapse,
-nonlocality & productive specialization, reward collapse & alignment,
-fragmentation, error amplification \\
+System $D$ & spherical perceptron, linear classifier & committee machine, deep
+MLP, MoE layer, contrastive encoder & 1--2 layer causal attention \\
+State $X$ & weights, separating hyperplane & function on a probe set,
+hidden-unit overlaps, feature spectra, interpolating path & attention maps,
+in-context predictions \\
+Deformation $\delta$ & load, centre separation & sample ratio, depth, init
+scale, temperature, task similarity, adapter rank & cue reliability, task-pool
+size, context length, vocabulary \\
+Scale $\mathbf N$ & dimension & dimension, width, depth, training-set size &
+width \\
+Observable $m$ & separability, margin, misclassification & $\hat m$, $q_{ab}$,
+specialisation gap, subspace overlap, effective rank, kernel alignment, barrier
+& mechanism order by ablation, ridge alignment, induction score, attention
+entropy \\
+Phenomenon $H$ & storage capacity & recovery, symmetry breaking, feature
+learning, delay, collapse & mechanism switching, in-context emergence \\
 \bottomrule
 \end{tabularx}
-\caption{Domain crosswalk for six coordinates. The system coordinate is the
-column header. Entries are registered possibilities, not a claim that every
-cell has been run.}
+\caption{The systems actually measured in this release, in the coordinates of
+\eqref{eq:atlas-tuple}. Diffusion, reinforcement-learning and multi-agent
+systems are expressible in the same coordinates and are \emph{not} part of this
+release; the grammar is broader than the map.}
 \label{tab:domain-crosswalk}
 \end{table}
 
 \subsection{What is deliberately outside the taxonomy}
 
-Theory status (exact, asymptotic, phenomenological, empirical), fidelity
-(solvable, trainable synthetic, natural, deployed), and evidence support
-(semantic, replicated, finite-size, predictive, interventional, external) are
-orthogonal metadata. This prevents an exact solvable result from being called
-externally valid, and prevents a large natural-data experiment from being called
-exact theory. Protocol fields---question, estimator, null, calibration,
-holdout, intervention, and falsifier---are also separate because the same atlas
-point can be tested well or poorly.
+Theory status (exact, asymptotic, partial, none), fidelity (solvable,
+trainable synthetic, natural, deployed) and evidence support (semantic,
+replication, finite-size, predictive, interventional, external) are
+\emph{orthogonal} metadata, not coordinates. Keeping them separate is what
+prevents an exact solvable result from being called externally valid, and a
+large natural-data experiment from being called exact theory. The protocol
+fields --- question, estimator, null, holdout, intervention and falsifier ---
+are separate for the same reason: the same atlas point can be tested well or
+badly, and the tuple \eqref{eq:atlas-tuple} does not record which.
 
-\subsection{Outcome taxonomy}
-
-An atlas edge receives one of thirteen non-ordinal outcomes. Transport outcomes
-are preserved, renormalized, rounded, or censored. Topology outcomes are split,
-merged, or new regime. Accessibility outcomes are hysteretic, path-dependent,
-or statistical--computational separation. Evidential failures are semantic
-failure, unresolved, or not comparable. These labels answer \emph{what happened}
-before stronger phase language is considered.
-
-\manuscriptfigure{figures/figure2_outcome_taxonomy.pdf}{The registered outcome
-vocabulary. Transport, topology, accessibility, and evidential failure are
-separate branches. ``Unresolved'' records insufficient separation; ``not
-comparable'' records a broken common estimand; neither is silently dropped from
-the atlas.}{fig:outcome-taxonomy}
+The outcome vocabulary is likewise not part of the taxonomy. It belongs to the
+decision procedure and is stated once, in Table~\ref{tab:outcomes}.
 
 \FloatBarrier
