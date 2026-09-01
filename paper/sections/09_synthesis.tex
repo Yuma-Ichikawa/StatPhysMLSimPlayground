@@ -19,8 +19,8 @@ The single most informative entry in the map is which family passed. Exactly
 \AtlasCountPhaseTransitionSupported{} of \AtlasTotalFamilies{} families
 received the verdict \emph{transition supported}, and it is the Gardner
 capacity --- the anchor whose answer was known before the experiment was run
-(\S\ref{sec:anchors}). Applied to the fourteen settings whose answers are not
-known, the same procedure certified nothing.
+(\S\ref{sec:anchors}). Applied to every other setting in the release --- none of whose
+answers are known --- the same procedure certified nothing.
 
 We take that as the central evidence that the gates are calibrated rather than
 merely strict. A procedure that never fires is useless; one that fires
@@ -29,7 +29,7 @@ fire, and the boundary it reported,
 $\alpha=\AtlasPerceptronCapacityPeakControl{}$, sits at the grid point nearest
 the exact $\alpha_c=2$.
 
-\subsection{Three transferable findings}
+\subsection{Transferable findings}
 
 \paragraph{1. At eight seeds, a quarter of susceptibility curves carry a
 single-point artefact.}
@@ -61,7 +61,7 @@ $\alpha$ is the wrong abscissa, a study sweeping it at a single size is not
 holding the boundary fixed, and two such studies at different sizes can
 disagree without either being wrong.
 
-\paragraph{2. Diverging response and locatable boundary are different
+\paragraph{3. Diverging response and locatable boundary are different
 achievements, and the second is much harder.}
 Several families produce a susceptibility that grows convincingly with size and
 still fail to yield a boundary location: the peak marches out of the sampled
@@ -72,7 +72,7 @@ the location analysis does not support. We suggest that a susceptibility plot
 without an accompanying drift fit should be read as evidence of criticality and
 not as evidence of a critical point.
 
-\paragraph{3. Two design choices can manufacture or destroy a transition.}
+\paragraph{4. Two design choices can manufacture or destroy a transition.}
 Both were found the hard way in this work. A control grid too coarse to hold an
 interior maximum yields a structurally censored result regardless of the
 physics; and a fixed epoch budget makes wider models appear \emph{less} ordered,
@@ -83,7 +83,7 @@ recommend training to a convergence criterion, and recording per run whether it
 was met, so that optimisation shortfall is a measured quantity rather than a
 hidden covariate.
 
-\paragraph{4. A risk curve can be flat while the mechanism reverses.}
+\paragraph{5. A risk curve can be flat while the mechanism reverses.}
 In the positional--semantic family (\S\ref{sec:sequence}) the model's risk
 barely moves across most of the control range, while the causal ablation shows
 the learned solution swinging from purely positional to purely semantic. Had we
@@ -116,6 +116,11 @@ critical response, boundary unresolved &
 window does not contain the boundary \\
 candidate boundary & \AtlasCountCandidateBoundary{} & one admissible signature;
 a second is needed \\
+threshold located (no scale path) &
+\AtlasCountThresholdLocatedNoScalePath{} & threshold on the control axis; the
+second axis is a problem parameter, not a size \\
+response shift & \AtlasCountResponseShift{} & the order parameter moves; no
+admissible finite-size signature \\
 response shift (off-grid) &
 \AtlasCountResponseShiftBoundaryOutsideGrid{} & the order parameter moves;
 most sizes censored \\
@@ -132,9 +137,10 @@ map.}
 \subsection{What we would do next, in order}
 
 \begin{enumerate}
-  \item \textbf{Twelve seeds on the four best-resolved families.} Every family
-    here is capped at grade~C purely by the replication tier. This is the
-    cheapest available upgrade and changes nothing else.
+  \item \textbf{Twelve seeds, everywhere.} Replication is the binding
+    constraint on every family here, and it is also what makes the spike test
+    reject a quarter of the size-curves. Twelve seeds would lift the replication
+    tier and shrink the artefact rate at the same time; nothing else changes.
   \item \textbf{Re-run the drifting families on the rescaled control
     $n/d^{\gamma}$.} If the peaks return to the interior of the window, several
     unresolved boundaries become locatable in a single sweep.

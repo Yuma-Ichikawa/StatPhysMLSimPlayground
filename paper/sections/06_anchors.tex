@@ -53,15 +53,16 @@ The pipeline recovers the transition at the right location, and its finite-size
 machinery behaves as it should on a case where the truth is known. The
 size-independence of the peak is worth stating explicitly: a critical capacity
 that does not move with $d$ is exactly what the Gardner result asserts, and it
-is what makes the contrast with \S\ref{sec:symmetry} --- where the peak
-\emph{does} move --- a measurement rather than an artefact of the analysis.
+is the reference against which a peak that \emph{does} drift with size, as in
+\S\ref{sec:symmetry}, can be read as a measurement rather than as noise in the
+analysis.
 
 This is also the only family in the release that the decision procedure awards
 its strongest verdict. We regard that as the main evidence that the procedure
-is calibrated rather than permissive: applied to fourteen settings whose
-answers are not known, it declined to certify a transition in every one, and
-certified the single case that was placed there because the answer was known
-in advance.
+is calibrated rather than permissive. Applied to every other family in the
+release --- none of whose answers is known in advance --- it declined to certify
+a transition in all of them, and certified the one case that was placed there
+precisely because the answer was known.
 
 A solver status other than ``feasible'' or ``provably infeasible'' is recorded
 per run as a flag, so no numerical failure can be silently absorbed into the
